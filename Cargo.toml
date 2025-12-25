@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/rustright-cdp",
     "crates/rustright-core",
+    "crates/rustright-test",
+    "crates/rustright-test-macros",
 ]
 
 [workspace.lints.rust]

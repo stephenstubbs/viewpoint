@@ -12,5 +12,5 @@ pub mod wait;
 pub use browser::{Browser, BrowserBuilder};
 pub use context::BrowserContext;
 pub use error::CoreError;
-pub use page::Page;
+pub use page::{AriaRole, Locator, LocatorOptions, Page, RoleLocatorBuilder, Selector, TextOptions};
 pub use wait::DocumentLoadState;

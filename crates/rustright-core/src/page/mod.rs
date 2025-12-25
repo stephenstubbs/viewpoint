@@ -1,5 +1,6 @@
 //! Page management and navigation.
 
+pub mod locator;
 mod navigation;
 
 use std::sync::Arc;
@@ -13,6 +14,7 @@ use tracing::{debug, info, instrument, trace, warn};
 use crate::error::{NavigationError, PageError};
 use crate::wait::{DocumentLoadState, LoadStateWaiter};
 
+pub use locator::{AriaRole, Locator, LocatorOptions, Selector, TextOptions};
 pub use navigation::GotoBuilder;
 
 /// Default navigation timeout.
@@ -211,6 +213,208 @@ impl Page {
     /// Get a reference to the CDP connection.
     pub fn connection(&self) -> &Arc<CdpConnection> {
         &self.connection
+    }
+
+    /// Get the current page URL.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the page is closed or the evaluation fails.
+    pub async fn url(&self) -> Result<String, PageError> {
+        if self.closed {
+            return Err(PageError::Closed);
+        }
+
+        let result: rustright_cdp::protocol::runtime::EvaluateResult = self
+            .connection
+            .send_command(
+                "Runtime.evaluate",
+                Some(rustright_cdp::protocol::runtime::EvaluateParams {
+                    expression: "window.location.href".to_string(),
+                    object_group: None,
+                    include_command_line_api: None,
+                    silent: Some(true),
+                    context_id: None,
+                    return_by_value: Some(true),
+                    await_promise: Some(false),
+                }),
+                Some(&self.session_id),
+            )
+            .await?;
+
+        result
+            .result
+            .value
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
+            .ok_or_else(|| PageError::EvaluationFailed("Failed to get URL".to_string()))
+    }
+
+    /// Get the current page title.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the page is closed or the evaluation fails.
+    pub async fn title(&self) -> Result<String, PageError> {
+        if self.closed {
+            return Err(PageError::Closed);
+        }
+
+        let result: rustright_cdp::protocol::runtime::EvaluateResult = self
+            .connection
+            .send_command(
+                "Runtime.evaluate",
+                Some(rustright_cdp::protocol::runtime::EvaluateParams {
+                    expression: "document.title".to_string(),
+                    object_group: None,
+                    include_command_line_api: None,
+                    silent: Some(true),
+                    context_id: None,
+                    return_by_value: Some(true),
+                    await_promise: Some(false),
+                }),
+                Some(&self.session_id),
+            )
+            .await?;
+
+        result
+            .result
+            .value
+            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
+            .ok_or_else(|| PageError::EvaluationFailed("Failed to get title".to_string()))
+    }
+
+    // =========================================================================
+    // Locator Methods
+    // =========================================================================
+
+    /// Create a locator for elements matching a CSS selector.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let button = page.locator("button.submit");
+    /// let items = page.locator(".list > .item");
+    /// ```
+    pub fn locator(&self, selector: impl Into<String>) -> Locator<'_> {
+        Locator::new(self, Selector::Css(selector.into()))
+    }
+
+    /// Create a locator for elements containing the specified text.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let heading = page.get_by_text("Welcome");
+    /// let exact = page.get_by_text_exact("Welcome to our site");
+    /// ```
+    pub fn get_by_text(&self, text: impl Into<String>) -> Locator<'_> {
+        Locator::new(
+            self,
+            Selector::Text {
+                text: text.into(),
+                exact: false,
+            },
+        )
+    }
+
+    /// Create a locator for elements with exact text content.
+    pub fn get_by_text_exact(&self, text: impl Into<String>) -> Locator<'_> {
+        Locator::new(
+            self,
+            Selector::Text {
+                text: text.into(),
+                exact: true,
+            },
+        )
+    }
+
+    /// Create a locator for elements with the specified ARIA role.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let buttons = page.get_by_role(AriaRole::Button);
+    /// let submit = page.get_by_role(AriaRole::Button).with_name("Submit");
+    /// ```
+    pub fn get_by_role(&self, role: AriaRole) -> RoleLocatorBuilder<'_> {
+        RoleLocatorBuilder::new(self, role)
+    }
+
+    /// Create a locator for elements with the specified test ID.
+    ///
+    /// By default, looks for `data-testid` attribute.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let button = page.get_by_test_id("submit-button");
+    /// ```
+    pub fn get_by_test_id(&self, test_id: impl Into<String>) -> Locator<'_> {
+        Locator::new(self, Selector::TestId(test_id.into()))
+    }
+
+    /// Create a locator for form controls by their associated label text.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let email = page.get_by_label("Email address");
+    /// ```
+    pub fn get_by_label(&self, label: impl Into<String>) -> Locator<'_> {
+        Locator::new(self, Selector::Label(label.into()))
+    }
+
+    /// Create a locator for inputs by their placeholder text.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let search = page.get_by_placeholder("Search...");
+    /// ```
+    pub fn get_by_placeholder(&self, placeholder: impl Into<String>) -> Locator<'_> {
+        Locator::new(self, Selector::Placeholder(placeholder.into()))
+    }
+}
+
+/// Builder for role-based locators.
+#[derive(Debug)]
+pub struct RoleLocatorBuilder<'a> {
+    page: &'a Page,
+    role: AriaRole,
+    name: Option<String>,
+}
+
+impl<'a> RoleLocatorBuilder<'a> {
+    fn new(page: &'a Page, role: AriaRole) -> Self {
+        Self {
+            page,
+            role,
+            name: None,
+        }
+    }
+
+    /// Filter by accessible name.
+    #[must_use]
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    /// Build the locator.
+    pub fn build(self) -> Locator<'a> {
+        Locator::new(
+            self.page,
+            Selector::Role {
+                role: self.role,
+                name: self.name,
+            },
+        )
+    }
+}
+
+impl<'a> From<RoleLocatorBuilder<'a>> for Locator<'a> {
+    fn from(builder: RoleLocatorBuilder<'a>) -> Self {
+        builder.build()
     }
 }
 
