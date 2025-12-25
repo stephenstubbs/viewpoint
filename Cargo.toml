@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rustright-cdp",
+    "crates/rustright-core",
+]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
