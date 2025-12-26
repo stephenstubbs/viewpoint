@@ -1,0 +1,31 @@
+[package]
+name = "viewpoint-test-macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Procedural macros for Viewpoint test framework"
+documentation = "https://docs.rs/viewpoint-test-macros"
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "parsing"] }
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+trybuild = "1.0"
+# viewpoint-test is used for integration testing but creates a circular dependency
+# Test the macros from viewpoint-test's test suite instead
+
+[lints]
+workspace = true

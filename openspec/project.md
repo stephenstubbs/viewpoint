@@ -1,7 +1,7 @@
 # Project Context
 
 ## Purpose
-RustRight is a high-performance browser automation and end-to-end testing framework written entirely in Rust. It aims to be the Rust equivalent of Playwright, enabling developers to write browser automation and E2E tests in Rust with native performance benefits.
+Viewpoint is a high-performance browser automation and end-to-end testing framework written entirely in Rust. It aims to be the Rust equivalent of Playwright, enabling developers to write browser automation and E2E tests in Rust with native performance benefits.
 
 ### Goals
 - Provide a native Rust API for browser automation
@@ -118,15 +118,15 @@ RustRight is a high-performance browser automation and end-to-end testing framew
 - Chromium browser (provided via Nix flake)
 - Chrome DevTools Protocol (CDP) over WebSocket
 
-## Workspace Structure (Planned)
+## Workspace Structure
 ```
-rustright/
+viewpoint/
 ├── Cargo.toml              # Workspace manifest
 ├── crates/
-│   ├── rustright/          # Main public API crate
-│   ├── rustright-core/     # Core domain logic
-│   ├── rustright-cdp/      # Chrome DevTools Protocol implementation
-│   └── rustright-cli/      # CLI binary
+│   ├── viewpoint-cdp/      # Chrome DevTools Protocol implementation
+│   ├── viewpoint-core/     # Core domain logic
+│   ├── viewpoint-test/     # Test framework with assertions and fixtures
+│   └── viewpoint-test-macros/  # Proc macros for test setup
 ├── tests/                  # Workspace-level integration tests
 └── examples/               # Usage examples
 ```

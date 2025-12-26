@@ -396,59 +396,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustright-cdp"
-version = "0.1.0"
-dependencies = [
- "futures-util",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "rustright-core"
-version = "0.1.0"
-dependencies = [
- "rustright-cdp",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "rustright-test"
-version = "0.1.0"
-dependencies = [
- "rustright-cdp",
- "rustright-core",
- "rustright-test-macros",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "rustright-test-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "rustright-test",
- "syn",
- "tokio",
- "trybuild",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -840,6 +787,58 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "viewpoint-cdp"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "viewpoint-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "viewpoint-cdp",
+]
+
+[[package]]
+name = "viewpoint-test"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "viewpoint-cdp",
+ "viewpoint-core",
+ "viewpoint-test-macros",
+]
+
+[[package]]
+name = "viewpoint-test-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "tokio",
+ "trybuild",
+]
 
 [[package]]
 name = "wasi"

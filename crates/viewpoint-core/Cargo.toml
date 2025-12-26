@@ -1,0 +1,28 @@
+[package]
+name = "viewpoint-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "High-level browser automation API for Viewpoint"
+documentation = "https://docs.rs/viewpoint-core"
+readme = "README.md"
+
+[dependencies]
+viewpoint-cdp = { version = "0.1.0", path = "../viewpoint-cdp" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1.0", features = ["sync", "time", "macros", "rt-multi-thread"] }
+tracing = "0.1"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true

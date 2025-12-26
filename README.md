@@ -1,6 +1,10 @@
-# RustRight
+# Viewpoint
 
-A Rust-native browser automation library inspired by Playwright. RustRight provides a high-level API for controlling Chromium browsers via the Chrome DevTools Protocol (CDP).
+[![Crates.io](https://img.shields.io/crates/v/viewpoint-test.svg)](https://crates.io/crates/viewpoint-test)
+[![Documentation](https://docs.rs/viewpoint-test/badge.svg)](https://docs.rs/viewpoint-test)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A Rust-native browser automation library inspired by Playwright. Viewpoint provides a high-level API for controlling Chromium browsers via the Chrome DevTools Protocol (CDP).
 
 ## Features
 
@@ -15,10 +19,10 @@ A Rust-native browser automation library inspired by Playwright. RustRight provi
 
 | Crate | Description |
 |-------|-------------|
-| `rustright-cdp` | Low-level Chrome DevTools Protocol client |
-| `rustright-core` | High-level browser automation API |
-| `rustright-test` | Test framework with assertions and fixtures |
-| `rustright-test-macros` | Proc macros for convenient test setup |
+| `viewpoint-cdp` | Low-level Chrome DevTools Protocol client |
+| `viewpoint-core` | High-level browser automation API |
+| `viewpoint-test` | Test framework with assertions and fixtures |
+| `viewpoint-test-macros` | Proc macros for convenient test setup |
 
 ## Quick Start
 
@@ -26,14 +30,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-rustright-test = { path = "crates/rustright-test" }
+viewpoint-test = "0.1"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 ```
 
 ### Basic Test with TestHarness
 
 ```rust
-use rustright_test::{expect, expect_page, TestHarness, DocumentLoadState};
+use viewpoint_test::{expect, expect_page, TestHarness, DocumentLoadState};
 
 #[tokio::test]
 async fn my_test() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,9 +66,9 @@ async fn my_test() -> Result<(), Box<dyn std::error::Error>> {
 ### Using the Test Macro
 
 ```rust
-use rustright_test::{test, Page, expect};
+use viewpoint_test::{test, Page, expect};
 
-#[rustright_test::test]
+#[viewpoint_test::test]
 async fn my_macro_test(page: &Page) -> Result<(), Box<dyn std::error::Error>> {
     page.goto("https://example.com").goto().await?;
     
@@ -77,7 +81,7 @@ async fn my_macro_test(page: &Page) -> Result<(), Box<dyn std::error::Error>> {
 
 ## Locators
 
-RustRight provides multiple ways to locate elements:
+Viewpoint provides multiple ways to locate elements:
 
 ```rust
 // CSS selector
@@ -138,7 +142,7 @@ element.focus().await?;
 Fluent async assertions with auto-waiting:
 
 ```rust
-use rustright_test::{expect, expect_page};
+use viewpoint_test::{expect, expect_page};
 
 // Element assertions
 expect(&locator).to_be_visible().await?;
@@ -208,10 +212,10 @@ cargo test --workspace
 HEADLESS=false cargo test --workspace
 
 # Run specific test
-cargo test -p rustright-test --test harness_tests
+cargo test -p viewpoint-test --test harness_tests
 
 # Run examples
-cargo run -p rustright-test --example basic_test
+cargo run -p viewpoint-test --example basic_test
 ```
 
 ## License

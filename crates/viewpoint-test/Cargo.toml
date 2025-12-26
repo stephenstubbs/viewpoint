@@ -1,0 +1,30 @@
+[package]
+name = "viewpoint-test"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Test framework for Viewpoint browser automation with Playwright-style assertions"
+documentation = "https://docs.rs/viewpoint-test"
+readme = "README.md"
+
+[dependencies]
+viewpoint-cdp = { version = "0.1.0", path = "../viewpoint-cdp" }
+viewpoint-core = { version = "0.1.0", path = "../viewpoint-core" }
+viewpoint-test-macros = { version = "0.1.0", path = "../viewpoint-test-macros" }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1.0", features = ["sync", "time", "rt"] }
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true

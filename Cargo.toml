@@ -1,11 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/rustright-cdp",
-    "crates/rustright-core",
-    "crates/rustright-test",
-    "crates/rustright-test-macros",
+    "crates/viewpoint-cdp",
+    "crates/viewpoint-core",
+    "crates/viewpoint-test",
+    "crates/viewpoint-test-macros",
 ]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/stephenstubbs/viewpoint"
+homepage = "https://github.com/stephenstubbs/viewpoint"
+documentation = "https://docs.rs/viewpoint-test"
+authors = ["Stephen Stubbs"]
+rust-version = "1.70"
+keywords = ["browser", "automation", "testing", "playwright", "chromium"]
+categories = ["development-tools::testing", "web-programming"]
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
