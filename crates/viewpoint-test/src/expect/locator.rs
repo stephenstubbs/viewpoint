@@ -4,6 +4,9 @@ use std::time::Duration;
 
 use viewpoint_core::Locator;
 
+use super::count::CountAssertions;
+use super::state::StateAssertions;
+use super::text::TextAssertions;
 use crate::error::AssertionError;
 
 /// Default timeout for assertions.
@@ -58,34 +61,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_be_visible(&self) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let is_visible = self
-                .locator
-                .is_visible()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check visibility", "visible", e.to_string()))?;
-
-            let expected = !self.is_negated;
-            if is_visible == expected {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not be visible"
-                    } else {
-                        "Element should be visible"
-                    },
-                    if expected { "visible" } else { "hidden" },
-                    if is_visible { "visible" } else { "hidden" },
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        StateAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_be_visible()
+            .await
     }
 
     /// Assert that the element is hidden.
@@ -94,36 +72,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_be_hidden(&self) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let is_visible = self
-                .locator
-                .is_visible()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check visibility", "hidden", e.to_string()))?;
-
-            let expected_hidden = !self.is_negated;
-            let is_hidden = !is_visible;
-
-            if is_hidden == expected_hidden {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not be hidden"
-                    } else {
-                        "Element should be hidden"
-                    },
-                    if expected_hidden { "hidden" } else { "visible" },
-                    if is_hidden { "hidden" } else { "visible" },
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        StateAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_be_hidden()
+            .await
     }
 
     /// Assert that the element has the exact text content.
@@ -132,41 +83,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_have_text(&self, expected: &str) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let text = self
-                .locator
-                .text_content()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text content", expected, e.to_string()))?;
-
-            let actual = text.as_deref().unwrap_or("");
-            let matches = actual.trim() == expected;
-            let expected_match = !self.is_negated;
-
-            if matches == expected_match {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not have text"
-                    } else {
-                        "Element should have text"
-                    },
-                    if self.is_negated {
-                        format!("not \"{expected}\"")
-                    } else {
-                        format!("\"{expected}\"")
-                    },
-                    format!("\"{actual}\""),
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        TextAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_text(expected)
+            .await
     }
 
     /// Assert that the element contains the specified text.
@@ -175,41 +94,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_contain_text(&self, expected: &str) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let text = self
-                .locator
-                .text_content()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text content", expected, e.to_string()))?;
-
-            let actual = text.as_deref().unwrap_or("");
-            let contains = actual.contains(expected);
-            let expected_match = !self.is_negated;
-
-            if contains == expected_match {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not contain text"
-                    } else {
-                        "Element should contain text"
-                    },
-                    if self.is_negated {
-                        format!("not containing \"{expected}\"")
-                    } else {
-                        format!("containing \"{expected}\"")
-                    },
-                    format!("\"{actual}\""),
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        TextAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_contain_text(expected)
+            .await
     }
 
     /// Assert that the element has the specified attribute value.
@@ -296,30 +183,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_be_enabled(&self) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let is_enabled = self.is_enabled().await?;
-            let expected_enabled = !self.is_negated;
-
-            if is_enabled == expected_enabled {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not be enabled"
-                    } else {
-                        "Element should be enabled"
-                    },
-                    if expected_enabled { "enabled" } else { "disabled" },
-                    if is_enabled { "enabled" } else { "disabled" },
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        StateAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_be_enabled()
+            .await
     }
 
     /// Assert that the element is disabled.
@@ -328,31 +194,9 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_be_disabled(&self) -> Result<(), AssertionError> {
-        let start = std::time::Instant::now();
-
-        loop {
-            let is_enabled = self.is_enabled().await?;
-            let expected_disabled = !self.is_negated;
-            let is_disabled = !is_enabled;
-
-            if is_disabled == expected_disabled {
-                return Ok(());
-            }
-
-            if start.elapsed() >= self.timeout {
-                return Err(AssertionError::new(
-                    if self.is_negated {
-                        "Element should not be disabled"
-                    } else {
-                        "Element should be disabled"
-                    },
-                    if expected_disabled { "disabled" } else { "enabled" },
-                    if is_disabled { "disabled" } else { "enabled" },
-                ));
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
+        StateAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_be_disabled()
+            .await
     }
 
     /// Assert that the element is checked (for checkboxes/radios).
@@ -361,30 +205,269 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the assertion fails or the element cannot be queried.
     pub async fn to_be_checked(&self) -> Result<(), AssertionError> {
+        StateAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_be_checked()
+            .await
+    }
+
+    /// Assert that the element has the specified value (for input/textarea/select).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the element cannot be queried.
+    pub async fn to_have_value(&self, expected: &str) -> Result<(), AssertionError> {
         let start = std::time::Instant::now();
 
         loop {
-            let is_checked = self
-                .locator
-                .is_checked()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check checked state", "checked", e.to_string()))?;
+            let actual = self.get_input_value().await?;
+            let matches = actual == expected;
+            let expected_match = !self.is_negated;
 
-            let expected_checked = !self.is_negated;
-
-            if is_checked == expected_checked {
+            if matches == expected_match {
                 return Ok(());
             }
 
             if start.elapsed() >= self.timeout {
                 return Err(AssertionError::new(
                     if self.is_negated {
-                        "Element should not be checked"
+                        "Element should not have value"
                     } else {
-                        "Element should be checked"
+                        "Element should have value"
                     },
-                    if expected_checked { "checked" } else { "unchecked" },
-                    if is_checked { "checked" } else { "unchecked" },
+                    if self.is_negated {
+                        format!("not \"{expected}\"")
+                    } else {
+                        format!("\"{expected}\"")
+                    },
+                    format!("\"{actual}\""),
+                ));
+            }
+
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+
+    /// Assert that a multi-select element has the specified values selected.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the element cannot be queried.
+    pub async fn to_have_values(&self, expected: &[&str]) -> Result<(), AssertionError> {
+        let start = std::time::Instant::now();
+
+        loop {
+            let actual = self.get_selected_values().await?;
+            let expected_set: std::collections::HashSet<&str> = expected.iter().copied().collect();
+            let actual_set: std::collections::HashSet<&str> = actual.iter().map(std::string::String::as_str).collect();
+            let matches = expected_set == actual_set;
+            let expected_match = !self.is_negated;
+
+            if matches == expected_match {
+                return Ok(());
+            }
+
+            if start.elapsed() >= self.timeout {
+                return Err(AssertionError::new(
+                    if self.is_negated {
+                        "Element should not have values"
+                    } else {
+                        "Element should have values"
+                    },
+                    if self.is_negated {
+                        format!("not {expected:?}")
+                    } else {
+                        format!("{expected:?}")
+                    },
+                    format!("{actual:?}"),
+                ));
+            }
+
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+
+    /// Assert that the element has the specified id.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the element cannot be queried.
+    pub async fn to_have_id(&self, expected: &str) -> Result<(), AssertionError> {
+        self.to_have_attribute("id", expected).await
+    }
+
+    /// Assert that the element has the specified count.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be counted.
+    pub async fn to_have_count(&self, expected: usize) -> Result<(), AssertionError> {
+        CountAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_count(expected)
+            .await
+    }
+
+    /// Assert that the element count is greater than a value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be counted.
+    pub async fn to_have_count_greater_than(&self, n: usize) -> Result<(), AssertionError> {
+        CountAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_count_greater_than(n)
+            .await
+    }
+
+    /// Assert that the element count is less than a value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be counted.
+    pub async fn to_have_count_less_than(&self, n: usize) -> Result<(), AssertionError> {
+        CountAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_count_less_than(n)
+            .await
+    }
+
+    /// Assert that the element count is at least a value (greater than or equal).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be counted.
+    pub async fn to_have_count_at_least(&self, n: usize) -> Result<(), AssertionError> {
+        CountAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_count_at_least(n)
+            .await
+    }
+
+    /// Assert that the element count is at most a value (less than or equal).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be counted.
+    pub async fn to_have_count_at_most(&self, n: usize) -> Result<(), AssertionError> {
+        CountAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_count_at_most(n)
+            .await
+    }
+
+    /// Assert that all elements have the specified texts (in order).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be queried.
+    pub async fn to_have_texts(&self, expected: &[&str]) -> Result<(), AssertionError> {
+        TextAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_have_texts(expected)
+            .await
+    }
+
+    /// Assert that the element's ARIA snapshot matches the expected structure.
+    ///
+    /// This method compares the accessibility tree of the element against an expected
+    /// snapshot. The expected snapshot can contain regex patterns in name fields
+    /// when enclosed in `/pattern/` syntax.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the element cannot be queried.
+    pub async fn to_match_aria_snapshot(
+        &self,
+        expected: &viewpoint_core::AriaSnapshot,
+    ) -> Result<(), AssertionError> {
+        let start = std::time::Instant::now();
+
+        loop {
+            let actual = self
+                .locator
+                .aria_snapshot()
+                .await
+                .map_err(|e| AssertionError::new("Failed to get ARIA snapshot", "snapshot", e.to_string()))?;
+
+            let matches = actual.matches(expected);
+            let expected_match = !self.is_negated;
+
+            if matches == expected_match {
+                return Ok(());
+            }
+
+            if start.elapsed() >= self.timeout {
+                let diff = actual.diff(expected);
+                return Err(AssertionError::new(
+                    if self.is_negated {
+                        "ARIA snapshot should not match"
+                    } else {
+                        "ARIA snapshot should match"
+                    },
+                    expected.to_yaml(),
+                    format!("{}\n\nDiff:\n{}", actual.to_yaml(), diff),
+                ));
+            }
+
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+
+    /// Assert that the element's ARIA snapshot matches the expected YAML string.
+    ///
+    /// This is a convenience method that parses the YAML string and delegates to
+    /// `to_match_aria_snapshot`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the YAML parsing fails, the assertion fails, or the
+    /// element cannot be queried.
+    pub async fn to_match_aria_snapshot_yaml(&self, expected_yaml: &str) -> Result<(), AssertionError> {
+        let expected = viewpoint_core::AriaSnapshot::from_yaml(expected_yaml)
+            .map_err(|e| AssertionError::new("Failed to parse expected ARIA snapshot", expected_yaml, e.to_string()))?;
+        self.to_match_aria_snapshot(&expected).await
+    }
+
+    /// Assert that all elements contain the specified texts (in order).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the elements cannot be queried.
+    pub async fn to_contain_texts(&self, expected: &[&str]) -> Result<(), AssertionError> {
+        TextAssertions::new(self.locator, self.timeout, self.is_negated)
+            .to_contain_texts(expected)
+            .await
+    }
+
+    /// Assert that the element has all specified classes.
+    ///
+    /// Unlike `to_have_class()` which checks for a single class, this method
+    /// verifies that the element has ALL specified classes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the assertion fails or the element cannot be queried.
+    pub async fn to_have_classes(&self, expected_classes: &[&str]) -> Result<(), AssertionError> {
+        let start = std::time::Instant::now();
+
+        loop {
+            let class_attr = self.get_attribute("class").await?;
+            let actual_classes: std::collections::HashSet<&str> = class_attr
+                .as_deref()
+                .unwrap_or("")
+                .split_whitespace()
+                .collect();
+
+            let has_all = expected_classes.iter().all(|c| actual_classes.contains(c));
+            let expected_match = !self.is_negated;
+
+            if has_all == expected_match {
+                return Ok(());
+            }
+
+            if start.elapsed() >= self.timeout {
+                return Err(AssertionError::new(
+                    if self.is_negated {
+                        format!("Element should not have classes {expected_classes:?}")
+                    } else {
+                        format!("Element should have classes {expected_classes:?}")
+                    },
+                    format!("{expected_classes:?}"),
+                    format!("{:?}", actual_classes.into_iter().collect::<Vec<_>>()),
                 ));
             }
 
@@ -393,117 +476,18 @@ impl<'a> LocatorAssertions<'a> {
     }
 
     // =========================================================================
-    // Internal helpers
+    // Internal helpers (delegated to locator_helpers module)
     // =========================================================================
 
+    async fn get_input_value(&self) -> Result<String, AssertionError> {
+        super::locator_helpers::get_input_value(self.locator).await
+    }
+
+    async fn get_selected_values(&self) -> Result<Vec<String>, AssertionError> {
+        super::locator_helpers::get_selected_values(self.locator).await
+    }
+
     async fn get_attribute(&self, name: &str) -> Result<Option<String>, AssertionError> {
-        let page = self.locator.page();
-        let selector = self.locator.selector();
-
-        // Build JS to get attribute
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false }};
-                const el = elements[0];
-                const value = el.getAttribute({});
-                return {{ found: true, value: value }};
-            }})()",
-            selector.to_js_expression(),
-            js_string_literal(name)
-        );
-
-        let result = evaluate_js(page, &js).await?;
-
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
-        if !found {
-            return Ok(None);
-        }
-
-        Ok(result.get("value").and_then(|v| v.as_str()).map(String::from))
+        super::locator_helpers::get_attribute(self.locator, name).await
     }
-
-    async fn is_enabled(&self) -> Result<bool, AssertionError> {
-        let page = self.locator.page();
-        let selector = self.locator.selector();
-
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false }};
-                const el = elements[0];
-                return {{ found: true, enabled: !el.disabled }};
-            }})()",
-            selector.to_js_expression()
-        );
-
-        let result = evaluate_js(page, &js).await?;
-
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
-        if !found {
-            return Err(AssertionError::new(
-                "Element not found",
-                "element to exist",
-                "element not found",
-            ));
-        }
-
-        Ok(result.get("enabled").and_then(serde_json::Value::as_bool).unwrap_or(true))
-    }
-}
-
-// Helper to escape strings for JavaScript
-fn js_string_literal(s: &str) -> String {
-    let escaped = s
-        .replace('\\', "\\\\")
-        .replace('\'', "\\'")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-        .replace('\t', "\\t");
-    format!("'{escaped}'")
-}
-
-// Helper to evaluate JavaScript on a page
-async fn evaluate_js(
-    page: &viewpoint_core::Page,
-    expression: &str,
-) -> Result<serde_json::Value, AssertionError> {
-    use viewpoint_cdp::protocol::runtime::EvaluateParams;
-
-    if page.is_closed() {
-        return Err(AssertionError::new(
-            "Page is closed",
-            "page to be open",
-            "page is closed",
-        ));
-    }
-
-    let params = EvaluateParams {
-        expression: expression.to_string(),
-        object_group: None,
-        include_command_line_api: None,
-        silent: Some(true),
-        context_id: None,
-        return_by_value: Some(true),
-        await_promise: Some(false),
-    };
-
-    let result: viewpoint_cdp::protocol::runtime::EvaluateResult = page
-        .connection()
-        .send_command("Runtime.evaluate", Some(params), Some(page.session_id()))
-        .await
-        .map_err(|e| AssertionError::new("Failed to evaluate JavaScript", "success", e.to_string()))?;
-
-    if let Some(exception) = result.exception_details {
-        return Err(AssertionError::new(
-            "JavaScript error",
-            "no error",
-            exception.text,
-        ));
-    }
-
-    result
-        .result
-        .value
-        .ok_or_else(|| AssertionError::new("No result from JavaScript", "a value", "null/undefined"))
 }

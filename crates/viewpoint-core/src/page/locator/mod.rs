@@ -20,10 +20,26 @@
 //! ```
 
 mod actions;
-mod selector;
+mod aria_role;
+mod builders;
+mod debug;
+mod element;
+mod evaluation;
+mod files;
+mod filter;
+mod helpers;
+mod queries;
+mod select;
+pub mod aria;
+mod aria_js;
+pub(crate) mod selector;
 
 use std::time::Duration;
 
+pub use builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
+pub use element::{BoundingBox, BoxModel, ElementHandle};
+pub use filter::{FilterBuilder, RoleLocatorBuilder};
+pub use aria::{AriaCheckedState, AriaSnapshot};
 pub use selector::{AriaRole, Selector, TextOptions};
 
 use crate::Page;
@@ -165,4 +181,150 @@ impl<'a> Locator<'a> {
     pub(crate) fn to_js_selector(&self) -> String {
         self.selector.to_js_expression()
     }
+
+    /// Create a locator that matches elements that match both this locator and `other`.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Find visible buttons with specific text
+    /// let button = page.get_by_role(AriaRole::Button)
+    ///     .and(page.get_by_text("Submit"));
+    /// ```
+    #[must_use]
+    pub fn and(&self, other: Locator<'a>) -> Locator<'a> {
+        Locator {
+            page: self.page,
+            selector: Selector::And(
+                Box::new(self.selector.clone()),
+                Box::new(other.selector),
+            ),
+            options: self.options.clone(),
+        }
+    }
+
+    /// Create a locator that matches elements that match either this locator or `other`.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Find buttons or links
+    /// let clickable = page.get_by_role(AriaRole::Button)
+    ///     .or(page.get_by_role(AriaRole::Link));
+    /// ```
+    #[must_use]
+    pub fn or(&self, other: Locator<'a>) -> Locator<'a> {
+        Locator {
+            page: self.page,
+            selector: Selector::Or(
+                Box::new(self.selector.clone()),
+                Box::new(other.selector),
+            ),
+            options: self.options.clone(),
+        }
+    }
+
+    /// Create a filter builder to narrow down the elements matched by this locator.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Filter list items by text
+    /// let item = page.locator("li").filter().has_text("Product").build();
+    ///
+    /// // Filter by having a child element
+    /// let rows = page.locator("tr").filter().has(page.locator(".active")).build();
+    /// ```
+    pub fn filter(&self) -> FilterBuilder<'a> {
+        FilterBuilder::new(self.page, self.selector.clone(), self.options.clone())
+    }
+
+    /// Get an ARIA accessibility snapshot of this element.
+    ///
+    /// The snapshot captures the accessible tree structure as it would be
+    /// exposed to assistive technologies. This is useful for accessibility testing.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let snapshot = page.locator("form").aria_snapshot().await?;
+    /// println!("{}", snapshot); // YAML-like output
+    ///
+    /// // Compare with expected snapshot
+    /// let expected = AriaSnapshot::from_yaml(r#"
+    ///   - form
+    ///     - textbox "Username"
+    ///     - textbox "Password"
+    ///     - button "Login"
+    /// "#)?;
+    /// assert!(snapshot.matches(&expected));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the element is not found or snapshot capture fails.
+    pub async fn aria_snapshot(&self) -> Result<AriaSnapshot, crate::error::LocatorError> {
+        use crate::error::LocatorError;
+
+        if self.page.is_closed() {
+            return Err(LocatorError::PageClosed);
+        }
+
+        // Get the element and evaluate ARIA snapshot
+        let js_selector = self.selector.to_js_expression();
+        let js = format!(
+            r"
+            (function() {{
+                const element = {};
+                if (!element) {{
+                    return {{ error: 'Element not found' }};
+                }}
+                const getSnapshot = {};
+                return getSnapshot(element);
+            }})()
+            ",
+            js_selector,
+            aria::aria_snapshot_js()
+        );
+
+        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
+            .page
+            .connection()
+            .send_command(
+                "Runtime.evaluate",
+                Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
+                    expression: js,
+                    object_group: None,
+                    include_command_line_api: None,
+                    silent: Some(true),
+                    context_id: None,
+                    return_by_value: Some(true),
+                    await_promise: Some(false),
+                }),
+                Some(self.page.session_id()),
+            )
+            .await?;
+
+        if let Some(exception) = result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
+        }
+
+        let value = result.result.value.ok_or_else(|| {
+            LocatorError::EvaluationError("No result from aria snapshot".to_string())
+        })?;
+
+        // Check for error
+        if let Some(error) = value.get("error").and_then(|e| e.as_str()) {
+            return Err(LocatorError::NotFound(error.to_string()));
+        }
+
+        // Parse the snapshot
+        let snapshot: AriaSnapshot = serde_json::from_value(value).map_err(|e| {
+            LocatorError::EvaluationError(format!("Failed to parse aria snapshot: {e}"))
+        })?;
+
+        Ok(snapshot)
+    }
 }
+
+// FilterBuilder and RoleLocatorBuilder are in filter.rs

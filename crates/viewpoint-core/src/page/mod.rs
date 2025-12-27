@@ -1,7 +1,40 @@
 //! Page management and navigation.
 
+pub mod binding;
+pub mod clock;
+mod clock_script;
+pub mod console;
+mod constructors;
+mod content;
+pub mod dialog;
+pub mod download;
+pub mod emulation;
+mod evaluate;
+pub mod events;
+pub mod file_chooser;
+pub mod frame;
+pub mod frame_locator;
+mod frame_locator_actions;
+mod frame_page_methods;
+mod input_devices;
+pub mod keyboard;
 pub mod locator;
+mod locator_factory;
+pub mod locator_handler;
+mod mouse;
+mod mouse_drag;
 mod navigation;
+pub mod page_error;
+mod pdf;
+mod routing_impl;
+pub mod popup;
+mod screenshot;
+mod screenshot_element;
+mod scripts;
+mod touchscreen;
+pub mod video;
+mod video_io;
+
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,19 +42,46 @@ use std::time::Duration;
 use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
 use viewpoint_cdp::protocol::target::CloseTargetParams;
 use viewpoint_cdp::CdpConnection;
+use viewpoint_js::js;
 use tracing::{debug, info, instrument, trace, warn};
 
 use crate::error::{NavigationError, PageError};
+use crate::network::{RouteHandlerRegistry, WebSocketManager};
 use crate::wait::{DocumentLoadState, LoadStateWaiter};
 
-pub use locator::{AriaRole, Locator, LocatorOptions, Selector, TextOptions};
-pub use navigation::GotoBuilder;
+pub use clock::{Clock, TimeValue};
+pub use console::{ConsoleMessage, ConsoleMessageLocation, ConsoleMessageType, JsArg};
+pub use content::{ScriptTagBuilder, ScriptType, SetContentBuilder, StyleTagBuilder};
+pub use dialog::Dialog;
+pub use download::{Download, DownloadState};
+pub use emulation::{EmulateMediaBuilder, MediaType, VisionDeficiency};
+pub use evaluate::{JsHandle, Polling, WaitForFunctionBuilder};
+pub use events::PageEventManager;
+pub use file_chooser::{FileChooser, FilePayload};
+pub use frame::Frame;
+pub use frame_locator::{FrameElementLocator, FrameLocator, FrameRoleLocatorBuilder};
+pub use keyboard::Keyboard;
+pub use locator::{AriaCheckedState, AriaRole, AriaSnapshot, BoundingBox, BoxModel, ElementHandle, FilterBuilder, Locator, LocatorOptions, RoleLocatorBuilder, Selector, TapBuilder, TextOptions};
+pub use locator_handler::{LocatorHandlerHandle, LocatorHandlerManager, LocatorHandlerOptions};
+pub use mouse::Mouse;
+pub use mouse_drag::DragAndDropBuilder;
+pub use viewpoint_cdp::protocol::input::MouseButton;
+pub use navigation::{GotoBuilder, NavigationResponse};
+pub use page_error::{PageError as PageErrorInfo, WebError};
+pub use pdf::{Margins, PaperFormat, PdfBuilder};
+pub use screenshot::{Animations, ClipRegion, ScreenshotBuilder, ScreenshotFormat};
+pub use touchscreen::Touchscreen;
+pub use video::{Video, VideoOptions};
+pub use viewpoint_cdp::protocol::emulation::ViewportSize;
+pub use viewpoint_cdp::protocol::DialogType;
 
 /// Default navigation timeout.
 const DEFAULT_NAVIGATION_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// Default test ID attribute name.
+pub const DEFAULT_TEST_ID_ATTRIBUTE: &str = "data-testid";
+
 /// A browser page (tab).
-#[derive(Debug)]
 pub struct Page {
     /// CDP connection.
     connection: Arc<CdpConnection>,
@@ -33,25 +93,45 @@ pub struct Page {
     frame_id: String,
     /// Whether the page has been closed.
     closed: bool,
+    /// Route handler registry.
+    route_registry: Arc<RouteHandlerRegistry>,
+    /// Keyboard controller.
+    keyboard: Keyboard,
+    /// Mouse controller.
+    mouse: Mouse,
+    /// Touchscreen controller.
+    touchscreen: Touchscreen,
+    /// Event manager for dialogs, downloads, and file choosers.
+    event_manager: Arc<PageEventManager>,
+    /// Locator handler manager.
+    locator_handler_manager: Arc<LocatorHandlerManager>,
+    /// Video recording controller (if recording is enabled).
+    video_controller: Option<Arc<Video>>,
+    /// Opener target ID (for popup pages).
+    opener_target_id: Option<String>,
+    /// Popup event manager.
+    popup_manager: Arc<popup::PopupManager>,
+    /// WebSocket event manager.
+    websocket_manager: Arc<WebSocketManager>,
+    /// Exposed function binding manager.
+    binding_manager: Arc<binding::BindingManager>,
+    /// Custom test ID attribute (defaults to "data-testid").
+    test_id_attribute: String,
+}
+
+// Manual Debug implementation since some fields don't implement Debug
+impl std::fmt::Debug for Page {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Page")
+            .field("target_id", &self.target_id)
+            .field("session_id", &self.session_id)
+            .field("frame_id", &self.frame_id)
+            .field("closed", &self.closed)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Page {
-    /// Create a new page.
-    pub(crate) fn new(
-        connection: Arc<CdpConnection>,
-        target_id: String,
-        session_id: String,
-        frame_id: String,
-    ) -> Self {
-        Self {
-            connection,
-            target_id,
-            session_id,
-            frame_id,
-            closed: false,
-        }
-    }
-
     /// Navigate to a URL.
     ///
     /// Returns a builder for configuring navigation options.
@@ -138,9 +218,19 @@ impl Page {
         debug!(frame_id = %result.frame_id, loader_id = ?result.loader_id, "Page.navigate completed");
 
         // Check for navigation errors
-        if let Some(error_text) = result.error_text {
-            warn!(error = %error_text, "Navigation failed with error");
-            return Err(NavigationError::NetworkError(error_text));
+        // Note: Chrome reports HTTP error status codes (4xx, 5xx) as errors with
+        // "net::ERR_HTTP_RESPONSE_CODE_FAILURE" or "net::ERR_INVALID_AUTH_CREDENTIALS".
+        // Following Playwright's behavior, we treat these as successful navigations
+        // that return a response with the appropriate status code.
+        if let Some(ref error_text) = result.error_text {
+            let is_http_error = error_text == "net::ERR_HTTP_RESPONSE_CODE_FAILURE"
+                || error_text == "net::ERR_INVALID_AUTH_CREDENTIALS";
+            
+            if !is_http_error {
+                warn!(error = %error_text, "Navigation failed with error");
+                return Err(NavigationError::NetworkError(error_text.clone()));
+            }
+            debug!(error = %error_text, "HTTP error response - continuing to capture status");
         }
 
         // Mark commit as received
@@ -153,12 +243,25 @@ impl Page {
             .wait_for_load_state_with_timeout(wait_until, timeout)
             .await?;
 
+        // Get response data captured during navigation
+        let response_data = waiter.response_data().await;
+
         info!(frame_id = %result.frame_id, "Navigation completed successfully");
 
-        Ok(NavigationResponse {
-            url: url.to_string(),
-            frame_id: result.frame_id,
-        })
+        // Use the final URL from response data if available (handles redirects)
+        let final_url = response_data.url.unwrap_or_else(|| url.to_string());
+
+        // Build the response with captured data
+        if let Some(status) = response_data.status {
+            Ok(NavigationResponse::with_response(
+                final_url,
+                result.frame_id,
+                status,
+                response_data.headers,
+            ))
+        } else {
+            Ok(NavigationResponse::new(final_url, result.frame_id))
+        }
     }
 
     /// Close this page.
@@ -174,6 +277,10 @@ impl Page {
         }
 
         info!("Closing page");
+
+        // Clean up route handlers
+        self.route_registry.unroute_all().await;
+        debug!("Route handlers cleaned up");
 
         self.connection
             .send_command::<_, serde_json::Value>(
@@ -215,6 +322,71 @@ impl Page {
         &self.connection
     }
 
+    // =========================================================================
+    // Screenshot & PDF Methods
+    // =========================================================================
+
+    /// Create a screenshot builder for capturing page screenshots.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example(page: viewpoint_core::Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Capture viewport screenshot
+    /// let bytes = page.screenshot().capture().await?;
+    ///
+    /// // Capture full page screenshot
+    /// page.screenshot()
+    ///     .full_page(true)
+    ///     .path("screenshot.png")
+    ///     .capture()
+    ///     .await?;
+    ///
+    /// // Capture JPEG with quality
+    /// page.screenshot()
+    ///     .jpeg(Some(80))
+    ///     .path("screenshot.jpg")
+    ///     .capture()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn screenshot(&self) -> screenshot::ScreenshotBuilder<'_> {
+        screenshot::ScreenshotBuilder::new(self)
+    }
+
+    /// Create a PDF builder for generating PDFs from the page.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::page::PaperFormat;
+    ///
+    /// # async fn example(page: viewpoint_core::Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Generate PDF with default settings
+    /// let bytes = page.pdf().generate().await?;
+    ///
+    /// // Generate A4 landscape PDF
+    /// page.pdf()
+    ///     .format(PaperFormat::A4)
+    ///     .landscape(true)
+    ///     .path("document.pdf")
+    ///     .generate()
+    ///     .await?;
+    ///
+    /// // Generate PDF with custom margins
+    /// page.pdf()
+    ///     .margin(1.0) // 1 inch margins
+    ///     .print_background(true)
+    ///     .generate()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn pdf(&self) -> pdf::PdfBuilder<'_> {
+        pdf::PdfBuilder::new(self)
+    }
+
     /// Get the current page URL.
     ///
     /// # Errors
@@ -230,7 +402,7 @@ impl Page {
             .send_command(
                 "Runtime.evaluate",
                 Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: "window.location.href".to_string(),
+                    expression: js!{ window.location.href }.to_string(),
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),
@@ -283,146 +455,15 @@ impl Page {
             .ok_or_else(|| PageError::EvaluationFailed("Failed to get title".to_string()))
     }
 
-    // =========================================================================
-    // Locator Methods
-    // =========================================================================
-
-    /// Create a locator for elements matching a CSS selector.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let button = page.locator("button.submit");
-    /// let items = page.locator(".list > .item");
-    /// ```
-    pub fn locator(&self, selector: impl Into<String>) -> Locator<'_> {
-        Locator::new(self, Selector::Css(selector.into()))
-    }
-
-    /// Create a locator for elements containing the specified text.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let heading = page.get_by_text("Welcome");
-    /// let exact = page.get_by_text_exact("Welcome to our site");
-    /// ```
-    pub fn get_by_text(&self, text: impl Into<String>) -> Locator<'_> {
-        Locator::new(
-            self,
-            Selector::Text {
-                text: text.into(),
-                exact: false,
-            },
-        )
-    }
-
-    /// Create a locator for elements with exact text content.
-    pub fn get_by_text_exact(&self, text: impl Into<String>) -> Locator<'_> {
-        Locator::new(
-            self,
-            Selector::Text {
-                text: text.into(),
-                exact: true,
-            },
-        )
-    }
-
-    /// Create a locator for elements with the specified ARIA role.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let buttons = page.get_by_role(AriaRole::Button);
-    /// let submit = page.get_by_role(AriaRole::Button).with_name("Submit");
-    /// ```
-    pub fn get_by_role(&self, role: AriaRole) -> RoleLocatorBuilder<'_> {
-        RoleLocatorBuilder::new(self, role)
-    }
-
-    /// Create a locator for elements with the specified test ID.
-    ///
-    /// By default, looks for `data-testid` attribute.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let button = page.get_by_test_id("submit-button");
-    /// ```
-    pub fn get_by_test_id(&self, test_id: impl Into<String>) -> Locator<'_> {
-        Locator::new(self, Selector::TestId(test_id.into()))
-    }
-
-    /// Create a locator for form controls by their associated label text.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let email = page.get_by_label("Email address");
-    /// ```
-    pub fn get_by_label(&self, label: impl Into<String>) -> Locator<'_> {
-        Locator::new(self, Selector::Label(label.into()))
-    }
-
-    /// Create a locator for inputs by their placeholder text.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let search = page.get_by_placeholder("Search...");
-    /// ```
-    pub fn get_by_placeholder(&self, placeholder: impl Into<String>) -> Locator<'_> {
-        Locator::new(self, Selector::Placeholder(placeholder.into()))
-    }
 }
 
-/// Builder for role-based locators.
-#[derive(Debug)]
-pub struct RoleLocatorBuilder<'a> {
-    page: &'a Page,
-    role: AriaRole,
-    name: Option<String>,
-}
+// Additional Page methods are defined in:
+// - scripts.rs: add_init_script, add_init_script_path
+// - locator_handler.rs: add_locator_handler, add_locator_handler_with_options, remove_locator_handler
+// - video.rs: video, start_video_recording, stop_video_recording
+// - binding.rs: expose_function, remove_exposed_function
+// - input_devices.rs: keyboard, mouse, touchscreen, clock, drag_and_drop
+// - locator_factory.rs: locator, get_by_*, set_test_id_attribute
+// - DragAndDropBuilder is defined in mouse.rs
+// - RoleLocatorBuilder is defined in locator/mod.rs
 
-impl<'a> RoleLocatorBuilder<'a> {
-    fn new(page: &'a Page, role: AriaRole) -> Self {
-        Self {
-            page,
-            role,
-            name: None,
-        }
-    }
-
-    /// Filter by accessible name.
-    #[must_use]
-    pub fn with_name(mut self, name: impl Into<String>) -> Self {
-        self.name = Some(name.into());
-        self
-    }
-
-    /// Build the locator.
-    pub fn build(self) -> Locator<'a> {
-        Locator::new(
-            self.page,
-            Selector::Role {
-                role: self.role,
-                name: self.name,
-            },
-        )
-    }
-}
-
-impl<'a> From<RoleLocatorBuilder<'a>> for Locator<'a> {
-    fn from(builder: RoleLocatorBuilder<'a>) -> Self {
-        builder.build()
-    }
-}
-
-/// Response from a navigation.
-#[derive(Debug, Clone)]
-pub struct NavigationResponse {
-    /// The URL that was navigated to.
-    pub url: String,
-    /// The frame ID that navigated.
-    pub frame_id: String,
-}

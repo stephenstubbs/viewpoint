@@ -1,0 +1,7 @@
+error: unknown scope: "invalid". Expected "browser" or "context"
+ --> tests/ui/invalid_scope_value.rs:6:1
+  |
+6 | #[test(scope = "invalid")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `test` (in Nightly builds, run with -Z macro-backtrace for more info)

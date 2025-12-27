@@ -18,11 +18,24 @@
 //! expect(&page).to_have_url("https://example.com").await?;
 //! ```
 
+mod count;
 mod locator;
+mod locator_helpers;
 mod page;
+mod soft;
+mod soft_locator;
+mod soft_page;
+mod state;
+mod text;
+
+#[cfg(test)]
+mod tests;
 
 pub use locator::LocatorAssertions;
 pub use page::PageAssertions;
+pub use soft::{SoftAssertionError, SoftAssertions};
+pub use soft_locator::SoftLocatorAssertions;
+pub use soft_page::SoftPageAssertions;
 
 use viewpoint_core::{Locator, Page};
 

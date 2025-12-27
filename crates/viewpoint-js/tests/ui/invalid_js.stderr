@@ -1,0 +1,7 @@
+error: Invalid JavaScript syntax: line 1, col 5: Error { error: (5..8, Unexpected { got: "let", expected: "let is reserved in const, let, class declaration" }) }
+ --> tests/ui/invalid_js.rs:5:17
+  |
+5 |     let _code = js! { let let x = 1 };
+  |                 ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `js` (in Nightly builds, run with -Z macro-backtrace for more info)

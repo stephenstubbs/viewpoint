@@ -1,0 +1,7 @@
+error: scope = "browser" requires browser = "<function_name>" to specify the shared browser source
+ --> tests/ui/invalid_scope.rs:6:1
+  |
+6 | #[test(scope = "browser")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `test` (in Nightly builds, run with -Z macro-backtrace for more info)

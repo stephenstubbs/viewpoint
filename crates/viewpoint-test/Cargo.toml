@@ -13,10 +13,15 @@ description = "Test framework for Viewpoint browser automation with Playwright-s
 documentation = "https://docs.rs/viewpoint-test"
 readme = "README.md"
 
+[features]
+default = []
+# Enable integration tests that require a running browser
+integration = []
+
 [dependencies]
-viewpoint-cdp = { version = "0.1.0", path = "../viewpoint-cdp" }
-viewpoint-core = { version = "0.1.0", path = "../viewpoint-core" }
-viewpoint-test-macros = { version = "0.1.0", path = "../viewpoint-test-macros" }
+viewpoint-cdp = { version = "0.2.0", path = "../viewpoint-cdp" }
+viewpoint-core = { version = "0.2.0", path = "../viewpoint-core" }
+viewpoint-test-macros = { version = "0.2.0", path = "../viewpoint-test-macros" }
 serde_json = "1.0"
 thiserror = "2.0"
 tokio = { version = "1.0", features = ["sync", "time", "rt"] }

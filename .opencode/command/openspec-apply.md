@@ -6,9 +6,6 @@ The user has requested to implement the following change proposal. Find the chan
   $ARGUMENTS
 </UserRequest>
 <!-- OPENSPEC:START -->
-**MUST** use Context7 to fetch up-to-date documentation for any library before implementing. Never rely on potentially outdated training data—always query Context7 first for accurate, current API references and examples.
-**MUST** use the latest versions of dependencies. Check for current versions and avoid pinning to older releases unless explicitly required for compatibility.
-
 **Guardrails**
 - Favor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.
 - Keep changes tightly scoped to the requested outcome.

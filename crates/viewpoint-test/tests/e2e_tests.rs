@@ -1,3 +1,5 @@
+#![cfg(feature = "integration")]
+
 //! End-to-end tests for the complete Viewpoint test framework.
 //!
 //! These tests exercise the full stack: browser automation, locators,

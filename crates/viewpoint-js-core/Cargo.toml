@@ -1,0 +1,23 @@
+[package]
+name = "viewpoint-js-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Core types for viewpoint-js macro"
+documentation = "https://docs.rs/viewpoint-js-core"
+
+[dependencies]
+serde_json = { version = "1.0", optional = true }
+
+[features]
+default = []
+json = ["serde_json"]
+
+[lints]
+workspace = true

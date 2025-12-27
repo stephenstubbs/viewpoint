@@ -13,16 +13,36 @@ description = "High-level browser automation API for Viewpoint"
 documentation = "https://docs.rs/viewpoint-core"
 readme = "README.md"
 
+[features]
+default = []
+# Enable integration tests that require a running browser
+integration = []
+
 [dependencies]
-viewpoint-cdp = { version = "0.1.0", path = "../viewpoint-cdp" }
+viewpoint-cdp = { version = "0.2.0", path = "../viewpoint-cdp" }
+viewpoint-js = { path = "../viewpoint-js" }
+viewpoint-js-core = { path = "../viewpoint-js-core" }
+base64 = "0.22"
+bytes = "1.10"
+chrono = { version = "0.4", features = ["serde"] }
+glob = "0.3"
+parking_lot = "0.12"
+regex = "1.11"
+reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "multipart", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
-tokio = { version = "1.0", features = ["sync", "time", "macros", "rt-multi-thread"] }
+tokio = { version = "1.0", features = ["sync", "time", "macros", "rt-multi-thread", "fs"] }
 tracing = "0.1"
+url = "2.5"
+uuid = { version = "1.11", features = ["v4"] }
+zip = "2.2"
 
 [dev-dependencies]
+tempfile = "3.19"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+viewpoint-js = { path = "../viewpoint-js" }
+viewpoint-js-core = { path = "../viewpoint-js-core" }
 
 [lints]
 workspace = true

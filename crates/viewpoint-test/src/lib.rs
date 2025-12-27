@@ -2,6 +2,11 @@
 //!
 //! This crate provides the primary testing API via `TestHarness`, along with
 //! assertions and configuration for browser-based E2E tests.
+
+// Clippy configuration for this crate
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::format_push_string)]
 //!
 //! # Primary API: `TestHarness`
 //!
@@ -37,7 +42,10 @@ mod harness;
 
 pub use config::{TestConfig, TestConfigBuilder};
 pub use error::{AssertionError, TestError};
-pub use expect::{expect, expect_page, Expectable, LocatorAssertions, PageAssertions};
+pub use expect::{
+    expect, expect_page, Expectable, LocatorAssertions, PageAssertions,
+    SoftAssertionError, SoftAssertions, SoftLocatorAssertions, SoftPageAssertions,
+};
 pub use harness::TestHarness;
 
 // Re-export the test macro for convenience

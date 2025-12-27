@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Navigate to a URL with default wait (Load event)
     println!("\nNavigating to example.com...");
     let response = page.goto("https://example.com").goto().await?;
-    println!("Navigation complete! URL: {}", response.url);
+    println!("Navigation complete! URL: {}", response.url());
 
     // Navigate with DomContentLoaded wait (faster)
     println!("\nNavigating to httpbin.org with DomContentLoaded wait...");
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .timeout(Duration::from_secs(15))
         .goto()
         .await?;
-    println!("Navigation complete! URL: {}", response.url);
+    println!("Navigation complete! URL: {}", response.url());
 
     // Navigate with custom referer
     println!("\nNavigating with custom referer...");
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await?;
-    println!("Navigation complete! URL: {}", response.url);
+    println!("Navigation complete! URL: {}", response.url());
 
     // Close the browser
     println!("\nClosing browser...");

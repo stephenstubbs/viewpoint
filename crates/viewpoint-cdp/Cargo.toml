@@ -13,6 +13,11 @@ description = "Low-level Chrome DevTools Protocol implementation over WebSocket"
 documentation = "https://docs.rs/viewpoint-cdp"
 readme = "README.md"
 
+[features]
+default = []
+# Enable integration tests that require a running browser
+integration = []
+
 [dependencies]
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -23,6 +28,7 @@ tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
 tracing = "0.1"
 
 [dev-dependencies]
+base64 = "0.22"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 

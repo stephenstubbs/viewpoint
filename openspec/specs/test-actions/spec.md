@@ -28,6 +28,11 @@ The framework SHALL support clicking elements via locators.
 - **WHEN** `.click().button(MouseButton::Right).await` is called
 - **THEN** a right-click SHALL be performed on the element
 
+#### Scenario: Middle click
+- **GIVEN** a locator targeting an element
+- **WHEN** `.click().button(MouseButton::Middle).await` is called
+- **THEN** a middle-click SHALL be performed on the element
+
 #### Scenario: Click with modifier keys
 - **GIVEN** a locator targeting a link element
 - **WHEN** `.click().modifiers(&[Modifier::Control]).await` is called

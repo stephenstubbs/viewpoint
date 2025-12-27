@@ -14,6 +14,14 @@ A Rust-native browser automation library inspired by Playwright. Viewpoint provi
 - **Actions**: Click, fill, type, hover, check/uncheck, select options
 - **Assertions**: Fluent async assertions for testing element and page state
 - **Test Framework**: `TestHarness` for easy test setup with automatic cleanup
+- **Network Interception**: Route, mock, and HAR replay for network requests
+- **Event System**: Handle popups, dialogs, downloads, console, and page errors
+- **WebSocket Monitoring**: Observe WebSocket connections and messages
+- **Exposed Functions**: Call Rust functions from JavaScript
+- **Accessibility Testing**: ARIA snapshots for accessibility verification
+- **Soft Assertions**: Collect multiple failures without stopping test execution
+- **HTTP Auth**: Automatic handling of HTTP Basic/Digest authentication
+- **Tracing**: Record traces for debugging test failures
 
 ## Crates
 
@@ -197,6 +205,175 @@ let harness = TestHarness::from_browser(&shared_browser).await?;
 let harness = TestHarness::from_context(&shared_context).await?;
 ```
 
+## Popup Handling
+
+Handle popups and new windows triggered by page actions:
+
+```rust
+use viewpoint_test::{TestHarness, expect_page};
+
+#[tokio::test]
+async fn test_popup() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    let context = harness.context();
+    
+    page.goto("https://example.com").goto().await?;
+    
+    // Wait for popup triggered by clicking a link
+    let popup = context.wait_for_page(|| async {
+        page.locator("a[target=_blank]").click().await?;
+        Ok(())
+    }).await?;
+    
+    // Work with the popup page
+    expect_page(&popup).to_have_url_containing("/new-page").await?;
+    popup.locator("button").click().await?;
+    
+    Ok(())
+}
+```
+
+## Soft Assertions
+
+Collect multiple assertion failures without stopping test execution:
+
+```rust
+use viewpoint_test::SoftAssertions;
+
+#[tokio::test]
+async fn test_with_soft_assertions() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    
+    page.goto("https://example.com").goto().await?;
+    
+    let soft = SoftAssertions::new();
+    
+    // These don't stop on failure
+    soft.expect(&page.locator("h1")).to_have_text("Title").await;
+    soft.expect(&page.locator(".content")).to_be_visible().await;
+    
+    // Assert all passed (reports all failures at once)
+    soft.assert_all()?;
+    
+    Ok(())
+}
+```
+
+## ARIA Accessibility Testing
+
+Verify accessibility tree structure:
+
+```rust
+use viewpoint_test::{expect, TestHarness};
+
+#[tokio::test]
+async fn test_accessibility() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    
+    page.goto("https://example.com").goto().await?;
+    
+    // Assert expected ARIA structure
+    expect(&page.locator("nav")).to_match_aria_snapshot(r#"
+      - navigation:
+        - link "Home"
+        - link "About"
+    "#).await?;
+    
+    Ok(())
+}
+```
+
+## Network Interception
+
+Mock network requests or serve responses from HAR files:
+
+```rust
+use viewpoint_test::{TestHarness, Route};
+
+#[tokio::test]
+async fn test_network_mock() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    
+    // Mock an API endpoint
+    page.route("**/api/users", |route: Route| async move {
+        route.fulfill()
+            .status(200)
+            .json(&serde_json::json!({"users": []}))
+            .send()
+            .await
+    }).await?;
+    
+    page.goto("https://example.com").goto().await?;
+    
+    Ok(())
+}
+
+// HAR replay - serve responses from recorded HAR file
+page.route_from_har("recordings/api.har").await?;
+```
+
+## WebSocket Monitoring
+
+Observe WebSocket connections and messages:
+
+```rust
+use viewpoint_test::TestHarness;
+
+#[tokio::test]
+async fn test_websocket() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    
+    page.on_websocket(|ws| async move {
+        println!("WebSocket opened: {}", ws.url());
+        
+        ws.on_framereceived(|frame| async move {
+            println!("Received: {:?}", frame.payload());
+            Ok(())
+        }).await?;
+        
+        Ok(())
+    }).await?;
+    
+    page.goto("https://example.com").goto().await?;
+    
+    Ok(())
+}
+```
+
+## Exposed Functions
+
+Call Rust functions from JavaScript:
+
+```rust
+use viewpoint_test::TestHarness;
+
+#[tokio::test]
+async fn test_exposed_function() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+    
+    // Expose a Rust function to JavaScript
+    page.expose_function("compute", |args| async move {
+        let x = args[0].as_i64().unwrap_or(0);
+        let y = args[1].as_i64().unwrap_or(0);
+        Ok(serde_json::json!(x + y))
+    }).await?;
+    
+    page.goto("https://example.com").goto().await?;
+    
+    // JavaScript can call: await window.compute(1, 2)
+    let result: i64 = page.evaluate("await window.compute(1, 2)").await?;
+    assert_eq!(result, 3);
+    
+    Ok(())
+}
+```
+
 ## Requirements
 
 - Rust 1.70+
@@ -204,19 +381,40 @@ let harness = TestHarness::from_context(&shared_context).await?;
 
 ## Development
 
+### Running Tests
+
 ```bash
-# Run all tests
+# Run unit tests only (no browser required)
 cargo test --workspace
 
-# Run with visible browser
-HEADLESS=false cargo test --workspace
+# Run all tests including browser integration tests
+cargo test --workspace --features integration
 
-# Run specific test
-cargo test -p viewpoint-test --test harness_tests
+# Run with visible browser (integration tests only)
+HEADLESS=false cargo test --workspace --features integration
+
+# Run specific test file
+cargo test -p viewpoint-test --test harness_tests --features integration
+
+# Run specific crate's tests
+cargo test -p viewpoint-js        # js! macro tests
+cargo test -p viewpoint-cdp       # CDP protocol tests
+cargo test -p viewpoint-core      # Browser automation tests
+cargo test -p viewpoint-test      # Test framework tests
 
 # Run examples
 cargo run -p viewpoint-test --example basic_test
 ```
+
+### Test Organization
+
+Tests are organized following the code-quality spec:
+
+- **Unit tests**: Located in `src/<module>/tests/mod.rs` within each crate
+- **Integration tests**: Located in `crates/<crate>/tests/*.rs`, feature-gated with `#![cfg(feature = "integration")]`
+- **Doc tests**: Inline in source files, run with `cargo test --doc`
+
+All modules use the folder structure (`module/mod.rs`) with tests in external directories.
 
 ## License
 

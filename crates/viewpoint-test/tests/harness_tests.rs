@@ -1,8 +1,11 @@
+#![cfg(feature = "integration")]
+
 //! Integration tests for TestHarness.
 
-use viewpoint_test::{TestConfig, TestHarness};
 use std::sync::Once;
 use std::time::Duration;
+use viewpoint_core::DocumentLoadState;
+use viewpoint_test::{expect, expect_page, TestConfig, TestHarness};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -18,6 +21,10 @@ fn init_tracing() {
             .ok();
     });
 }
+
+// ============================================================================
+// Harness Creation Tests
+// ============================================================================
 
 #[tokio::test]
 async fn test_harness_new_creates_page() {
@@ -152,9 +159,6 @@ async fn test_harness_from_context() {
 // ============================================================================
 // Assertion Tests
 // ============================================================================
-
-use viewpoint_test::{expect, expect_page};
-use viewpoint_core::DocumentLoadState;
 
 #[tokio::test]
 async fn test_expect_to_be_visible() {
@@ -375,4 +379,46 @@ async fn test_expect_to_be_checked() {
         .to_be_checked()
         .await
         .expect("checkbox should not be checked");
+}
+
+// ============================================================================
+// Harness Cleanup Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_harness_close_explicit() {
+    init_tracing();
+
+    let harness = TestHarness::new().await.expect("should create harness");
+    let page = harness.page();
+    
+    // Do some work
+    page.goto("https://example.com")
+        .wait_until(DocumentLoadState::DomContentLoaded)
+        .goto()
+        .await
+        .expect("should navigate");
+
+    // Explicitly close
+    harness.close().await.expect("should close harness");
+}
+
+#[tokio::test]
+async fn test_harness_cleanup_on_drop() {
+    init_tracing();
+
+    {
+        let harness = TestHarness::new().await.expect("should create harness");
+        let page = harness.page();
+        
+        page.goto("https://example.com")
+            .wait_until(DocumentLoadState::DomContentLoaded)
+            .goto()
+            .await
+            .expect("should navigate");
+        
+        // harness will be dropped here
+    }
+
+    // If we get here, drop didn't crash
 }

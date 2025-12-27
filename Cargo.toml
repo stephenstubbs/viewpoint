@@ -3,12 +3,14 @@ resolver = "2"
 members = [
     "crates/viewpoint-cdp",
     "crates/viewpoint-core",
+    "crates/viewpoint-js",
+    "crates/viewpoint-js-core",
     "crates/viewpoint-test",
     "crates/viewpoint-test-macros",
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/stephenstubbs/viewpoint"

@@ -1,3 +1,5 @@
+#![cfg(feature = "integration")]
+
 //! Integration tests for viewpoint-cdp.
 //!
 //! These tests require Chromium to be installed and accessible.
@@ -305,4 +307,130 @@ async fn test_cdp_command_with_timeout() {
 
     // Clean up
     let _ = child.kill();
+}
+
+/// Test connection error after browser process is killed.
+/// This verifies the connection properly reports errors when the browser is terminated.
+#[tokio::test]
+async fn test_connection_error_after_browser_kill() {
+    init_tracing();
+    
+    let (mut child, ws_url) = launch_chromium();
+
+    let conn = CdpConnection::connect(&ws_url)
+        .await
+        .expect("Failed to connect to Chromium");
+
+    // Verify connection works initially
+    let result: GetTargetsResult = conn
+        .send_command("Target.getTargets", Some(GetTargetsParams::default()), None)
+        .await
+        .expect("Initial command should succeed");
+    println!("Initial targets: {}", result.target_infos.len());
+
+    // Kill the browser process
+    child.kill().expect("Failed to kill browser");
+    child.wait().expect("Failed to wait for browser exit");
+    
+    // Give the connection time to detect the disconnection
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    // Commands should now fail with a connection-related error
+    let error_result: Result<GetTargetsResult, _> = conn
+        .send_command("Target.getTargets", Some(GetTargetsParams::default()), None)
+        .await;
+
+    assert!(error_result.is_err(), "Command should fail after browser is killed");
+    let err = error_result.unwrap_err();
+    println!("Got expected error: {}", err);
+}
+
+/// Test connection to invalid WebSocket URL fails gracefully.
+#[tokio::test]
+async fn test_connection_to_invalid_url() {
+    init_tracing();
+    
+    // Try to connect to a non-existent endpoint
+    let result = CdpConnection::connect("ws://127.0.0.1:19999/devtools/browser/invalid").await;
+    
+    assert!(result.is_err(), "Connection to invalid URL should fail");
+    let err = result.unwrap_err();
+    println!("Got expected error for invalid URL: {}", err);
+}
+
+/// Test connection handles malformed WebSocket URL.
+#[tokio::test]
+async fn test_connection_to_malformed_url() {
+    init_tracing();
+    
+    // Completely invalid URL
+    let result = CdpConnection::connect("not-a-valid-websocket-url").await;
+    
+    assert!(result.is_err(), "Connection to malformed URL should fail");
+    let err = result.unwrap_err();
+    println!("Got expected error for malformed URL: {}", err);
+}
+
+// =============================================================================
+// Fetch domain type tests (unit tests - no browser needed)
+// =============================================================================
+
+mod fetch_tests {
+    use viewpoint_cdp::protocol::fetch::{
+        AuthChallengeResponse, AuthChallengeResponseType, ErrorReason, FulfillRequestParams,
+        HeaderEntry, RequestPattern, RequestStage,
+    };
+    use viewpoint_cdp::protocol::network::ResourceType;
+
+    #[test]
+    fn test_request_pattern_serialization() {
+        let pattern = RequestPattern::url("**/api/**")
+            .with_resource_type(ResourceType::Fetch)
+            .with_stage(RequestStage::Response);
+
+        let json = serde_json::to_string(&pattern).unwrap();
+        assert!(json.contains("\"urlPattern\":\"**/api/**\""));
+        assert!(json.contains("\"resourceType\":\"Fetch\""));
+        assert!(json.contains("\"requestStage\":\"Response\""));
+    }
+
+    #[test]
+    fn test_fulfill_request_params_serialization() {
+        let params = FulfillRequestParams {
+            request_id: "req-123".to_string(),
+            response_code: 200,
+            response_headers: Some(vec![HeaderEntry {
+                name: "Content-Type".to_string(),
+                value: "application/json".to_string(),
+            }]),
+            binary_response_headers: None,
+            body: Some(base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                b"{\"ok\":true}",
+            )),
+            response_phrase: None,
+        };
+
+        let json = serde_json::to_string(&params).unwrap();
+        assert!(json.contains("\"requestId\":\"req-123\""));
+        assert!(json.contains("\"responseCode\":200"));
+    }
+
+    #[test]
+    fn test_error_reason_serialization() {
+        let reason = ErrorReason::ConnectionRefused;
+        let json = serde_json::to_string(&reason).unwrap();
+        assert_eq!(json, "\"ConnectionRefused\"");
+    }
+
+    #[test]
+    fn test_auth_challenge_response() {
+        let creds = AuthChallengeResponse::provide_credentials("user", "pass");
+        assert_eq!(creds.response, AuthChallengeResponseType::ProvideCredentials);
+        assert_eq!(creds.username, Some("user".to_string()));
+        assert_eq!(creds.password, Some("pass".to_string()));
+
+        let cancel = AuthChallengeResponse::cancel();
+        assert_eq!(cancel.response, AuthChallengeResponseType::CancelAuth);
+    }
 }
