@@ -17,13 +17,13 @@ readme = "README.md"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = { version = "2.0", features = ["full", "parsing"] }
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["full", "parsing"] }
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
-trybuild = "1.0"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+trybuild.workspace = true
 # viewpoint-test is used for integration testing but creates a circular dependency
 # Test the macros from viewpoint-test's test suite instead
 

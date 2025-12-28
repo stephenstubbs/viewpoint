@@ -19,17 +19,17 @@ default = []
 integration = []
 
 [dependencies]
-viewpoint-cdp = { version = "0.2.0", path = "../viewpoint-cdp" }
-viewpoint-core = { version = "0.2.0", path = "../viewpoint-core" }
-viewpoint-test-macros = { version = "0.2.0", path = "../viewpoint-test-macros" }
-serde_json = "1.0"
-thiserror = "2.0"
-tokio = { version = "1.0", features = ["sync", "time", "rt"] }
-tracing = "0.1"
+viewpoint-cdp.workspace = true
+viewpoint-core.workspace = true
+viewpoint-test-macros.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+tracing.workspace = true
 
 [dev-dependencies]
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing-subscriber.workspace = true
 
 [lints]
 workspace = true

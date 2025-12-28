@@ -17,18 +17,18 @@ readme = "README.md"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = { version = "2.0", features = ["full", "parsing", "extra-traits"] }
-swc_common = { version = "18", features = ["sourcemap"] }
-swc_ecma_ast = "19"
-swc_ecma_parser = "31"
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+swc_common.workspace = true
+swc_ecma_ast.workspace = true
+swc_ecma_parser.workspace = true
 
 # Re-export the core crate for users
-viewpoint-js-core = { path = "../viewpoint-js-core" }
+viewpoint-js-core.workspace = true
 
 [dev-dependencies]
-trybuild = "1.0"
+trybuild.workspace = true
 
 [features]
 default = []

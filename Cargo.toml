@@ -21,6 +21,59 @@ rust-version = "1.70"
 keywords = ["browser", "automation", "testing", "playwright", "chromium"]
 categories = ["development-tools::testing", "web-programming"]
 
+[workspace.dependencies]
+# Internal crates
+viewpoint-cdp = { version = "0.2.0", path = "crates/viewpoint-cdp" }
+viewpoint-core = { version = "0.2.0", path = "crates/viewpoint-core" }
+viewpoint-js = { version = "0.2.0", path = "crates/viewpoint-js" }
+viewpoint-js-core = { version = "0.2.0", path = "crates/viewpoint-js-core" }
+viewpoint-test = { version = "0.2.0", path = "crates/viewpoint-test" }
+viewpoint-test-macros = { version = "0.2.0", path = "crates/viewpoint-test-macros" }
+
+# Async runtime
+tokio = "1.0"
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "2.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "multipart", "rustls-tls"] }
+url = "2.5"
+
+# Proc macro utilities
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "parsing", "extra-traits"] }
+
+# JavaScript parsing (SWC)
+swc_common = { version = "18", features = ["sourcemap"] }
+swc_ecma_ast = "19"
+swc_ecma_parser = "31"
+
+# Utility crates
+base64 = "0.22"
+bytes = "1.10"
+chrono = { version = "0.4", features = ["serde"] }
+glob = "0.3"
+parking_lot = "0.12"
+regex = "1.11"
+uuid = { version = "1.11", features = ["v4"] }
+zip = "2.2"
+
+# Dev/test dependencies
+tempfile = "3.19"
+trybuild = "1.0"
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 
