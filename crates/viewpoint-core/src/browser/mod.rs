@@ -6,7 +6,7 @@ use std::process::Child;
 use std::sync::Arc;
 use std::time::Duration;
 
-use viewpoint_cdp::protocol::target::{CreateBrowserContextParams, CreateBrowserContextResult};
+use viewpoint_cdp::protocol::target_domain::{CreateBrowserContextParams, CreateBrowserContextResult};
 use viewpoint_cdp::CdpConnection;
 use tokio::sync::Mutex;
 
@@ -17,7 +17,6 @@ use crate::error::BrowserError;
 pub use launcher::BrowserBuilder;
 
 /// Default timeout for browser operations.
-#[allow(dead_code)]
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// A browser instance connected via CDP.

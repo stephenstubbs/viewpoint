@@ -4,7 +4,6 @@
 //! iframes without needing to directly access Frame objects.
 
 // Allow dead code for frame locator methods (spec: frames)
-#![allow(dead_code)]
 
 use std::time::Duration;
 
@@ -308,7 +307,6 @@ impl<'a> FrameElementLocator<'a> {
     }
 
     /// Build the JavaScript expression to query elements within the frame.
-    #[allow(dead_code)]
     fn to_js_expression(&self) -> String {
         let frame_access = self.frame_locator.to_js_frame_access();
         let element_selector = self.selector.to_js_expression();

@@ -4,7 +4,6 @@
 //! during browser automation.
 
 // Allow dead code for HAR recording scaffolding (spec: har-support)
-#![allow(dead_code)]
 
 use std::collections::HashMap;
 use std::path::PathBuf;

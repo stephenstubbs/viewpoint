@@ -273,7 +273,6 @@ impl super::Page {
     }
 
     /// Get the locator handler manager.
-    #[allow(dead_code)] // Will be used when locator handlers are fully wired up
     pub(crate) fn locator_handler_manager(&self) -> &LocatorHandlerManager {
         &self.locator_handler_manager
     }

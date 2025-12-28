@@ -16,7 +16,6 @@ use crate::error::LocatorError;
 /// Result of querying element information.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[allow(dead_code)] // Fields are deserialized from JS, may not all be used yet
 pub(super) struct ElementInfo {
     /// Whether the element exists.
     pub(super) found: bool,

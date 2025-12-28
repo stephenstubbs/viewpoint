@@ -2,11 +2,6 @@
 //!
 //! This crate provides the primary testing API via `TestHarness`, along with
 //! assertions and configuration for browser-based E2E tests.
-
-// Clippy configuration for this crate
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::format_push_string)]
 //!
 //! # Primary API: `TestHarness`
 //!

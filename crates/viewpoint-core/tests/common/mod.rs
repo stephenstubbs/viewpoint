@@ -1,6 +1,5 @@
 //! Common test utilities and setup for integration tests.
 
-#![allow(dead_code)]
 
 use std::sync::Once;
 use std::time::Duration;

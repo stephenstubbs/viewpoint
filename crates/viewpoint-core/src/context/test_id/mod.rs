@@ -33,7 +33,6 @@ impl BrowserContext {
     }
 
     /// Get the test ID attribute synchronously (for internal use).
-    #[allow(dead_code)] // Will be used by locators that need sync access
     pub(crate) fn test_id_attribute_blocking(&self) -> String {
         // Use try_read to avoid blocking; fall back to default if lock is held
         self.test_id_attribute

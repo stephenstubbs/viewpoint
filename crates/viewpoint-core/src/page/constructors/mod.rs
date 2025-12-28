@@ -49,7 +49,6 @@ impl Page {
     }
 
     /// Create a new page with an opener (for popups).
-    #[allow(dead_code)] // Will be used when popup handling is wired up
     pub(crate) fn with_opener(
         connection: Arc<CdpConnection>,
         target_id: String,

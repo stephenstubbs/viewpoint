@@ -4,7 +4,6 @@
 //! including frame events for sent and received messages.
 
 // Allow dead code for websocket monitoring scaffolding (spec: network-events)
-#![allow(dead_code)]
 
 use std::collections::HashMap;
 use std::future::Future;

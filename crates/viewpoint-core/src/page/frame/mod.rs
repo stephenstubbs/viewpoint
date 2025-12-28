@@ -5,7 +5,6 @@
 //! context, and URL.
 
 // Allow dead code for frame scaffolding (spec: frames)
-#![allow(dead_code)]
 
 use std::sync::Arc;
 use std::time::Duration;

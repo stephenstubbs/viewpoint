@@ -7,12 +7,12 @@
 //! # Example
 //!
 //! ```no_run
-//! use viewpoint_cdp::{CdpConnection, protocol::target::GetTargetsParams};
+//! use viewpoint_cdp::{CdpConnection, protocol::target_domain::GetTargetsParams};
 //!
 //! # async fn example() -> Result<(), viewpoint_cdp::CdpError> {
 //! let conn = CdpConnection::connect("ws://localhost:9222/devtools/browser/...").await?;
 //!
-//! let result: viewpoint_cdp::protocol::target::GetTargetsResult =
+//! let result: viewpoint_cdp::protocol::target_domain::GetTargetsResult =
 //!     conn.send_command("Target.getTargets", Some(GetTargetsParams::default()), None).await?;
 //!
 //! for target in result.target_infos {

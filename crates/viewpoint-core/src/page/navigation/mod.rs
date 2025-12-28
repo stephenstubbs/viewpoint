@@ -75,7 +75,7 @@ impl NavigationResponse {
 
     /// Check if the navigation resulted in an OK response (2xx status).
     pub fn ok(&self) -> bool {
-        self.status.map_or(true, |s| (200..300).contains(&s))
+        self.status.is_none_or(|s| (200..300).contains(&s))
     }
 }
 

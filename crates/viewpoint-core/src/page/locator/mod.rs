@@ -87,7 +87,6 @@ impl<'a> Locator<'a> {
     }
 
     /// Create a new locator with custom options.
-    #[allow(dead_code)] // Available for future use
     pub(crate) fn with_options(page: &'a Page, selector: Selector, options: LocatorOptions) -> Self {
         Self {
             page,
@@ -177,7 +176,6 @@ impl<'a> Locator<'a> {
     }
 
     /// Convert the selector to a JavaScript expression for CDP evaluation.
-    #[allow(dead_code)] // Available for future use
     pub(crate) fn to_js_selector(&self) -> String {
         self.selector.to_js_expression()
     }

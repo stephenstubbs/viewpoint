@@ -86,7 +86,6 @@ impl APIRequestContext {
     /// Create an API context with a shared cookie jar.
     ///
     /// This is used internally when creating an API context from a browser context.
-    #[allow(dead_code)] // Will be used when context.request() is wired up
     pub(crate) async fn with_shared_cookies(
         options: APIContextOptions,
         cookie_jar: Arc<Jar>,

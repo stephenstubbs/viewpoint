@@ -4,7 +4,6 @@
 //! Videos are recorded as a sequence of JPEG frames and can be saved as `WebM` files.
 
 // Allow dead code for video recording scaffolding (spec: video-recording)
-#![allow(dead_code)]
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -424,7 +423,6 @@ impl super::Page {
     }
 
     /// Stop video recording and get the path (internal use).
-    #[allow(dead_code)] // Will be used when video recording is fully wired up
     pub(crate) async fn stop_video_recording(&self) -> Result<Option<std::path::PathBuf>, PageError> {
         if let Some(ref video) = self.video_controller {
             Ok(Some(video.stop_recording().await?))

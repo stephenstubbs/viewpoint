@@ -40,7 +40,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
-use viewpoint_cdp::protocol::target::CloseTargetParams;
+use viewpoint_cdp::protocol::target_domain::CloseTargetParams;
 use viewpoint_cdp::CdpConnection;
 use viewpoint_js::js;
 use tracing::{debug, info, instrument, trace, warn};

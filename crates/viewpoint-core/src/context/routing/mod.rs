@@ -5,7 +5,6 @@
 //! and interception of network requests.
 
 // Allow dead code for context routing scaffolding (spec: network-routing)
-#![allow(dead_code)]
 
 use std::future::Future;
 use std::pin::Pin;

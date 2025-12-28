@@ -3,7 +3,6 @@
 //! This module provides the event management infrastructure for page-level events.
 
 // Allow dead code for event scaffolding (various specs)
-#![allow(dead_code)]
 
 mod download_handling;
 mod event_listener;

@@ -15,7 +15,7 @@ mod page_download;
 mod page_screencast;
 pub mod runtime;
 pub mod storage;
-pub mod target;
+pub mod target_domain;
 pub mod tracing;
 
 // Re-export cookie and websocket types from network module

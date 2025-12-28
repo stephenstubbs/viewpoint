@@ -30,7 +30,7 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
 
-use viewpoint_cdp::protocol::target::{
+use viewpoint_cdp::protocol::target_domain::{
     DisposeBrowserContextParams, GetTargetsParams, GetTargetsResult,
 };
 use viewpoint_cdp::CdpConnection;

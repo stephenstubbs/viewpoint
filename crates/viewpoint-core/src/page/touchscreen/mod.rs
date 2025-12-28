@@ -119,7 +119,6 @@ impl Touchscreen {
     }
 
     /// Mark touch as enabled (for internal use when context is created with hasTouch).
-    #[allow(dead_code)] // Will be used when context touch options are wired up
     pub(crate) fn set_enabled(&self, enabled: bool) {
         self.enabled.store(enabled, Ordering::SeqCst);
     }

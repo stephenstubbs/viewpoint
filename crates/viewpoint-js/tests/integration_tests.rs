@@ -2,10 +2,6 @@
 
 use viewpoint_js::js;
 
-// ToJsValue is used implicitly by the macro for interpolation
-#[allow(unused_imports)]
-use viewpoint_js_core::ToJsValue;
-
 #[test]
 fn test_simple_expression() {
     let code: &str = js! { 1 + 2 };

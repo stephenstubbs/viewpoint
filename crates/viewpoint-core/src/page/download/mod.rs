@@ -3,7 +3,6 @@
 //! This module provides functionality for handling file downloads.
 
 // Allow dead code for scaffolding that will be wired up in future
-#![allow(dead_code)]
 
 use std::path::{Path, PathBuf};
 

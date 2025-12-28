@@ -11,13 +11,13 @@ members = [
 
 [workspace.package]
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 license = "MIT"
 repository = "https://github.com/stephenstubbs/viewpoint"
 homepage = "https://github.com/stephenstubbs/viewpoint"
 documentation = "https://docs.rs/viewpoint-test"
 authors = ["Stephen Stubbs"]
-rust-version = "1.70"
+rust-version = "1.85"
 keywords = ["browser", "automation", "testing", "playwright", "chromium"]
 categories = ["development-tools::testing", "web-programming"]
 
@@ -76,8 +76,42 @@ trybuild = "1.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+# Some internal infrastructure is scaffolded but not fully wired up yet
+dead_code = "allow"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+# Allowed by design - these are intentional choices
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
+missing_errors_doc = "allow"      # Many async functions return Result - docs would be repetitive
+missing_panics_doc = "allow"      # Panics are rare and documented where critical  
+return_self_not_must_use = "allow" # Builders don't always need must_use
+struct_field_names = "allow"      # Field naming follows domain conventions
+doc_markdown = "allow"            # Technical terms (CDP, DOM) don't need backticks
+too_many_lines = "allow"          # Some CDP handlers are inherently long
+similar_names = "allow"           # Domain terms can be similar (e.g., request/response)
+# Numeric casts - CDP protocol uses specific numeric types
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+cast_possible_wrap = "allow"
+# Async/API design choices  
+unused_async = "allow"            # Some async fns are for API consistency
+unused_self = "allow"             # Some methods take self for future use
+needless_pass_by_value = "allow"  # Builder patterns pass by value intentionally
+# Code style preferences
+items_after_statements = "allow"  # Local imports near usage for clarity
+match_same_arms = "allow"         # Explicit matching for documentation
+manual_let_else = "allow"         # Style preference
+wildcard_in_or_patterns = "allow" # Pattern style preference
+missing_fields_in_debug = "allow" # Debug impls are intentionally partial
+assigning_clones = "allow"        # Performance optimization can be done later
+# Complex types are acceptable for route handlers
+type_complexity = "allow"
+# CDP protocol functions often need many parameters
+too_many_arguments = "allow"
+# NetworkEvent has variants of different sizes by design
+large_enum_variant = "allow"
+# String building - performance can be optimized later
+format_push_string = "allow"

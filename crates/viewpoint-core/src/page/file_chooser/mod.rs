@@ -3,7 +3,6 @@
 //! This module provides functionality for handling file chooser dialogs.
 
 // Allow dead code for file chooser scaffolding (spec: file-uploads)
-#![allow(dead_code)]
 
 use std::path::Path;
 use std::sync::Arc;

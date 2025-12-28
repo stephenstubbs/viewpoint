@@ -5,7 +5,6 @@
 //! Trace Viewer.
 
 // Allow dead code for tracing scaffolding (spec: tracing)
-#![allow(dead_code)]
 
 mod capture;
 mod network;

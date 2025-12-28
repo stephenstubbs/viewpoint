@@ -14,7 +14,7 @@ use viewpoint_cdp::protocol::emulation::{
     SetLocaleOverrideParams, SetTimezoneOverrideParams, SetTouchEmulationEnabledParams,
     SetUserAgentOverrideParams,
 };
-use viewpoint_cdp::protocol::target::{
+use viewpoint_cdp::protocol::target_domain::{
     AttachToTargetParams, AttachToTargetResult, CreateTargetParams, CreateTargetResult,
 };
 use viewpoint_cdp::CdpConnection;

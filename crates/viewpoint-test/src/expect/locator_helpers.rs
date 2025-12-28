@@ -225,7 +225,6 @@ pub async fn is_enabled(locator: &viewpoint_core::Locator<'_>) -> Result<bool, A
 /// Retry loop helper for assertions.
 ///
 /// This encapsulates the common retry-with-timeout pattern used by all assertions.
-#[allow(dead_code)]
 pub async fn retry_until<F, Fut, T>(
     timeout: Duration,
     is_negated: bool,

@@ -1,7 +1,6 @@
 //! Network request types.
 
 // Allow dead code for request builder setters (spec: network-events)
-#![allow(dead_code)]
 
 use std::collections::HashMap;
 use std::sync::Arc;

@@ -11,7 +11,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Once;
 use std::time::Duration;
 
-use viewpoint_cdp::protocol::target::{GetTargetsParams, GetTargetsResult};
+use viewpoint_cdp::protocol::target_domain::{GetTargetsParams, GetTargetsResult};
 use viewpoint_cdp::CdpConnection;
 
 static TRACING_INIT: Once = Once::new();
@@ -120,10 +120,10 @@ async fn test_cdp_session_commands() {
         .expect("Failed to connect to Chromium");
 
     // Create a browser context
-    let create_result: viewpoint_cdp::protocol::target::CreateBrowserContextResult = conn
+    let create_result: viewpoint_cdp::protocol::target_domain::CreateBrowserContextResult = conn
         .send_command(
             "Target.createBrowserContext",
-            Some(viewpoint_cdp::protocol::target::CreateBrowserContextParams::default()),
+            Some(viewpoint_cdp::protocol::target_domain::CreateBrowserContextParams::default()),
             None,
         )
         .await
@@ -132,10 +132,10 @@ async fn test_cdp_session_commands() {
     println!("Created browser context: {}", create_result.browser_context_id);
 
     // Create a target (page) in the context
-    let target_result: viewpoint_cdp::protocol::target::CreateTargetResult = conn
+    let target_result: viewpoint_cdp::protocol::target_domain::CreateTargetResult = conn
         .send_command(
             "Target.createTarget",
-            Some(viewpoint_cdp::protocol::target::CreateTargetParams {
+            Some(viewpoint_cdp::protocol::target_domain::CreateTargetParams {
                 url: "about:blank".to_string(),
                 width: None,
                 height: None,
@@ -151,10 +151,10 @@ async fn test_cdp_session_commands() {
     println!("Created target: {}", target_result.target_id);
 
     // Attach to the target
-    let attach_result: viewpoint_cdp::protocol::target::AttachToTargetResult = conn
+    let attach_result: viewpoint_cdp::protocol::target_domain::AttachToTargetResult = conn
         .send_command(
             "Target.attachToTarget",
-            Some(viewpoint_cdp::protocol::target::AttachToTargetParams {
+            Some(viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
                 target_id: target_result.target_id.clone(),
                 flatten: Some(true),
             }),
@@ -207,19 +207,19 @@ async fn test_cdp_event_subscription() {
     let mut event_rx = conn.subscribe_events();
 
     // Create a context and page
-    let create_result: viewpoint_cdp::protocol::target::CreateBrowserContextResult = conn
+    let create_result: viewpoint_cdp::protocol::target_domain::CreateBrowserContextResult = conn
         .send_command(
             "Target.createBrowserContext",
-            Some(viewpoint_cdp::protocol::target::CreateBrowserContextParams::default()),
+            Some(viewpoint_cdp::protocol::target_domain::CreateBrowserContextParams::default()),
             None,
         )
         .await
         .expect("Failed to create browser context");
 
-    let target_result: viewpoint_cdp::protocol::target::CreateTargetResult = conn
+    let target_result: viewpoint_cdp::protocol::target_domain::CreateTargetResult = conn
         .send_command(
             "Target.createTarget",
-            Some(viewpoint_cdp::protocol::target::CreateTargetParams {
+            Some(viewpoint_cdp::protocol::target_domain::CreateTargetParams {
                 url: "about:blank".to_string(),
                 width: None,
                 height: None,
@@ -232,10 +232,10 @@ async fn test_cdp_event_subscription() {
         .await
         .expect("Failed to create target");
 
-    let attach_result: viewpoint_cdp::protocol::target::AttachToTargetResult = conn
+    let attach_result: viewpoint_cdp::protocol::target_domain::AttachToTargetResult = conn
         .send_command(
             "Target.attachToTarget",
-            Some(viewpoint_cdp::protocol::target::AttachToTargetParams {
+            Some(viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
                 target_id: target_result.target_id,
                 flatten: Some(true),
             }),

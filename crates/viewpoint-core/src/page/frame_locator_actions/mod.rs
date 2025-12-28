@@ -16,7 +16,6 @@ use crate::error::LocatorError;
 /// Result of querying element information in a frame.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[allow(dead_code)]
 pub(crate) struct FrameElementInfo {
     /// Whether the element exists.
     pub found: bool,

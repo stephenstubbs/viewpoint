@@ -99,7 +99,6 @@ impl<'l, 'a> ClickBuilder<'l, 'a> {
 
     /// Set the click count (internal use for double-click support).
     #[must_use]
-    #[allow(dead_code)]
     pub(crate) fn click_count(mut self, count: i32) -> Self {
         self.click_count = count;
         self

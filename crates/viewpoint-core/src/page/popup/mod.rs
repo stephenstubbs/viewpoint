@@ -4,7 +4,6 @@
 //! that are opened by JavaScript code (e.g., via `window.open()`).
 
 // Allow dead code for popup scaffolding (spec: page-operations)
-#![allow(dead_code)]
 
 use std::future::Future;
 use std::pin::Pin;
@@ -194,7 +193,7 @@ where
     ///
     /// Returns the popup page that was opened during the action.
     pub async fn wait(mut self) -> Result<Page, PageError> {
-        use viewpoint_cdp::protocol::target::{AttachToTargetParams, AttachToTargetResult, TargetCreatedEvent};
+        use viewpoint_cdp::protocol::target_domain::{AttachToTargetParams, AttachToTargetResult, TargetCreatedEvent};
 
         let connection = self.page.connection().clone();
         let target_id = self.page.target_id().to_string();

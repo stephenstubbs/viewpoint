@@ -284,15 +284,15 @@ impl<'a> ClearCookiesBuilder<'a> {
             let matches_name = self
                 .name
                 .as_ref()
-                .map_or(true, |n| cookie.name == *n);
+                .is_none_or(|n| cookie.name == *n);
             let matches_domain = self
                 .domain
                 .as_ref()
-                .map_or(true, |d| cookie.domain.as_deref() == Some(d.as_str()));
+                .is_none_or(|d| cookie.domain.as_deref() == Some(d.as_str()));
             let matches_path = self
                 .path
                 .as_ref()
-                .map_or(true, |p| cookie.path.as_deref() == Some(p.as_str()));
+                .is_none_or(|p| cookie.path.as_deref() == Some(p.as_str()));
 
             if matches_name && matches_domain && matches_path {
                 let mut params = StorageDeleteCookiesParams::new(&cookie.name)

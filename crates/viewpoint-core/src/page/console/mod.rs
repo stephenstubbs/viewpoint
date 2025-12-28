@@ -4,7 +4,6 @@
 //! (console.log, console.error, etc.) from the page.
 
 // Allow dead code for console scaffolding (spec: console-events)
-#![allow(dead_code)]
 
 use std::sync::Arc;
 

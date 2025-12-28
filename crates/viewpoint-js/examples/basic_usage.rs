@@ -4,10 +4,6 @@
 
 use viewpoint_js::js;
 
-// ToJsValue is used implicitly by the macro for interpolation
-#[allow(unused_imports)]
-use viewpoint_js_core::ToJsValue;
-
 fn main() {
     // Example 1: Simple expressions (returns &'static str)
     println!("=== Simple Expressions ===");
