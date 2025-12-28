@@ -89,20 +89,29 @@ impl KeyboardState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
+///
 /// // Press a single key
-/// page.keyboard().press("Enter").await?;
+/// page.keyboard().press("Enter").await.unwrap();
 ///
 /// // Type text character by character
-/// page.keyboard().type_text("Hello").await?;
+/// page.keyboard().type_text("Hello").await.unwrap();
 ///
 /// // Use key combinations
-/// page.keyboard().press("Control+a").await?;
+/// page.keyboard().press("Control+a").await.unwrap();
 ///
 /// // Hold modifier and press keys
-/// page.keyboard().down("Shift").await?;
-/// page.keyboard().press("a").await?; // Types 'A'
-/// page.keyboard().up("Shift").await?;
+/// page.keyboard().down("Shift").await.unwrap();
+/// page.keyboard().press("a").await.unwrap(); // Types 'A'
+/// page.keyboard().up("Shift").await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Keyboard {

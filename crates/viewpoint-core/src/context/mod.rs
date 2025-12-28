@@ -42,6 +42,7 @@ pub use events::{ContextEventManager, HandlerId};
 pub use weberror::WebErrorHandler;
 pub use storage::{StorageStateBuilder, StorageStateOptions};
 pub use trace::{Tracing, TracingOptions};
+use trace::TracingState;
 pub use types::{
     ColorScheme, ContextOptions, ContextOptionsBuilder, Cookie, ForcedColors, Geolocation,
     HttpCredentials, IndexedDbDatabase, IndexedDbEntry, IndexedDbIndex, IndexedDbObjectStore,
@@ -100,6 +101,8 @@ pub struct BrowserContext {
     test_id_attribute: Arc<RwLock<String>>,
     /// HAR recorder for capturing network traffic.
     har_recorder: Arc<RwLock<Option<crate::network::HarRecorder>>>,
+    /// Shared tracing state for persistent tracing across `tracing()` calls.
+    tracing_state: Arc<RwLock<TracingState>>,
 }
 
 // Manual Debug implementation since WebErrorHandler doesn't implement Debug
@@ -147,6 +150,7 @@ impl BrowserContext {
             init_scripts: Arc::new(RwLock::new(Vec::new())),
             test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
             har_recorder: Arc::new(RwLock::new(None)),
+            tracing_state: Arc::new(RwLock::new(TracingState::default())),
         };
         ctx.start_weberror_listener();
         ctx
@@ -181,6 +185,7 @@ impl BrowserContext {
             init_scripts: Arc::new(RwLock::new(Vec::new())),
             test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
             har_recorder: Arc::new(RwLock::new(None)),
+            tracing_state: Arc::new(RwLock::new(TracingState::default())),
         };
         ctx.start_weberror_listener();
         ctx

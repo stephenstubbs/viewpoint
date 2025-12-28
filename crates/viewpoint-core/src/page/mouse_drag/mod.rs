@@ -11,16 +11,25 @@ use crate::error::LocatorError;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
+///
 /// // Simple drag and drop
-/// page.drag_and_drop("#source", "#target").send().await?;
+/// page.drag_and_drop("#source", "#target").send().await.ok();
 ///
 /// // With position options
 /// page.drag_and_drop("#source", "#target")
 ///     .source_position(10.0, 10.0)
 ///     .target_position(5.0, 5.0)
 ///     .send()
-///     .await?;
+///     .await.ok();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct DragAndDropBuilder<'a> {

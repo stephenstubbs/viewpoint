@@ -6,12 +6,12 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```text
 //! use viewpoint_test_macros::test;
-//! use viewpoint_test::Page;
+//! use viewpoint_core::Page;
 //!
 //! #[viewpoint_test_macros::test]
-//! async fn my_test(page: Page) -> Result<(), Box<dyn std::error::Error>> {
+//! async fn my_test(page: &Page) -> Result<(), Box<dyn std::error::Error>> {
 //!     page.goto("https://example.com").goto().await?;
 //!     Ok(())
 //! }
@@ -21,11 +21,11 @@
 //!
 //! The macro supports fixture scoping via attributes:
 //!
-//! ```ignore
+//! ```text
 //! // Module-scoped browser
 //! #[viewpoint_test_macros::test(scope = "browser", browser = "shared_browser")]
-//! async fn fast_test(page: Page) -> Result<(), Box<dyn std::error::Error>> {
-//!     // ...
+//! async fn fast_test(page: &Page) -> Result<(), Box<dyn std::error::Error>> {
+//!     // Uses shared browser, but fresh context and page
 //! }
 //! ```
 
@@ -42,9 +42,9 @@ mod test_attr;
 ///
 /// # Basic Usage
 ///
-/// ```ignore
+/// ```text
 /// #[viewpoint_test_macros::test]
-/// async fn my_test(page: Page) -> Result<(), Box<dyn std::error::Error>> {
+/// async fn my_test(page: &Page) -> Result<(), Box<dyn std::error::Error>> {
 ///     page.goto("https://example.com").goto().await?;
 ///     Ok(())
 /// }

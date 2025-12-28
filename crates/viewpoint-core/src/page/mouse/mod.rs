@@ -42,24 +42,30 @@ impl MouseState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
+///
 /// // Move mouse to coordinates
-/// page.mouse().move_(100.0, 200.0).await?;
+/// page.mouse().move_(100.0, 200.0).send().await.unwrap();
 ///
 /// // Click at coordinates
-/// page.mouse().click(100.0, 200.0).await?;
-///
-/// // Right-click
-/// page.mouse().click(100.0, 200.0).button(MouseButton::Right).await?;
+/// page.mouse().click(100.0, 200.0).send().await.unwrap();
 ///
 /// // Scroll
-/// page.mouse().wheel(0.0, 100.0).await?;
+/// page.mouse().wheel(0.0, 100.0).await.unwrap();
 ///
 /// // Drag operation
-/// page.mouse().move_(100.0, 100.0).await?;
-/// page.mouse().down().await?;
-/// page.mouse().move_(200.0, 200.0).steps(10).await?;
-/// page.mouse().up().await?;
+/// page.mouse().move_(100.0, 100.0).send().await.unwrap();
+/// page.mouse().down().send().await.unwrap();
+/// page.mouse().move_(200.0, 200.0).steps(10).send().await.unwrap();
+/// page.mouse().up().send().await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Mouse {

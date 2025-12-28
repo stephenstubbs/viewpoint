@@ -21,19 +21,21 @@ use crate::error::LocatorError;
 ///
 /// # Example
 ///
-/// ```ignore
-/// // Simple click - await directly
-/// page.locator("button").click().await?;
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
 ///
-/// // Click with options
-/// page.locator("button").click()
-///     .position(10.0, 5.0)
-///     .button(MouseButton::Right)
-///     .modifiers(modifiers::SHIFT)
-///     .send().await?;
+/// // Simple click - await directly
+/// page.locator("button").click().await.ok();
 ///
 /// // Force click without waiting for actionability
-/// page.locator("button").click().force(true).await?;
+/// page.locator("button").click().force(true).await.ok();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct ClickBuilder<'l, 'a> {

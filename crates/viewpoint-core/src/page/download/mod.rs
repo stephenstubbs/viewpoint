@@ -29,18 +29,28 @@ pub enum DownloadState {
 ///
 /// # Example
 ///
-/// ```ignore
-/// let download = page.wait_for_download(async {
-///     page.locator("a.download").click().await?;
-///     Ok(())
-/// }).await?;
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
 ///
-/// // Get the downloaded file path
-/// let path = download.path().await?;
-/// println!("Downloaded to: {}", path.display());
-///
-/// // Or save to a custom location
-/// download.save_as("./downloads/my-file.pdf").await?;
+/// // Downloads are obtained like this:
+/// // let download = page.wait_for_download(async {
+/// //     page.locator("a.download").click().await?;
+/// //     Ok(())
+/// // }).await?;
+/// //
+/// // // Get the downloaded file path
+/// // let path = download.path().await?;
+/// // println!("Downloaded to: {}", path.display());
+/// //
+/// // // Or save to a custom location
+/// // download.save_as("./downloads/my-file.pdf").await?;
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Download {

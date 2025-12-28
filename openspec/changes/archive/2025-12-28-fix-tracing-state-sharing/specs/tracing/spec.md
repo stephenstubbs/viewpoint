@@ -1,8 +1,5 @@
-# tracing Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change add-tracing-debugging. Update Purpose after archive.
-## Requirements
 ### Requirement: Start Tracing
 
 The system SHALL allow starting trace recording when at least one page exists in the context.
@@ -59,43 +56,7 @@ The system SHALL allow stopping and saving traces, with state persisted across `
 - **WHEN** `context.tracing().stop("trace.zip").await` is called
 - **THEN** an error is returned indicating tracing is not active
 
-### Requirement: Trace Chunks
-
-The system SHALL support trace chunks.
-
-#### Scenario: Start chunk
-
-- **GIVEN** tracing is active
-- **WHEN** `context.tracing().start_chunk().await` is called
-- **THEN** a new trace chunk begins
-
-#### Scenario: Stop chunk
-
-- **GIVEN** a trace chunk is active
-- **WHEN** `context.tracing().stop_chunk("chunk.zip").await` is called
-- **THEN** the chunk is saved separately
-
-### Requirement: Trace Content
-
-The system SHALL capture comprehensive trace data.
-
-#### Scenario: Trace includes actions
-
-- **GIVEN** a trace is recording
-- **WHEN** page actions are performed
-- **THEN** the actions are recorded in the trace
-
-#### Scenario: Trace includes network
-
-- **GIVEN** a trace with network enabled
-- **WHEN** network requests occur
-- **THEN** requests and responses are in the trace
-
-#### Scenario: Trace is viewable
-
-- **GIVEN** a saved trace file
-- **WHEN** opened in Playwright Trace Viewer
-- **THEN** the trace is correctly displayed
+## ADDED Requirements
 
 ### Requirement: Tracing State Persistence
 
@@ -113,4 +74,3 @@ The system SHALL persist tracing state across multiple `context.tracing()` calls
 - **GIVEN** tracing has been started via `context.tracing().start()`
 - **WHEN** `context.tracing().is_recording().await` is called
 - **THEN** it returns `true`
-

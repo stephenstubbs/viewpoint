@@ -21,7 +21,7 @@ The codebase SHALL produce zero warnings when running `cargo check`.
 
 ### Requirement: Zero Clippy Warnings
 
-The codebase SHALL produce zero warnings when running `cargo clippy` with pedantic lints enabled.
+The codebase SHALL produce zero warnings when running `cargo clippy` with pedantic lints enabled. Temporary suppressions SHALL NOT be used to hide incomplete work.
 
 #### Scenario: Clean clippy check
 - **WHEN** running `cargo clippy` on the workspace
@@ -34,6 +34,15 @@ The codebase SHALL produce zero warnings when running `cargo clippy` with pedant
 #### Scenario: Error documentation present
 - **WHEN** a public function returns `Result`
 - **THEN** the function has an `# Errors` documentation section
+
+#### Scenario: Panic documentation present
+- **WHEN** a public function can panic
+- **THEN** the function has a `# Panics` documentation section
+
+#### Scenario: No blanket suppressions
+- **WHEN** a crate-level `#![allow(...)]` is considered
+- **THEN** the underlying issue SHALL be fixed instead
+- **AND** suppressions SHALL only be used for intentional design decisions with documented justification
 
 ### Requirement: Maintainable File Sizes
 
@@ -119,6 +128,20 @@ Crates with integration tests that require external resources (browser, network)
 - **THEN** tests SHALL NOT use the `integration` feature gate
 - **AND** tests SHALL run with plain `cargo test`
 
+#### Scenario: Doc test feature gating
+- **WHEN** a doc test demonstrates browser automation APIs requiring Chromium
+- **THEN** the doc test SHALL use the `#[cfg(feature = "integration")]` attribute in a hidden setup block
+- **AND** the doc test SHALL include hidden boilerplate to launch browser, create context, and page
+- **AND** the doc test SHALL compile with `cargo test` but only execute with `cargo test --features integration`
+
+#### Scenario: Doc test structure
+- **WHEN** a feature-gated doc test is written
+- **THEN** the doc test SHALL follow this pattern:
+  - Use ```` ``` ```` (no `ignore` or `no_run`)
+  - Include hidden (`# `) lines for: feature gate, async wrapper, browser setup, cleanup
+  - Show only the API usage in visible lines
+- **AND** the doc test MUST be self-contained and executable
+
 ### Requirement: Dependency Management
 The workspace SHALL centralize all dependency versions in the root `Cargo.toml` under `[workspace.dependencies]`. Dependencies SHALL be kept reasonably current to benefit from security patches and bug fixes.
 
@@ -132,4 +155,23 @@ The workspace SHALL centralize all dependency versions in the root `Cargo.toml` 
 - **THEN** all workspace tests MUST pass before merging
 - **AND** compilation MUST succeed with `cargo check --workspace`
 - **AND** no new clippy warnings MUST be introduced
+
+### Requirement: Suppression Justification Policy
+
+Clippy lint suppressions SHALL only be used when there is a clear, documented reason and the code cannot be reasonably refactored.
+
+#### Scenario: Allowed suppressions
+- **WHEN** a `#[allow(...)]` attribute is used
+- **THEN** it SHALL be accompanied by a comment explaining why
+- **AND** the suppression SHALL be as narrow as possible (item-level, not module-level)
+
+#### Scenario: Prohibited blanket suppressions
+- **WHEN** a `#![allow(...)]` crate-level suppression exists
+- **THEN** it SHALL be removed and issues fixed individually
+- **AND** only workspace-level configuration in `Cargo.toml` is acceptable for project-wide policy
+
+#### Scenario: Dead code handling
+- **WHEN** dead code warnings appear
+- **THEN** the code SHALL be either used, removed, or gated with `#[cfg(...)]`
+- **AND** `#[allow(dead_code)]` SHALL NOT be used to hide incomplete features
 

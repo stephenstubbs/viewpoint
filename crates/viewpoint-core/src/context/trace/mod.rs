@@ -26,28 +26,46 @@ use crate::error::ContextError;
 use crate::network::har::HarPage;
 
 pub use types::{ActionEntry, TracingOptions};
-use types::{SourceFileEntry, TracingState};
+pub(crate) use types::TracingState;
+use types::SourceFileEntry;
 
 /// Tracing manager for recording test execution traces.
 ///
 /// Traces record screenshots, DOM snapshots, network activity, and action
 /// history. They can be viewed using Playwright's Trace Viewer.
 ///
+/// **Note:** At least one page must exist in the context before starting tracing.
+/// The tracing state is shared across all `context.tracing()` calls within the
+/// same context, so you can call `start()` and `stop()` from separate `tracing()`
+/// invocations.
+///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// use viewpoint_core::context::TracingOptions;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+///
+/// // Create a page first (required before starting tracing)
+/// let page = context.new_page().await.unwrap();
+///
 /// // Start tracing with screenshots
 /// context.tracing().start(
 ///     TracingOptions::new()
 ///         .name("my-test")
 ///         .screenshots(true)
 ///         .snapshots(true)
-/// ).await?;
+/// ).await.unwrap();
 ///
-/// // ... perform test actions ...
+/// // Perform test actions...
+/// page.goto("https://example.com").goto().await.unwrap();
 ///
-/// // Stop and save trace
-/// context.tracing().stop("trace.zip").await?;
+/// // Stop and save trace (state persists across tracing() calls)
+/// context.tracing().stop("/tmp/trace.zip").await.unwrap();
+/// # });
 /// ```
 pub struct Tracing {
     /// CDP connection.
@@ -69,17 +87,18 @@ impl std::fmt::Debug for Tracing {
 }
 
 impl Tracing {
-    /// Create a new Tracing instance.
+    /// Create a new Tracing instance with shared state.
     pub(crate) fn new(
         connection: Arc<CdpConnection>,
         context_id: String,
         pages: Arc<RwLock<Vec<PageInfo>>>,
+        state: Arc<RwLock<TracingState>>,
     ) -> Self {
         Self {
             connection,
             context_id,
             pages,
-            state: Arc::new(RwLock::new(TracingState::default())),
+            state,
         }
     }
 
@@ -95,13 +114,25 @@ impl Tracing {
 
     /// Start recording a trace.
     ///
+    /// # Requirements
+    ///
+    /// At least one page must exist in the context before starting tracing.
+    /// Create a page with `context.new_page().await` first.
+    ///
     /// # Errors
     ///
-    /// Returns an error if tracing is already active or CDP commands fail.
+    /// Returns an error if:
+    /// - Tracing is already active
+    /// - No pages exist in the context
+    /// - CDP commands fail
     ///
     /// # Example
     ///
     /// ```ignore
+    /// // Create a page first
+    /// let page = context.new_page().await?;
+    ///
+    /// // Then start tracing
     /// context.tracing().start(
     ///     TracingOptions::new()
     ///         .screenshots(true)
@@ -115,6 +146,14 @@ impl Tracing {
         if state.is_recording {
             return Err(ContextError::Internal(
                 "Tracing is already active".to_string(),
+            ));
+        }
+
+        // Validate that at least one page exists
+        let session_ids = self.get_session_ids().await;
+        if session_ids.is_empty() {
+            return Err(ContextError::Internal(
+                "Cannot start tracing: no pages in context. Create a page first.".to_string(),
             ));
         }
 
@@ -132,7 +171,7 @@ impl Tracing {
         ];
 
         // Start tracing on all sessions
-        for session_id in self.get_session_ids().await {
+        for session_id in session_ids {
             let params = cdp_tracing::StartParams {
                 categories: Some(categories.join(",")),
                 transfer_mode: Some(cdp_tracing::TransferMode::ReturnAsStream),

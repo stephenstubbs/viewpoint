@@ -76,30 +76,33 @@ pub(super) struct SourceFileEntry {
 }
 
 /// Internal state for an active trace.
+///
+/// This is pub(crate) to allow sharing between BrowserContext and Tracing,
+/// but all fields use pub(super) visibility to keep them internal to the trace module.
 #[derive(Debug, Default)]
-pub(super) struct TracingState {
+pub(crate) struct TracingState {
     /// Whether tracing is currently active.
-    pub is_recording: bool,
+    pub(super) is_recording: bool,
     /// Tracing options.
-    pub options: TracingOptions,
+    pub(super) options: TracingOptions,
     /// Recorded actions.
-    pub actions: Vec<ActionEntry>,
+    pub(super) actions: Vec<ActionEntry>,
     /// Recorded events.
-    pub events: Vec<serde_json::Value>,
+    pub(super) events: Vec<serde_json::Value>,
     /// Screenshots captured during tracing.
-    pub screenshots: Vec<ScreenshotEntry>,
+    pub(super) screenshots: Vec<ScreenshotEntry>,
     /// DOM snapshots captured during tracing.
-    pub snapshots: Vec<serde_json::Value>,
+    pub(super) snapshots: Vec<serde_json::Value>,
     /// Network requests being tracked.
-    pub pending_requests: HashMap<String, PendingRequest>,
+    pub(super) pending_requests: HashMap<String, PendingRequest>,
     /// Completed network entries.
-    pub network_entries: Vec<NetworkEntryState>,
+    pub(super) network_entries: Vec<NetworkEntryState>,
     /// HAR pages.
-    pub har_pages: Vec<crate::network::har::HarPage>,
+    pub(super) har_pages: Vec<crate::network::har::HarPage>,
     /// Current page ID for HAR entries.
-    pub current_page_id: Option<String>,
+    pub(super) current_page_id: Option<String>,
     /// Source files to include.
-    pub source_files: Vec<SourceFileEntry>,
+    pub(super) source_files: Vec<SourceFileEntry>,
 }
 
 /// A pending network request.

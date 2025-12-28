@@ -21,26 +21,37 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// use viewpoint_core::AriaRole;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
+///
 /// // Locate elements inside an iframe
 /// page.frame_locator("#my-iframe")
 ///     .locator("button")
 ///     .click()
-///     .await?;
+///     .await.ok();
 ///
 /// // Use semantic locators inside frames
 /// page.frame_locator("#payment-frame")
 ///     .get_by_role(AriaRole::Button)
 ///     .with_name("Submit")
+///     .build()
 ///     .click()
-///     .await?;
+///     .await.ok();
 ///
 /// // Nested frames
 /// page.frame_locator("#outer")
 ///     .frame_locator("#inner")
 ///     .locator("input")
 ///     .fill("text")
-///     .await?;
+///     .await.ok();
+/// # });
 /// ```
 #[derive(Debug, Clone)]
 pub struct FrameLocator<'a> {

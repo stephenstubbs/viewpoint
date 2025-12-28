@@ -5,17 +5,26 @@
 //!
 //! # Example
 //!
-//! ```ignore
-//! use viewpoint_test::expect;
+//! ```
+//! # #[cfg(feature = "integration")]
+//! # tokio_test::block_on(async {
+//! # use viewpoint_core::Browser;
+//! use viewpoint_test::{expect, expect_page};
+//! # let browser = Browser::launch().headless(true).launch().await.unwrap();
+//! # let context = browser.new_context().await.unwrap();
+//! # let page = context.new_page().await.unwrap();
+//! # page.goto("https://example.com").goto().await.unwrap();
 //!
 //! // Assert element is visible
-//! expect(&locator).to_be_visible().await?;
+//! let locator = page.locator("h1");
+//! expect(&locator).to_be_visible().await.unwrap();
 //!
 //! // Assert text content
-//! expect(&locator).to_have_text("Hello").await?;
+//! expect(&locator).to_have_text("Example Domain").await.unwrap();
 //!
 //! // Assert page URL
-//! expect(&page).to_have_url("https://example.com").await?;
+//! expect_page(&page).to_have_url("https://example.com/").await.unwrap();
+//! # });
 //! ```
 
 mod count;
@@ -43,11 +52,20 @@ use viewpoint_core::{Locator, Page};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
 /// use viewpoint_test::expect;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("https://example.com").goto().await.unwrap();
 ///
-/// expect(&locator).to_be_visible().await?;
-/// expect(&locator).to_have_text("Hello").await?;
+/// let locator = page.locator("h1");
+/// expect(&locator).to_be_visible().await.unwrap();
+/// expect(&locator).to_have_text("Example Domain").await.unwrap();
+/// # });
 /// ```
 pub fn expect<'a>(locator: &'a Locator<'a>) -> LocatorAssertions<'a> {
     LocatorAssertions::new(locator)
@@ -57,11 +75,19 @@ pub fn expect<'a>(locator: &'a Locator<'a>) -> LocatorAssertions<'a> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
 /// use viewpoint_test::expect_page;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("https://example.com").goto().await.unwrap();
 ///
-/// expect_page(&page).to_have_url("https://example.com").await?;
-/// expect_page(&page).to_have_title("Example").await?;
+/// expect_page(&page).to_have_url("https://example.com/").await.unwrap();
+/// expect_page(&page).to_have_title("Example Domain").await.unwrap();
+/// # });
 /// ```
 pub fn expect_page(page: &Page) -> PageAssertions<'_> {
     PageAssertions::new(page)

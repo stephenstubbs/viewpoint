@@ -119,11 +119,18 @@ pub struct ConsoleMessageLocation {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// page.on_console(|message| async move {
 ///     println!("{}: {}", message.type_(), message.text());
-///     Ok(())
 /// }).await;
+/// # });
 /// ```
 #[derive(Debug, Clone)]
 pub struct ConsoleMessage {

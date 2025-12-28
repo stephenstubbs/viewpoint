@@ -5,21 +5,29 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "integration")]
+//! # tokio_test::block_on(async {
+//! # use viewpoint_core::Browser;
 //! use std::time::Duration;
+//! # let browser = Browser::launch().headless(true).launch().await.unwrap();
+//! # let context = browser.new_context().await.unwrap();
+//! # let page = context.new_page().await.unwrap();
+//! # page.goto("about:blank").goto().await.unwrap();
 //!
 //! // Install clock mocking
-//! page.clock().install().await?;
+//! page.clock().install().await.unwrap();
 //!
 //! // Set a fixed time
-//! page.clock().set_fixed_time("2024-01-01T00:00:00Z").await?;
+//! page.clock().set_fixed_time("2024-01-01T00:00:00Z").await.unwrap();
 //!
 //! // Check that Date.now() returns the fixed time
 //! use viewpoint_js::js;
-//! let time: f64 = page.evaluate(js!{ Date.now() }).await?;
+//! let time: f64 = page.evaluate(js!{ Date.now() }).await.unwrap();
 //!
 //! // Advance time by 5 seconds, firing any scheduled timers
-//! page.clock().run_for(Duration::from_secs(5)).await?;
+//! page.clock().run_for(Duration::from_secs(5)).await.unwrap();
+//! # });
 //! ```
 
 use std::sync::Arc;
@@ -41,20 +49,28 @@ use super::clock_script::CLOCK_MOCK_SCRIPT;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
 /// use std::time::Duration;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+/// # page.goto("about:blank").goto().await.unwrap();
 ///
 /// // Install clock mocking
-/// page.clock().install().await?;
+/// page.clock().install().await.unwrap();
 ///
 /// // Freeze time at a specific moment
-/// page.clock().set_fixed_time("2024-01-01T00:00:00Z").await?;
+/// page.clock().set_fixed_time("2024-01-01T00:00:00Z").await.unwrap();
 ///
 /// // Advance time and fire scheduled timers
-/// page.clock().run_for(Duration::from_secs(5)).await?;
+/// page.clock().run_for(Duration::from_secs(5)).await.unwrap();
 ///
 /// // Uninstall when done
-/// page.clock().uninstall().await?;
+/// page.clock().uninstall().await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Clock<'a> {

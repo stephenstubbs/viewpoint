@@ -107,24 +107,28 @@ pub(super) struct VideoState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// use viewpoint_core::page::VideoOptions;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+///
 /// // Recording is usually started via context options
-/// let context = browser.new_context()
+/// let context = browser.new_context_builder()
 ///     .record_video(VideoOptions::new("./videos"))
 ///     .build()
-///     .await?;
+///     .await.unwrap();
 ///
-/// let page = context.new_page().await?;
-/// page.goto("https://example.com").goto().await?;
+/// let page = context.new_page().await.unwrap();
+/// page.goto("https://example.com").goto().await.unwrap();
 ///
 /// // Get the video path after recording
 /// if let Some(video) = page.video() {
-///     let path = video.path().await?;
-///     println!("Video saved to: {}", path.display());
-///     
-///     // Or save to a specific location
-///     video.save_as("my-test.webm").await?;
+///     // Video operations available here
+///     // let path = video.path().await?;
 /// }
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Video {

@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.1"
+version = "0.2.2"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/stephenstubbs/viewpoint"
@@ -23,12 +23,12 @@ categories = ["development-tools::testing", "web-programming"]
 
 [workspace.dependencies]
 # Internal crates
-viewpoint-cdp = { version = "0.2.1", path = "crates/viewpoint-cdp" }
-viewpoint-core = { version = "0.2.1", path = "crates/viewpoint-core" }
-viewpoint-js = { version = "0.2.1", path = "crates/viewpoint-js" }
-viewpoint-js-core = { version = "0.2.1", path = "crates/viewpoint-js-core" }
-viewpoint-test = { version = "0.2.1", path = "crates/viewpoint-test" }
-viewpoint-test-macros = { version = "0.2.1", path = "crates/viewpoint-test-macros" }
+viewpoint-cdp = { version = "0.2.2", path = "crates/viewpoint-cdp" }
+viewpoint-core = { version = "0.2.2", path = "crates/viewpoint-core" }
+viewpoint-js = { version = "0.2.2", path = "crates/viewpoint-js" }
+viewpoint-js-core = { version = "0.2.2", path = "crates/viewpoint-js-core" }
+viewpoint-test = { version = "0.2.2", path = "crates/viewpoint-test" }
+viewpoint-test-macros = { version = "0.2.2", path = "crates/viewpoint-test-macros" }
 
 # Async runtime
 tokio = "1.47"
@@ -72,6 +72,7 @@ zip = "2.2"
 
 # Dev/test dependencies
 tempfile = "3.24"
+tokio-test = "0.4"
 trybuild = "1.0"
 
 [workspace.lints.rust]
@@ -85,7 +86,7 @@ pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
 missing_errors_doc = "allow"      # Many async functions return Result - docs would be repetitive
-missing_panics_doc = "allow"      # Panics are rare and documented where critical  
+missing_panics_doc = "allow"      # Panics are rare and documented where critical
 return_self_not_must_use = "allow" # Builders don't always need must_use
 struct_field_names = "allow"      # Field naming follows domain conventions
 doc_markdown = "allow"            # Technical terms (CDP, DOM) don't need backticks
@@ -96,7 +97,7 @@ cast_possible_truncation = "allow"
 cast_sign_loss = "allow"
 cast_precision_loss = "allow"
 cast_possible_wrap = "allow"
-# Async/API design choices  
+# Async/API design choices
 unused_async = "allow"            # Some async fns are for API consistency
 unused_self = "allow"             # Some methods take self for future use
 needless_pass_by_value = "allow"  # Builder patterns pass by value intentionally

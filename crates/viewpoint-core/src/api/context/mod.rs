@@ -32,20 +32,20 @@ use super::{APIContextOptions, APIError, APIRequestBuilder, HttpMethod};
 ///
 /// # Creating from Browser Context
 ///
-/// ```ignore
-/// use viewpoint_core::{Browser, BrowserContext};
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// use viewpoint_core::Browser;
 ///
-/// async fn example() -> Result<(), Box<dyn std::error::Error>> {
-///     let browser = Browser::launch().headless(true).await?;
-///     let context = browser.new_context().await?;
+/// let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// let context = browser.new_context().await.unwrap();
 ///
-///     // Get API context that shares cookies with browser
-///     let api = context.request().await?;
+/// // Get API context that shares cookies with browser
+/// let api = context.request().await.unwrap();
 ///
-///     // API requests will include browser cookies
-///     let response = api.get("https://api.example.com/user").send().await?;
-///     Ok(())
-/// }
+/// // API requests will include browser cookies
+/// let response = api.get("https://httpbin.org/get").send().await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct APIRequestContext {

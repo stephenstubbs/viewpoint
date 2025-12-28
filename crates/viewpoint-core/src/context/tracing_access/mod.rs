@@ -12,35 +12,46 @@ impl BrowserContext {
     /// for debugging test failures. The resulting trace files are compatible
     /// with Playwright's Trace Viewer.
     ///
+    /// **Note:** At least one page must exist in the context before starting
+    /// tracing. The tracing state is shared across all `tracing()` calls within
+    /// the same context.
+    ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::{Browser, context::TracingOptions};
+    /// ```
+    /// # #[cfg(feature = "integration")]
+    /// # tokio_test::block_on(async {
+    /// # use viewpoint_core::Browser;
+    /// use viewpoint_core::context::TracingOptions;
+    /// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+    /// # let context = browser.new_context().await.unwrap();
     ///
-    /// let browser = Browser::launch().await?;
-    /// let context = browser.new_context().await?;
+    /// // Create a page first (required before starting tracing)
+    /// let page = context.new_page().await.unwrap();
     ///
     /// // Start tracing with screenshots
     /// context.tracing().start(
     ///     TracingOptions::new()
     ///         .screenshots(true)
     ///         .snapshots(true)
-    /// ).await?;
+    /// ).await.unwrap();
     ///
     /// // Perform test actions
-    /// let page = context.new_page().await?;
-    /// page.goto("https://example.com").goto().await?;
+    /// page.goto("https://example.com").goto().await.unwrap();
     ///
-    /// // Stop and save trace
-    /// context.tracing().stop("trace.zip").await?;
+    /// // Stop and save trace (state persists across tracing() calls)
+    /// context.tracing().stop("/tmp/trace.zip").await.unwrap();
+    /// # });
     /// ```
     pub fn tracing(&self) -> Tracing {
         // The session_ids will be populated dynamically - the tracing listener
-        // will be attached to page sessions via the context's pages list
+        // will be attached to page sessions via the context's pages list.
+        // State is shared across all Tracing instances from the same context.
         Tracing::new(
             self.connection.clone(),
             self.context_id.clone(),
             self.pages.clone(),
+            self.tracing_state.clone(),
         )
     }
 }

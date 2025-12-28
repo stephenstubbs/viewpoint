@@ -19,11 +19,19 @@ use crate::error::PageError;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// page.on_dialog(|dialog| async move {
 ///     println!("Dialog message: {}", dialog.message());
 ///     dialog.accept().await
 /// });
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Dialog {

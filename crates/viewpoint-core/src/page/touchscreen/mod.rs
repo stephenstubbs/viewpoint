@@ -23,12 +23,20 @@ static TOUCH_ID_COUNTER: AtomicI32 = AtomicI32::new(0);
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// // Enable touch on the page
-/// page.touchscreen().enable().await?;
+/// page.touchscreen().enable().await.unwrap();
 ///
 /// // Tap at coordinates
-/// page.touchscreen().tap(100.0, 200.0).await?;
+/// page.touchscreen().tap(100.0, 200.0).await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct Touchscreen {

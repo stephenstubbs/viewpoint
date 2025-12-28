@@ -5,7 +5,16 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "integration")]
+//! # tokio_test::block_on(async {
+//! # use viewpoint_core::Browser;
+//! use viewpoint_core::AriaRole;
+//! # let browser = Browser::launch().headless(true).launch().await.unwrap();
+//! # let context = browser.new_context().await.unwrap();
+//! # let page = context.new_page().await.unwrap();
+//! # page.goto("about:blank").goto().await.unwrap();
+//!
 //! // CSS selector
 //! let button = page.locator("button.submit");
 //!
@@ -17,6 +26,7 @@
 //!
 //! // Chained locators
 //! let item = page.locator(".list").locator(".item").first();
+//! # });
 //! ```
 
 mod actions;

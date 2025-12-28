@@ -156,10 +156,19 @@ impl<'a> FilterBuilder<'a> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// use viewpoint_core::AriaRole;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// let button = page.get_by_role(AriaRole::Button)
 ///     .with_name("Submit")
 ///     .build();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct RoleLocatorBuilder<'a> {

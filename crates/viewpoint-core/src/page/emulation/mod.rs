@@ -70,30 +70,40 @@ impl From<VisionDeficiency> for CdpVisionDeficiency {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// use viewpoint_core::{ColorScheme, ReducedMotion};
+/// use viewpoint_core::page::MediaType;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// // Emulate dark mode
 /// page.emulate_media()
 ///     .color_scheme(ColorScheme::Dark)
 ///     .apply()
-///     .await?;
+///     .await.unwrap();
 ///
 /// // Emulate print media
 /// page.emulate_media()
 ///     .media(MediaType::Print)
 ///     .apply()
-///     .await?;
+///     .await.unwrap();
 ///
 /// // Combine multiple settings
 /// page.emulate_media()
 ///     .color_scheme(ColorScheme::Dark)
 ///     .reduced_motion(ReducedMotion::Reduce)
 ///     .apply()
-///     .await?;
+///     .await.unwrap();
 ///
 /// // Clear all media emulation
 /// page.emulate_media()
 ///     .clear()
-///     .await?;
+///     .await.unwrap();
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct EmulateMediaBuilder<'a> {

@@ -23,17 +23,23 @@ use crate::error::LocatorError;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// // Enable file chooser interception
-/// page.set_intercept_file_chooser(true).await?;
+/// page.set_intercept_file_chooser(true).await.unwrap();
 ///
-/// let file_chooser = page.wait_for_file_chooser(async {
-///     page.locator("input[type=file]").click().await?;
-///     Ok(())
-/// }).await?;
-///
-/// // Set the files
-/// file_chooser.set_files(&["./upload.txt"]).await?;
+/// // File chooser would be obtained like:
+/// // let file_chooser = page.wait_for_file_chooser(async {
+/// //     page.locator("input[type=file]").click().await?;
+/// //     Ok(())
+/// // }).await?;
+/// # });
 /// ```
 #[derive(Debug)]
 pub struct FileChooser {

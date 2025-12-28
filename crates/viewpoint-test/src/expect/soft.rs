@@ -6,15 +6,22 @@
 //!
 //! # Example
 //!
-//! ```ignore
-//! use viewpoint_test::{expect, SoftAssertions};
+//! ```
+//! # #[cfg(feature = "integration")]
+//! # tokio_test::block_on(async {
+//! # use viewpoint_core::Browser;
+//! use viewpoint_test::SoftAssertions;
+//! # let browser = Browser::launch().headless(true).launch().await.unwrap();
+//! # let context = browser.new_context().await.unwrap();
+//! # let page = context.new_page().await.unwrap();
+//! # page.goto("https://example.com").goto().await.unwrap();
 //!
 //! let soft = SoftAssertions::new();
 //!
 //! // These assertions don't fail immediately
-//! soft.expect(&locator1).to_be_visible().await;
-//! soft.expect(&locator2).to_have_text("Expected").await;
-//! soft.expect(&locator3).to_be_enabled().await;
+//! let locator = page.locator("h1");
+//! soft.expect(&locator).to_be_visible().await;
+//! soft.expect(&locator).to_have_text("Example Domain").await;
 //!
 //! // Check if all assertions passed
 //! if !soft.passed() {
@@ -22,7 +29,8 @@
 //! }
 //!
 //! // Or assert all at the end (fails if any assertion failed)
-//! soft.assert_all()?;
+//! soft.assert_all().unwrap();
+//! # });
 //! ```
 
 use std::sync::{Arc, Mutex};
@@ -116,11 +124,22 @@ impl SoftAssertions {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```
+    /// # #[cfg(feature = "integration")]
+    /// # tokio_test::block_on(async {
+    /// # use viewpoint_core::Browser;
+    /// use viewpoint_test::SoftAssertions;
+    /// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+    /// # let context = browser.new_context().await.unwrap();
+    /// # let page = context.new_page().await.unwrap();
+    /// # page.goto("https://example.com").goto().await.unwrap();
+    ///
     /// let soft = SoftAssertions::new();
+    /// let locator = page.locator("h1");
     /// soft.expect(&locator).to_be_visible().await;
-    /// soft.expect(&locator).to_have_text("Hello").await;
-    /// soft.assert_all()?;
+    /// soft.expect(&locator).to_have_text("Example Domain").await;
+    /// soft.assert_all().unwrap();
+    /// # });
     /// ```
     pub fn expect<'a>(&self, locator: &'a Locator<'a>) -> SoftLocatorAssertions<'a> {
         SoftLocatorAssertions {
@@ -133,10 +152,20 @@ impl SoftAssertions {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```
+    /// # #[cfg(feature = "integration")]
+    /// # tokio_test::block_on(async {
+    /// # use viewpoint_core::Browser;
+    /// use viewpoint_test::SoftAssertions;
+    /// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+    /// # let context = browser.new_context().await.unwrap();
+    /// # let page = context.new_page().await.unwrap();
+    /// # page.goto("https://example.com").goto().await.unwrap();
+    ///
     /// let soft = SoftAssertions::new();
-    /// soft.expect_page(&page).to_have_url("https://example.com").await;
-    /// soft.assert_all()?;
+    /// soft.expect_page(&page).to_have_url("https://example.com/").await;
+    /// soft.assert_all().unwrap();
+    /// # });
     /// ```
     pub fn expect_page<'a>(&self, page: &'a Page) -> SoftPageAssertions<'a> {
         SoftPageAssertions {

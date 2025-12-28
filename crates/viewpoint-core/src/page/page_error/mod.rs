@@ -12,11 +12,18 @@ use viewpoint_cdp::protocol::runtime::{ExceptionDetails, ExceptionThrownEvent};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+/// # let page = context.new_page().await.unwrap();
+///
 /// page.on_pageerror(|error| async move {
 ///     println!("Page error: {}", error.message());
-///     Ok(())
 /// }).await;
+/// # });
 /// ```
 #[derive(Debug, Clone)]
 pub struct PageError {
@@ -108,11 +115,17 @@ impl std::error::Error for PageError {}
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "integration")]
+/// # tokio_test::block_on(async {
+/// # use viewpoint_core::Browser;
+/// # let browser = Browser::launch().headless(true).launch().await.unwrap();
+/// # let context = browser.new_context().await.unwrap();
+///
 /// context.on_weberror(|error| async move {
-///     println!("Error on page {}: {}", error.page_url(), error.message());
-///     Ok(())
+///     println!("Error: {}", error.message());
 /// }).await;
+/// # });
 /// ```
 #[derive(Debug, Clone)]
 pub struct WebError {

@@ -40,9 +40,11 @@ zip.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+tokio-test.workspace = true
 tracing-subscriber.workspace = true
 viewpoint-js.workspace = true
 viewpoint-js-core.workspace = true
+zip.workspace = true
 
 [lints]
 workspace = true
