@@ -16,8 +16,8 @@ This is the main crate for the [Viewpoint](https://github.com/stephenstubbs/view
 
 ```toml
 [dev-dependencies]
-viewpoint-test = "0.1"
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+viewpoint-test = "0.2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 ```rust
@@ -172,7 +172,7 @@ async fn test_accessibility() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Requirements
 
-- Rust 1.70+
+- Rust 1.85+
 - Chromium browser (set `CHROMIUM_PATH` or have it in PATH)
 
 ## License

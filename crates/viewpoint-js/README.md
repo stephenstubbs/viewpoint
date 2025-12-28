@@ -19,8 +19,8 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-viewpoint-js = "0.1"
-viewpoint-js-core = "0.1"  # Required for interpolation
+viewpoint-js = "0.2"
+viewpoint-js-core = "0.2"  # Required for interpolation
 ```
 
 ### Simple Expressions

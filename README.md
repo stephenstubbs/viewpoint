@@ -25,12 +25,13 @@ A Rust-native browser automation library inspired by Playwright. Viewpoint provi
 
 ## Crates
 
-| Crate | Description |
-|-------|-------------|
-| `viewpoint-cdp` | Low-level Chrome DevTools Protocol client |
-| `viewpoint-core` | High-level browser automation API |
-| `viewpoint-test` | Test framework with assertions and fixtures |
-| `viewpoint-test-macros` | Proc macros for convenient test setup |
+| Crate | Description | Docs |
+|-------|-------------|------|
+| [`viewpoint-cdp`](https://crates.io/crates/viewpoint-cdp) | Low-level Chrome DevTools Protocol client | [![docs.rs](https://docs.rs/viewpoint-cdp/badge.svg)](https://docs.rs/viewpoint-cdp) |
+| [`viewpoint-core`](https://crates.io/crates/viewpoint-core) | High-level browser automation API | [![docs.rs](https://docs.rs/viewpoint-core/badge.svg)](https://docs.rs/viewpoint-core) |
+| [`viewpoint-test`](https://crates.io/crates/viewpoint-test) | Test framework with assertions and fixtures | [![docs.rs](https://docs.rs/viewpoint-test/badge.svg)](https://docs.rs/viewpoint-test) |
+| [`viewpoint-test-macros`](https://crates.io/crates/viewpoint-test-macros) | Proc macros for convenient test setup | [![docs.rs](https://docs.rs/viewpoint-test-macros/badge.svg)](https://docs.rs/viewpoint-test-macros) |
+| [`viewpoint-js`](https://crates.io/crates/viewpoint-js) | JavaScript interpolation macro | [![docs.rs](https://docs.rs/viewpoint-js/badge.svg)](https://docs.rs/viewpoint-js) |
 
 ## Quick Start
 
@@ -38,8 +39,8 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-viewpoint-test = "0.1"
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+viewpoint-test = "0.2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 ### Basic Test with TestHarness
@@ -376,7 +377,7 @@ async fn test_exposed_function() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Requirements
 
-- Rust 1.70+
+- Rust 1.85+
 - Chromium browser (automatically found via `CHROMIUM_PATH` or system PATH)
 
 ## Development
