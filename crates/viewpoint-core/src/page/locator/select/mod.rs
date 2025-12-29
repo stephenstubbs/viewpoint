@@ -23,12 +23,17 @@ impl Locator<'_> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Select by value
     /// page.locator("select#size").select_option("medium").await?;
     ///
     /// // Select by visible text
     /// page.locator("select#size").select_option("Medium Size").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
     pub async fn select_option(&self, option: &str) -> Result<(), LocatorError> {

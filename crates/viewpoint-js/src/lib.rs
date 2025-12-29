@@ -7,15 +7,16 @@
 //! # Features
 //!
 //! - **Compile-time validation**: JavaScript syntax errors are caught during compilation
-//! - **Rust variable interpolation**: Embed Rust expressions using `#{expr}` syntax
+//! - **Value interpolation**: Embed Rust expressions using `#{expr}` syntax (quoted/escaped)
+//! - **Raw interpolation**: Inject pre-built JavaScript using `@{expr}` syntax (unquoted)
 //! - **Zero runtime overhead**: Static strings when no interpolation is used
 //! - **Clear error messages**: Points to the exact location of syntax errors
 //!
 //! # Usage
 //!
-//! ```rust,ignore
+//! ```no_run
 //! use viewpoint_js::js;
-//! use viewpoint_js_core::ToJsValue; // Needed for interpolation
+//! use viewpoint_js_core::ToJsValue; // Needed for value interpolation
 //!
 //! // Simple expression - produces &'static str
 //! let code = js!{ 1 + 2 };
@@ -23,28 +24,42 @@
 //! // Arrow function
 //! let code = js!{ () => window.innerWidth };
 //!
-//! // With Rust variable interpolation (requires ToJsValue in scope)
+//! // With value interpolation (requires ToJsValue in scope)
 //! let selector = ".my-class";
 //! let code = js!{ document.querySelector(#{selector}) };
+//!
+//! // With raw interpolation (inject JS expression as-is)
+//! let selector_expr = "document.querySelectorAll('.item')";
+//! let code = js!{ Array.from(@{selector_expr}) };
 //!
 //! // Multi-line function
 //! let code = js!{
 //!     (() => {
-//!         const items = document.querySelectorAll('li');
+//!         const items = document.querySelectorAll("li");
 //!         return items.length;
 //!     })()
 //! };
 //! ```
 //!
-//! # Interpolation
+//! # Value Interpolation (`#{expr}`)
 //!
-//! Use `#{expr}` to embed Rust expressions into JavaScript. Values are automatically
+//! Use `#{expr}` to embed Rust values into JavaScript. Values are automatically
 //! converted to JavaScript representations via the [`ToJsValue`] trait:
 //!
 //! - Strings are quoted and escaped
 //! - Numbers are inserted as-is
 //! - Booleans become `true` or `false`
 //! - `Option::None` becomes `null`
+//!
+//! # Raw Interpolation (`@{expr}`)
+//!
+//! Use `@{expr}` to inject pre-built JavaScript expressions directly without
+//! quoting or escaping. The expression must return something that implements
+//! `AsRef<str>`. This is useful for:
+//!
+//! - Injecting dynamically-built selector expressions
+//! - Composing JavaScript from multiple parts
+//! - Including pre-validated JavaScript fragments
 //!
 //! [`ToJsValue`]: viewpoint_js_core::ToJsValue
 
@@ -69,7 +84,7 @@ mod parser;
 ///
 /// ## Simple Expression
 ///
-/// ```rust,ignore
+/// ```no_run
 /// use viewpoint_js::js;
 ///
 /// let code: &str = js!{ 1 + 2 };
@@ -78,7 +93,7 @@ mod parser;
 ///
 /// ## Arrow Function
 ///
-/// ```rust,ignore
+/// ```no_run
 /// use viewpoint_js::js;
 ///
 /// let code = js!{ () => window.innerWidth };
@@ -86,7 +101,7 @@ mod parser;
 ///
 /// ## With Interpolation
 ///
-/// ```rust,ignore
+/// ```no_run
 /// use viewpoint_js::js;
 /// use viewpoint_js_core::ToJsValue;
 ///
@@ -96,7 +111,7 @@ mod parser;
 ///
 /// ## Invalid JavaScript (Compile Error)
 ///
-/// ```rust,ignore,compile_fail
+/// ```compile_fail
 /// use viewpoint_js::js;
 ///
 /// // This will produce a compile-time error because the JavaScript is invalid

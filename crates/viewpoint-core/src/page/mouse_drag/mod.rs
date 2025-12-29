@@ -1,6 +1,7 @@
 //! Drag and drop operations for mouse.
 
 use tracing::{debug, instrument};
+use viewpoint_js::js;
 
 use super::Page;
 use crate::error::LocatorError;
@@ -131,17 +132,16 @@ impl<'a> DragAndDropBuilder<'a> {
 
     /// Get the bounding box of an element (x, y, width, height).
     async fn get_element_box(&self, selector: &str) -> Result<(f64, f64, f64, f64), LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const el = document.querySelector({selector});
+        let js_code = js! {
+            (function() {
+                const el = document.querySelector(#{selector});
                 if (!el) return null;
                 const rect = el.getBoundingClientRect();
-                return {{ x: rect.x, y: rect.y, width: rect.width, height: rect.height }};
-            }})()",
-            selector = crate::page::locator::selector::js_string_literal(selector)
-        );
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
+        let result = self.evaluate_js(&js_code).await?;
 
         if result.is_null() {
             return Err(LocatorError::NotFound(selector.to_string()));
@@ -168,38 +168,16 @@ impl<'a> DragAndDropBuilder<'a> {
     }
 
     /// Evaluate JavaScript and return the result.
+    ///
+    /// Delegates to `Page::evaluate_js_raw` for the actual evaluation.
     async fn evaluate_js(&self, expression: &str) -> Result<serde_json::Value, LocatorError> {
         if self.page.is_closed() {
             return Err(LocatorError::PageClosed);
         }
 
-        let params = viewpoint_cdp::protocol::runtime::EvaluateParams {
-            expression: expression.to_string(),
-            object_group: None,
-            include_command_line_api: None,
-            silent: Some(true),
-            context_id: None,
-            return_by_value: Some(true),
-            await_promise: Some(false),
-        };
-
-        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
-            .page
-            .connection()
-            .send_command(
-                "Runtime.evaluate",
-                Some(params),
-                Some(self.page.session_id()),
-            )
-            .await?;
-
-        if let Some(exception) = result.exception_details {
-            return Err(LocatorError::EvaluationError(exception.text));
-        }
-
-        result
-            .result
-            .value
-            .ok_or_else(|| LocatorError::EvaluationError("No result value".to_string()))
+        self.page
+            .evaluate_js_raw(expression)
+            .await
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))
     }
 }

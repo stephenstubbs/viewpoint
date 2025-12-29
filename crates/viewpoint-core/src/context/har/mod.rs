@@ -17,15 +17,24 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let mut context = browser.new_context().await?;
+    /// let page = context.new_page().await?;
+    ///
     /// // Basic recording
     /// context.record_har("output.har").await?;
     ///
     /// // Navigate and make requests...
-    /// page.goto("https://example.com").await?;
+    /// page.goto("https://example.com").goto().await?;
     ///
     /// // HAR is saved automatically on context.close()
     /// context.close().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -51,8 +60,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
     /// use viewpoint_core::network::HarRecordingBuilder;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // Record only API requests
     /// context.start_har_recording(
@@ -60,6 +74,17 @@ impl BrowserContext {
     ///         .url_filter("**/api/**")
     ///         .build()
     /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    /// use viewpoint_core::network::HarRecordingBuilder;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // Omit response content
     /// context.start_har_recording(
@@ -67,6 +92,8 @@ impl BrowserContext {
     ///         .omit_content(true)
     ///         .build()
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -96,11 +123,19 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// context.record_har("output.har").await?;
     /// // ... do some navigation ...
     /// let path = context.save_har().await?;
     /// println!("HAR saved to: {}", path.display());
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

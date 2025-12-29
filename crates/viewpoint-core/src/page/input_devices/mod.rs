@@ -18,7 +18,10 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Press a key
     /// page.keyboard().press("Enter").await?;
     ///
@@ -32,6 +35,8 @@ impl Page {
     /// page.keyboard().down("Shift").await?;
     /// page.keyboard().press("a").await?; // Types 'A'
     /// page.keyboard().up("Shift").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn keyboard(&self) -> &Keyboard {
         &self.keyboard
@@ -44,7 +49,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_core::MouseButton;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Move mouse
     /// page.mouse().move_(100.0, 200.0).send().await?;
     ///
@@ -56,6 +65,8 @@ impl Page {
     ///
     /// // Scroll
     /// page.mouse().wheel(0.0, 100.0).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn mouse(&self) -> &Mouse {
         &self.mouse
@@ -68,8 +79,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.touchscreen().tap(100.0, 200.0).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn touchscreen(&self) -> &Touchscreen {
         &self.touchscreen
@@ -83,9 +99,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
     /// use std::time::Duration;
     ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Install clock mocking
     /// let mut clock = page.clock();
     /// clock.install().await?;
@@ -98,6 +116,8 @@ impl Page {
     ///
     /// // Cleanup
     /// clock.uninstall().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn clock(&self) -> Clock<'_> {
         Clock::new(&self.connection, &self.session_id)
@@ -109,15 +129,21 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple drag and drop
-    /// page.drag_and_drop("#source", "#target").await?;
+    /// page.drag_and_drop("#source", "#target").send().await?;
     ///
     /// // With position options
     /// page.drag_and_drop("#source", "#target")
     ///     .source_position(10.0, 10.0)
     ///     .target_position(5.0, 5.0)
+    ///     .send()
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn drag_and_drop(
         &self,

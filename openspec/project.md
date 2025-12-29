@@ -9,7 +9,7 @@ Viewpoint is a high-performance browser automation and E2E testing framework in 
 - Chromium as initial target, extensible to other browsers
 
 ## Tech Stack
-- **Language**: Rust (stable, via rust-overlay)
+- **Language**: Rust (stable, via rust-overlay, edition 2024)
 - **Async Runtime**: Tokio
 - **Error Handling**: `thiserror` (libraries), `anyhow` (binaries)
 - **Build Environment**: Nix flakes + direnv

@@ -15,7 +15,11 @@ impl<'a> Locator<'a> {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_cdp::protocol::input::{MouseButton, modifiers};
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple click - await directly
     /// page.locator("button").click().await?;
     ///
@@ -28,6 +32,8 @@ impl<'a> Locator<'a> {
     ///
     /// // Force click without waiting for actionability
     /// page.locator("button").click().force(true).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Options
@@ -121,7 +127,11 @@ impl<'a> Locator<'a> {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use std::time::Duration;
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple type - await directly
     /// page.locator("input").type_text("hello").await?;
     ///
@@ -129,6 +139,8 @@ impl<'a> Locator<'a> {
     /// page.locator("input").type_text("hello")
     ///     .delay(Duration::from_millis(100))
     ///     .send().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Options
@@ -195,7 +207,10 @@ impl<'a> Locator<'a> {
     ///
     /// # Examples
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple hover - await directly
     /// page.locator("button").hover().await?;
     ///
@@ -206,6 +221,8 @@ impl<'a> Locator<'a> {
     ///
     /// // Force hover without waiting for actionability
     /// page.locator("button").hover().force(true).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Options
@@ -302,7 +319,11 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_cdp::protocol::input::modifiers;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple tap
     /// page.locator("button").tap().send().await?;
     ///
@@ -310,10 +331,12 @@ impl<'a> Locator<'a> {
     /// page.locator("button").tap().position(10.0, 5.0).send().await?;
     ///
     /// // Tap with modifiers
-    /// page.locator("button").tap().modifiers(Modifiers::SHIFT).send().await?;
+    /// page.locator("button").tap().modifiers(modifiers::SHIFT).send().await?;
     ///
     /// // Force tap without waiting for actionability
     /// page.locator("button").tap().force(true).send().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn tap(&self) -> TapBuilder<'_, 'a> {
         TapBuilder::new(self)
@@ -327,10 +350,15 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let source = page.locator("#draggable");
     /// let target = page.locator("#droppable");
     /// source.drag_to(&target).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self, target), fields(selector = ?self.selector))]
     pub async fn drag_to(&self, target: &Locator<'_>) -> Result<(), LocatorError> {
@@ -395,7 +423,10 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Capture element screenshot
     /// let bytes = page.locator("button").screenshot().capture().await?;
     ///
@@ -405,6 +436,8 @@ impl<'a> Locator<'a> {
     ///     .path("button.png")
     ///     .capture()
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn screenshot(&self) -> crate::page::screenshot_element::ElementScreenshotBuilder<'_, '_> {
         crate::page::screenshot_element::ElementScreenshotBuilder::new(self)

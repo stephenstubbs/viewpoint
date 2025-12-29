@@ -25,9 +25,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::Route;
+    /// ```no_run
+    /// use viewpoint_core::network::Route;
+    /// use viewpoint_core::page::Page;
     ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Block all CSS requests
     /// page.route("**/*.css", |route: Route| async move {
     ///     route.abort().await
@@ -48,6 +50,8 @@ impl Page {
     ///         .header("Authorization", "Bearer token")
     ///         .await
     /// }).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn route<M, H, Fut>(&self, pattern: M, handler: H) -> Result<(), NetworkError>
     where
@@ -65,7 +69,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::network::Route;
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Handle only POST requests
     /// page.route_predicate(
     ///     |url| url.contains("/api/"),
@@ -77,6 +85,8 @@ impl Page {
     ///         }
     ///     }
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn route_predicate<P, H, Fut>(
         &self,
@@ -98,10 +108,18 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// page.route("**/*.css", handler).await?;
+    /// ```no_run
+    /// use viewpoint_core::network::Route;
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// page.route("**/*.css", |route: Route| async move {
+    ///     route.abort().await
+    /// }).await?;
     /// // Later...
     /// page.unroute("**/*.css").await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn unroute(&self, pattern: &str) {
         self.route_registry.unroute(pattern).await;
@@ -111,8 +129,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.unroute_all().await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn unroute_all(&self) {
         self.route_registry.unroute_all().await;
@@ -126,7 +149,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::network::HarReplayOptions;
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Simple HAR routing
     /// page.route_from_har("recordings/api.har").await?;
     ///
@@ -137,6 +164,8 @@ impl Page {
     ///         .url("**/api/**")
     ///         .strict(true)
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -152,9 +181,11 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::network::{HarReplayOptions, TimingMode};
+    /// ```no_run
+    /// use viewpoint_core::network::HarReplayOptions;
+    /// use viewpoint_core::page::Page;
     ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Strict mode: fail if no match found
     /// page.route_from_har_with_options(
     ///     "api.har",
@@ -172,6 +203,8 @@ impl Page {
     ///     "api.har",
     ///     HarReplayOptions::new().use_original_timing(true)
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -209,11 +242,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
     /// use std::time::Duration;
+    /// use viewpoint_core::page::Page;
     ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Wait for any API request
-    /// let request = page.wait_for_request("**/api/**")
+    /// let request = page.wait_for_request("**/api/**".to_string())
     ///     .timeout(Duration::from_secs(10))
     ///     .wait()
     ///     .await?;
@@ -221,9 +256,11 @@ impl Page {
     /// println!("Request URL: {}", request.url());
     ///
     /// // Wait for a specific request
-    /// let request = page.wait_for_request("**/users")
+    /// let request = page.wait_for_request("**/users".to_string())
     ///     .wait()
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn wait_for_request<M: UrlMatcher + Clone + 'static>(
         &self,
@@ -238,11 +275,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
     /// use std::time::Duration;
+    /// use viewpoint_core::page::Page;
     ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Wait for any API response
-    /// let response = page.wait_for_response("**/api/**")
+    /// let response = page.wait_for_response("**/api/**".to_string())
     ///     .timeout(Duration::from_secs(10))
     ///     .wait()
     ///     .await?;
@@ -251,6 +290,8 @@ impl Page {
     ///
     /// // Get the response body
     /// let body = response.text().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn wait_for_response<M: UrlMatcher + Clone + 'static>(
         &self,
@@ -271,7 +312,10 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_websocket(|ws| async move {
     ///     println!("WebSocket opened: {}", ws.url());
     ///     
@@ -288,6 +332,8 @@ impl Page {
     ///         println!("WebSocket closed");
     ///     }).await;
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_websocket<F, Fut>(&self, handler: F)
     where

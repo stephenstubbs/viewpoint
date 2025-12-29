@@ -2,7 +2,8 @@
 //!
 //! These methods query element state and properties without performing actions.
 
-use super::selector::js_string_literal;
+use viewpoint_js::js;
+
 use super::Locator;
 use crate::error::LocatorError;
 
@@ -33,17 +34,17 @@ impl<'a> Locator<'a> {
     ///
     /// Returns an error if the element cannot be queried.
     pub async fn is_checked(&self) -> Result<bool, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false, checked: false }};
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = @{selector_expr};
+                if (elements.length === 0) return { found: false, checked: false };
                 const el = elements[0];
-                return {{ found: true, checked: el.checked || false }};
-            }})()",
-            self.selector.to_js_expression()
-        );
+                return { found: true, checked: el.checked || false };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
+        let result = self.evaluate_js(&js_code).await?;
         let checked: bool = result
             .get("checked")
             .and_then(serde_json::Value::as_bool)
@@ -67,11 +68,16 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let items = page.locator("li").all().await?;
     /// for item in items {
     ///     println!("{}", item.text_content().await?.unwrap_or_default());
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -93,25 +99,30 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let texts = page.locator("li").all_inner_texts().await?;
     /// assert_eq!(texts, vec!["Item 1", "Item 2", "Item 3"]);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
     ///
     /// Returns an error if the elements cannot be queried.
     pub async fn all_inner_texts(&self) -> Result<Vec<String>, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = Array.from({});
-                return elements.map(el => el.innerText || '');
-            }})()",
-            self.selector.to_js_expression()
-        );
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = Array.from(@{selector_expr});
+                return elements.map(el => el.innerText || "");
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
-        
+        let result = self.evaluate_js(&js_code).await?;
+
         result
             .as_array()
             .map(|arr| {
@@ -129,25 +140,30 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let texts = page.locator("li").all_text_contents().await?;
     /// assert_eq!(texts, vec!["Item 1", "Item 2", "Item 3"]);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
     ///
     /// Returns an error if the elements cannot be queried.
     pub async fn all_text_contents(&self) -> Result<Vec<String>, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = Array.from({});
-                return elements.map(el => el.textContent || '');
-            }})()",
-            self.selector.to_js_expression()
-        );
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = Array.from(@{selector_expr});
+                return elements.map(el => el.textContent || "");
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
-        
+        let result = self.evaluate_js(&js_code).await?;
+
         result
             .as_array()
             .map(|arr| {
@@ -166,18 +182,21 @@ impl<'a> Locator<'a> {
     ///
     /// Returns an error if the element cannot be queried.
     pub async fn inner_text(&self) -> Result<String, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false }};
-                return {{ found: true, text: elements[0].innerText || '' }};
-            }})()",
-            self.selector.to_js_expression()
-        );
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = @{selector_expr};
+                if (elements.length === 0) return { found: false };
+                return { found: true, text: elements[0].innerText || "" };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
-        
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let result = self.evaluate_js(&js_code).await?;
+
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
         }
@@ -195,20 +214,22 @@ impl<'a> Locator<'a> {
     ///
     /// Returns an error if the element cannot be queried.
     pub async fn get_attribute(&self, name: &str) -> Result<Option<String>, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false }};
-                const attr = elements[0].getAttribute({});
-                return {{ found: true, value: attr }};
-            }})()",
-            self.selector.to_js_expression(),
-            js_string_literal(name)
-        );
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = @{selector_expr};
+                if (elements.length === 0) return { found: false };
+                const attr = elements[0].getAttribute(#{name});
+                return { found: true, value: attr };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
-        
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let result = self.evaluate_js(&js_code).await?;
+
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
         }
@@ -227,19 +248,22 @@ impl<'a> Locator<'a> {
     ///
     /// Returns an error if the element cannot be queried.
     pub async fn input_value(&self) -> Result<String, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length === 0) return {{ found: false }};
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = @{selector_expr};
+                if (elements.length === 0) return { found: false };
                 const el = elements[0];
-                return {{ found: true, value: el.value || '' }};
-            }})()",
-            self.selector.to_js_expression()
-        );
+                return { found: true, value: el.value || "" };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
-        
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let result = self.evaluate_js(&js_code).await?;
+
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
         }

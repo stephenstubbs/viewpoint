@@ -72,14 +72,20 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// context.on_weberror(|error| async move {
     ///     eprintln!("Error in {}: {}", error.target_id(), error.message());
     ///     if let Some(stack) = error.stack() {
     ///         eprintln!("Stack:\n{}", stack);
     ///     }
     /// }).await;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub async fn on_weberror<F, Fut>(&self, handler: F)
     where
         F: Fn(WebError) -> Fut + Send + Sync + 'static,

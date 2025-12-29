@@ -17,8 +17,13 @@ impl Video {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Video;
+    ///
+    /// # async fn example(video: &Video) -> Result<(), viewpoint_core::CoreError> {
     /// video.save_as("./test-results/my-test.webm").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn save_as(&self, path: impl AsRef<Path>) -> Result<(), PageError> {
         let current_path = self.path().await?;
@@ -63,8 +68,13 @@ impl Video {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Video;
+    ///
+    /// # async fn example(video: &Video) -> Result<(), viewpoint_core::CoreError> {
     /// video.delete().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn delete(&self) -> Result<(), PageError> {
         let state = self.state.read().await;

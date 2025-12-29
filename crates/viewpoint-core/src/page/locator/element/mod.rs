@@ -102,10 +102,15 @@ impl ElementHandle<'_> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
     /// use viewpoint_js::js;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let handle = page.locator("button").element_handle().await?;
     /// let text: String = handle.evaluate(js!{ this.textContent }).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn evaluate<T: serde::de::DeserializeOwned>(
         &self,

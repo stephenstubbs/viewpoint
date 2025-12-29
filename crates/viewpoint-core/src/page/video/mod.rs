@@ -358,11 +358,16 @@ impl Video {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// if let Some(video) = page.video() {
     ///     let path = video.path().await?;
     ///     println!("Video at: {}", path.display());
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn path(&self) -> Result<PathBuf, PageError> {
         let state = self.state.read().await;
@@ -397,9 +402,14 @@ impl super::Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::browser::Browser;
+    /// use viewpoint_core::page::VideoOptions;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
     /// // Video recording is enabled via context options
-    /// let context = browser.new_context()
+    /// let context = browser.new_context_builder()
     ///     .record_video(VideoOptions::new("./videos"))
     ///     .build()
     ///     .await?;
@@ -412,6 +422,8 @@ impl super::Page {
     ///     let path = video.path().await?;
     ///     println!("Video saved to: {}", path.display());
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn video(&self) -> Option<&Video> {
         self.video_controller.as_ref().map(std::convert::AsRef::as_ref)

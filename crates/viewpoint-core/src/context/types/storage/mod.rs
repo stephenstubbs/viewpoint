@@ -57,11 +57,17 @@ impl StorageState {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, StorageState};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// let state = StorageState::load("state.json").await?;
     /// let script = state.to_local_storage_init_script();
     /// context.add_init_script(&script).await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub fn to_local_storage_init_script(&self) -> String {
         if self.origins.is_empty() {
             return String::new();
@@ -124,11 +130,17 @@ impl StorageState {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, StorageState};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// let state = StorageState::load("state.json").await?;
     /// let script = state.to_indexed_db_init_script();
     /// context.add_init_script(&script).await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub fn to_indexed_db_init_script(&self) -> String {
         // Collect origins with IndexedDB data
         let origins_with_idb: Vec<_> = self

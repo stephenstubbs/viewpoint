@@ -140,3 +140,57 @@ fn test_complex_expression() {
     assert!(code.contains(".item"));
     assert!(code.contains("length"));
 }
+
+// Raw interpolation tests (@{expr})
+
+#[test]
+fn test_raw_interpolation_simple() {
+    let selector_expr = "document.querySelectorAll('.item')";
+    let code: String = js! { Array.from(@{selector_expr}) };
+    assert!(code.contains("Array.from"));
+    // Raw interpolation should inject without quotes
+    assert!(code.contains("document.querySelectorAll('.item')"));
+    // Should NOT have extra quotes around the expression
+    assert!(!code.contains("\"document.querySelectorAll"));
+}
+
+#[test]
+fn test_raw_interpolation_in_iife() {
+    let expr = "document.querySelectorAll('.item')";
+    let code: String = js! {
+        (function() {
+            const elements = @{expr};
+            return elements.length;
+        })()
+    };
+    assert!(code.contains("document.querySelectorAll('.item')"));
+    assert!(code.contains("elements.length"));
+}
+
+#[test]
+fn test_mixed_raw_and_value_interpolation() {
+    let expr = "document.body";
+    let name = "test-id";
+    let code: String = js! { @{expr}.setAttribute("data-id", #{name}) };
+    // Raw interpolation for expr
+    assert!(code.contains("document.body"));
+    // Value interpolation for name (should be quoted)
+    assert!(code.contains("\"test-id\""));
+}
+
+#[test]
+fn test_raw_interpolation_function_result() {
+    fn get_selector() -> String {
+        "document.getElementById('foo')".to_string()
+    }
+    let code: String = js! { const el = @{get_selector()}; };
+    assert!(code.contains("document.getElementById('foo')"));
+}
+
+#[test]
+fn test_raw_interpolation_preserves_quotes() {
+    let js_code = r#"console.log("hello")"#;
+    let code: String = js! { @{js_code} };
+    // Should preserve the original quotes in the JS code
+    assert!(code.contains(r#"console.log("hello")"#));
+}

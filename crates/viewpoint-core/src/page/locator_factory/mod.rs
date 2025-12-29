@@ -11,9 +11,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let button = page.locator("button.submit");
     /// let items = page.locator(".list > .item");
+    /// # }
     /// ```
     pub fn locator(&self, selector: impl Into<String>) -> Locator<'_> {
         Locator::new(self, Selector::Css(selector.into()))
@@ -23,9 +27,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let heading = page.get_by_text("Welcome");
     /// let exact = page.get_by_text_exact("Welcome to our site");
+    /// # }
     /// ```
     pub fn get_by_text(&self, text: impl Into<String>) -> Locator<'_> {
         Locator::new(
@@ -52,9 +60,14 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_core::page::locator::AriaRole;
+    ///
+    /// # fn example(page: &Page) {
     /// let buttons = page.get_by_role(AriaRole::Button);
     /// let submit = page.get_by_role(AriaRole::Button).with_name("Submit");
+    /// # }
     /// ```
     pub fn get_by_role(&self, role: AriaRole) -> RoleLocatorBuilder<'_> {
         RoleLocatorBuilder::new(self, role)
@@ -68,8 +81,12 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let button = page.get_by_test_id("submit-button");
+    /// # }
     /// ```
     pub fn get_by_test_id(&self, test_id: impl Into<String>) -> Locator<'_> {
         let id = test_id.into();
@@ -103,8 +120,12 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let email = page.get_by_label("Email address");
+    /// # }
     /// ```
     pub fn get_by_label(&self, label: impl Into<String>) -> Locator<'_> {
         Locator::new(self, Selector::Label(label.into()))
@@ -114,8 +135,12 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let search = page.get_by_placeholder("Search...");
+    /// # }
     /// ```
     pub fn get_by_placeholder(&self, placeholder: impl Into<String>) -> Locator<'_> {
         Locator::new(self, Selector::Placeholder(placeholder.into()))
@@ -125,8 +150,12 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let logo = page.get_by_alt_text("Company Logo");
+    /// # }
     /// ```
     pub fn get_by_alt_text(&self, alt: impl Into<String>) -> Locator<'_> {
         Locator::new(
@@ -153,8 +182,12 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let tooltip = page.get_by_title("Click to expand");
+    /// # }
     /// ```
     pub fn get_by_title(&self, title: impl Into<String>) -> Locator<'_> {
         Locator::new(

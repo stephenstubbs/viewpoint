@@ -17,13 +17,21 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, Page};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// let handler_id = context.on_page(|page: Page| async move {
     ///     println!("New page created: {}", page.url().await.unwrap_or_default());
     /// }).await;
     ///
     /// // Later, remove the handler
     /// context.off_page(handler_id).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_page<F, Fut>(&self, handler: F) -> HandlerId
     where
@@ -47,13 +55,21 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// let handler_id = context.on_close(|| async {
     ///     println!("Context is closing!");
     /// }).await;
     ///
     /// // Later, remove the handler
     /// context.off_close(handler_id).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_close<F, Fut>(&self, handler: F) -> HandlerId
     where
@@ -78,14 +94,24 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, error::ContextError};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    /// let page = context.new_page().await?;
+    ///
     /// let popup = context.wait_for_page(|| async {
-    ///     page.locator("a[target=_blank]").click().await?;
+    ///     page.locator("a[target=_blank]").click().await
+    ///         .map_err(|e| ContextError::Internal(e.to_string()))?;
     ///     Ok(())
-    /// }).await?;
+    /// }).wait().await?;
     ///
     /// // Now work with the popup page
     /// popup.goto("https://example.com").goto().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

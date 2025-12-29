@@ -108,9 +108,14 @@ impl<'a> FrameLocator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let button = page.frame_locator("#iframe").locator("button.submit");
     /// button.click().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn locator(&self, selector: impl Into<String>) -> FrameElementLocator<'a> {
         FrameElementLocator::new(self.clone(), Selector::Css(selector.into()))
@@ -162,13 +167,18 @@ impl<'a> FrameLocator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Access element in nested frame
     /// page.frame_locator("#outer-frame")
     ///     .frame_locator("#inner-frame")
     ///     .locator("button")
     ///     .click()
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn frame_locator(&self, selector: impl Into<String>) -> FrameLocator<'a> {
         FrameLocator::with_parent(

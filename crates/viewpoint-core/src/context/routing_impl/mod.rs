@@ -17,8 +17,12 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::Route;
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::Route};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // Block all analytics requests for all pages
     /// context.route("**/analytics/**", |route: Route| async move {
@@ -33,6 +37,8 @@ impl BrowserContext {
     ///         .send()
     ///         .await
     /// }).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -54,7 +60,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::Route};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// // Block POST requests to any API endpoint
     /// context.route_predicate(
     ///     |url| url.contains("/api/"),
@@ -66,6 +78,8 @@ impl BrowserContext {
     ///         }
     ///     }
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -109,7 +123,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::HarReplayOptions};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// // Simple HAR routing for all pages
     /// context.route_from_har("recordings/api.har").await?;
     ///
@@ -120,6 +140,8 @@ impl BrowserContext {
     ///         .url("**/api/**")
     ///         .strict(true)
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -135,26 +157,52 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::network::{HarReplayOptions, TimingMode};
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::HarReplayOptions};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // Strict mode: fail if no match found
     /// context.route_from_har_with_options(
     ///     "api.har",
     ///     HarReplayOptions::new().strict(true)
     /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::HarReplayOptions};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // URL filter: only match specific URLs
     /// context.route_from_har_with_options(
     ///     "api.har",
     ///     HarReplayOptions::new().url("**/api/**")
     /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```no_run
+    /// use viewpoint_core::{Browser, network::HarReplayOptions};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
     ///
     /// // Simulate original timing
     /// context.route_from_har_with_options(
     ///     "api.har",
     ///     HarReplayOptions::new().use_original_timing(true)
     /// ).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

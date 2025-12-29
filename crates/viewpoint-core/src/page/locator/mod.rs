@@ -131,8 +131,12 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// let items = page.locator(".list").locator(".item");
+    /// # }
     /// ```
     #[must_use]
     pub fn locator(&self, selector: impl Into<String>) -> Locator<'a> {
@@ -194,10 +198,14 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Page, AriaRole};
+    ///
+    /// # fn example(page: &Page) {
     /// // Find visible buttons with specific text
-    /// let button = page.get_by_role(AriaRole::Button)
+    /// let button = page.get_by_role(AriaRole::Button).build()
     ///     .and(page.get_by_text("Submit"));
+    /// # }
     /// ```
     #[must_use]
     pub fn and(&self, other: Locator<'a>) -> Locator<'a> {
@@ -215,10 +223,14 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Page, AriaRole};
+    ///
+    /// # fn example(page: &Page) {
     /// // Find buttons or links
-    /// let clickable = page.get_by_role(AriaRole::Button)
-    ///     .or(page.get_by_role(AriaRole::Link));
+    /// let clickable = page.get_by_role(AriaRole::Button).build()
+    ///     .or(page.get_by_role(AriaRole::Link).build());
+    /// # }
     /// ```
     #[must_use]
     pub fn or(&self, other: Locator<'a>) -> Locator<'a> {
@@ -236,12 +248,16 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
     /// // Filter list items by text
-    /// let item = page.locator("li").filter().has_text("Product").build();
+    /// let item = page.locator("li").filter().has_text("Product");
     ///
     /// // Filter by having a child element
-    /// let rows = page.locator("tr").filter().has(page.locator(".active")).build();
+    /// let rows = page.locator("tr").filter().has(page.locator(".active"));
+    /// # }
     /// ```
     pub fn filter(&self) -> FilterBuilder<'a> {
         FilterBuilder::new(self.page, self.selector.clone(), self.options.clone())
@@ -254,18 +270,14 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let snapshot = page.locator("form").aria_snapshot().await?;
     /// println!("{}", snapshot); // YAML-like output
-    ///
-    /// // Compare with expected snapshot
-    /// let expected = AriaSnapshot::from_yaml(r#"
-    ///   - form
-    ///     - textbox "Username"
-    ///     - textbox "Password"
-    ///     - button "Login"
-    /// "#)?;
-    /// assert!(snapshot.matches(&expected));
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

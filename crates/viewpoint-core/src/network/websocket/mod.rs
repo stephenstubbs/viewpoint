@@ -87,11 +87,15 @@ impl WebSocket {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::WebSocket;
+    ///
+    /// # async fn example(websocket: WebSocket) -> Result<(), viewpoint_core::CoreError> {
     /// websocket.on_framesent(|frame| async move {
     ///     println!("Sent: {:?}", frame.payload());
     /// }).await;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub async fn on_framesent<F, Fut>(&self, handler: F)
     where
         F: Fn(WebSocketFrame) -> Fut + Send + Sync + 'static,
@@ -111,11 +115,15 @@ impl WebSocket {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::WebSocket;
+    ///
+    /// # async fn example(websocket: WebSocket) -> Result<(), viewpoint_core::CoreError> {
     /// websocket.on_framereceived(|frame| async move {
     ///     println!("Received: {:?}", frame.payload());
     /// }).await;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub async fn on_framereceived<F, Fut>(&self, handler: F)
     where
         F: Fn(WebSocketFrame) -> Fut + Send + Sync + 'static,
@@ -135,11 +143,15 @@ impl WebSocket {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::WebSocket;
+    ///
+    /// # async fn example(websocket: WebSocket) -> Result<(), viewpoint_core::CoreError> {
     /// websocket.on_close(|| async {
     ///     println!("WebSocket closed");
     /// }).await;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub async fn on_close<F, Fut>(&self, handler: F)
     where
         F: Fn() -> Fut + Send + Sync + 'static,

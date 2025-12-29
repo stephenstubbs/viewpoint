@@ -55,12 +55,17 @@ impl BindingManager {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::binding::BindingManager;
+    ///
+    /// # async fn example(manager: BindingManager) -> Result<(), viewpoint_core::CoreError> {
     /// manager.expose_function("compute", |args| async move {
-    ///     let x: i64 = serde_json::from_value(args[0].clone())?;
-    ///     let y: i64 = serde_json::from_value(args[1].clone())?;
-    ///     Ok(serde_json::to_value(x + y)?)
+    ///     let x: i64 = serde_json::from_value(args[0].clone()).map_err(|e| e.to_string())?;
+    ///     let y: i64 = serde_json::from_value(args[1].clone()).map_err(|e| e.to_string())?;
+    ///     serde_json::to_value(x + y).map_err(|e| e.to_string())
     /// }).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expose_function<F, Fut>(&self, name: &str, callback: F) -> Result<(), PageError>
     where
@@ -331,7 +336,10 @@ impl super::Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Expose a simple function
     /// page.expose_function("add", |args| async move {
     ///     let x = args[0].as_i64().unwrap_or(0);
@@ -346,8 +354,11 @@ impl super::Page {
     /// page.expose_function("sha256", |args| async move {
     ///     let input = args[0].as_str().unwrap_or("");
     ///     // ... compute hash ...
+    ///     let hash_string = "example_hash";
     ///     Ok(serde_json::json!(hash_string))
     /// }).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Notes

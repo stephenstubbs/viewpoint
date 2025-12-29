@@ -102,13 +102,17 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// page.on_popup(|popup| async move {
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// page.on_popup(|mut popup| async move {
     ///     println!("Popup opened: {}", popup.url().await.unwrap_or_default());
     ///     // Work with the popup
-    ///     popup.close().await?;
-    ///     Ok(())
+    ///     let _ = popup.close().await;
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_popup<F, Fut>(&self, handler: F)
     where
@@ -130,14 +134,19 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let popup = page.wait_for_popup(|| async {
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// let mut popup = page.wait_for_popup(|| async {
     ///     page.locator("a[target=_blank]").click().await
-    /// }).await?;
+    /// }).wait().await?;
     ///
     /// // Now work with the popup page
     /// println!("Popup URL: {}", popup.url().await?);
     /// popup.close().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

@@ -420,14 +420,17 @@ impl<'a> NewContextBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::{Browser, VideoOptions};
+    /// ```no_run
+    /// use viewpoint_core::{Browser, page::VideoOptions};
     ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
     /// let browser = Browser::launch().headless(true).launch().await?;
     /// let context = browser.new_context_builder()
     ///     .record_video(VideoOptions::new("./videos"))
     ///     .build()
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[must_use]
     pub fn record_video(mut self, options: crate::page::VideoOptions) -> Self {

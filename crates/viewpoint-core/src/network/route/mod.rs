@@ -137,14 +137,18 @@ impl Route {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Route;
+    ///
+    /// # async fn example(route: Route) -> Result<(), viewpoint_core::CoreError> {
     /// route.fulfill()
     ///     .status(200)
     ///     .content_type("application/json")
     ///     .body(r#"{"success": true}"#)
     ///     .send()
     ///     .await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub fn fulfill(&self) -> FulfillBuilder<'_> {
         FulfillBuilder::new(self)
     }
@@ -153,16 +157,23 @@ impl Route {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// // Continue unchanged
-    /// route.continue_().await?;
+    /// ```no_run
+    /// use viewpoint_core::Route;
     ///
+    /// # async fn example(route: Route) -> Result<(), viewpoint_core::CoreError> {
+    /// // Continue unchanged
+    /// route.continue_().send().await?;
+    /// # Ok(())
+    /// # }
+    ///
+    /// # async fn example2(route: Route) -> Result<(), viewpoint_core::CoreError> {
     /// // Modify the request
     /// route.continue_()
     ///     .header("X-Custom", "value")
     ///     .send()
     ///     .await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub fn continue_(&self) -> ContinueBuilder<'_> {
         ContinueBuilder::new(self)
     }
@@ -252,8 +263,11 @@ impl Route {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let response = route.fetch().await?;
+    /// ```no_run
+    /// use viewpoint_core::Route;
+    ///
+    /// # async fn example(route: Route) -> Result<(), viewpoint_core::CoreError> {
+    /// let response = route.fetch().send().await?;
     /// println!("Status: {}", response.status);
     ///
     /// // Modify and send to page
@@ -262,7 +276,8 @@ impl Route {
     ///     .header("X-Modified", "true")
     ///     .send()
     ///     .await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub fn fetch(&self) -> FetchBuilder<'_> {
         FetchBuilder::new(self)
     }

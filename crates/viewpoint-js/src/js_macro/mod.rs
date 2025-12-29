@@ -64,8 +64,8 @@ fn tokens_to_js_string(tokens: &TokenStream2) -> String {
             }
             proc_macro2::TokenTree::Punct(punct) => {
                 let ch = punct.as_char();
-                // Handle # specially for interpolation
-                if ch == '#' {
+                // Handle # and @ specially for interpolation
+                if ch == '#' || ch == '@' {
                     result.push(ch);
                 } else {
                     // Some punctuation needs spacing
@@ -103,39 +103,47 @@ fn needs_space_after_punct(ch: char) -> bool {
 /// Create a version of the source suitable for validation.
 ///
 /// Replaces interpolation markers with valid JavaScript placeholders.
+/// Handles both `#{...}` (value) and `@{...}` (raw) interpolation.
 fn create_validation_source(source: &str) -> String {
     let mut result = String::new();
     let mut chars = source.chars().peekable();
 
     while let Some(c) = chars.next() {
-        if c == '#' {
-            if chars.peek() == Some(&'{') {
-                chars.next(); // consume '{'
-
-                // Find matching closing brace
-                let mut depth = 1;
-                for c in chars.by_ref() {
-                    if c == '{' {
-                        depth += 1;
-                    } else if c == '}' {
-                        depth -= 1;
-                        if depth == 0 {
-                            break;
-                        }
-                    }
-                }
-
-                // Replace with a placeholder that's valid JS (null is always valid)
-                result.push_str("null");
-            } else {
-                result.push(c);
-            }
+        // Handle value interpolation: #{...}
+        if c == '#' && chars.peek() == Some(&'{') {
+            chars.next(); // consume '{'
+            skip_interpolation_expr(&mut chars);
+            // Replace with a placeholder that's valid JS (null is always valid)
+            result.push_str("null");
+        }
+        // Handle raw interpolation: @{...}
+        else if c == '@' && chars.peek() == Some(&'{') {
+            chars.next(); // consume '{'
+            skip_interpolation_expr(&mut chars);
+            // Replace with a placeholder that's valid JS (null is always valid)
+            result.push_str("null");
         } else {
             result.push(c);
         }
     }
 
     result
+}
+
+/// Skip over an interpolation expression in the character iterator.
+/// Expects the opening '{' to have already been consumed.
+fn skip_interpolation_expr(chars: &mut std::iter::Peekable<std::str::Chars>) {
+    let mut depth = 1;
+    for c in chars.by_ref() {
+        if c == '{' {
+            depth += 1;
+        } else if c == '}' {
+            depth -= 1;
+            if depth == 0 {
+                break;
+            }
+        }
+    }
 }
 
 #[cfg(test)]

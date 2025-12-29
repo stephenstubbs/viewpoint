@@ -52,3 +52,24 @@ fn test_create_validation_source_multiple_interp() {
     let result = create_validation_source(source);
     assert_eq!(result, "[null, null]");
 }
+
+#[test]
+fn test_create_validation_source_raw_interp() {
+    let source = "Array.from(@{selector_expr})";
+    let result = create_validation_source(source);
+    assert_eq!(result, "Array.from(null)");
+}
+
+#[test]
+fn test_create_validation_source_mixed_interp() {
+    let source = "@{expr}.setAttribute('id', #{value})";
+    let result = create_validation_source(source);
+    assert_eq!(result, "null.setAttribute('id', null)");
+}
+
+#[test]
+fn test_create_validation_source_at_without_brace() {
+    let source = "x @ y";
+    let result = create_validation_source(source);
+    assert_eq!(result, "x @ y");
+}

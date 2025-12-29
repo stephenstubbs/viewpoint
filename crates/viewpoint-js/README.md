@@ -9,7 +9,8 @@ errors early, before they reach the browser.
 ## Features
 
 - **Compile-time validation**: JavaScript syntax errors are caught during compilation
-- **Rust variable interpolation**: Embed Rust expressions using `#{expr}` syntax
+- **Value interpolation**: Embed Rust expressions using `#{expr}` syntax (quoted/escaped)
+- **Raw interpolation**: Inject pre-built JavaScript using `@{expr}` syntax (unquoted)
 - **Zero runtime overhead**: Static strings when no interpolation is used
 - **Clear error messages**: Points to the exact location of syntax errors
 
@@ -39,9 +40,9 @@ let code = js!{
 };
 ```
 
-### Interpolation
+### Value Interpolation
 
-Use `#{expr}` to embed Rust expressions into JavaScript:
+Use `#{expr}` to embed Rust values into JavaScript (properly quoted and escaped):
 
 ```rust
 use viewpoint_js::js;
@@ -49,11 +50,46 @@ use viewpoint_js_core::ToJsValue;
 
 let selector = ".my-class";
 let code = js!{ document.querySelector(#{selector}) };
-// Produces: format!(...) that results in "document.querySelector(\".my-class\")"
+// Produces: "document.querySelector(\".my-class\")"
 
 let count = 42;
 let code = js!{ Array(#{count}).fill(0) };
 // Produces: "Array(42).fill(0)"
+```
+
+### Raw Interpolation
+
+Use `@{expr}` to inject pre-built JavaScript expressions directly (without quoting):
+
+```rust
+use viewpoint_js::js;
+
+// Inject a JavaScript expression as-is
+let selector_expr = "document.querySelectorAll('.item')";
+let code = js!{ Array.from(@{selector_expr}) };
+// Produces: "Array.from(document.querySelectorAll('.item'))"
+
+// Useful for building complex JS with dynamic parts
+let frame_access = get_frame_access_code();
+let code = js!{
+    (function() {
+        const doc = @{frame_access};
+        return doc.title;
+    })()
+};
+```
+
+### Mixing Both Interpolation Types
+
+You can use both `#{}` and `@{}` in the same macro call:
+
+```rust
+use viewpoint_js::js;
+
+let selector_expr = "document.body";
+let attr_name = "data-id";
+let code = js!{ @{selector_expr}.setAttribute(#{attr_name}, "value") };
+// Produces: "document.body.setAttribute(\"data-id\", \"value\")"
 ```
 
 ### Compile-Time Errors

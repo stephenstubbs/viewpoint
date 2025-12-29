@@ -128,7 +128,12 @@ impl Tracing {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Browser, TracingOptions};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// // Create a page first
     /// let page = context.new_page().await?;
     ///
@@ -138,7 +143,8 @@ impl Tracing {
     ///         .screenshots(true)
     ///         .snapshots(true)
     /// ).await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     #[instrument(level = "info", skip(self, options))]
     pub async fn start(&self, options: TracingOptions) -> Result<(), ContextError> {
         let mut state = self.state.write().await;
@@ -232,9 +238,15 @@ impl Tracing {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// context.tracing().stop("trace.zip").await?;
-    /// ```
+    /// # Ok(())
+    /// # }
     #[instrument(level = "info", skip(self), fields(path = %path.as_ref().display()))]
     pub async fn stop(&self, path: impl AsRef<std::path::Path>) -> Result<(), ContextError> {
         let path = path.as_ref();
@@ -361,12 +373,18 @@ impl Tracing {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// # let browser = Browser::launch().headless(true).launch().await?;
+    /// # let context = browser.new_context().await?;
     /// context.tracing().add_source_file(
     ///     "tests/my_test.rs",
-    ///     include_str!("tests/my_test.rs")
+    ///     "// test source code"
     /// ).await;
-    /// ```
+    /// # Ok(())
+    /// # }
     pub async fn add_source_file(&self, path: impl Into<String>, content: impl Into<String>) {
         let mut state = self.state.write().await;
         state.source_files.push(SourceFileEntry {

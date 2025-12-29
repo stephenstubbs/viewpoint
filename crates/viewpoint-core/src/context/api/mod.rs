@@ -15,10 +15,11 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::{Browser, BrowserContext};
+    /// ```no_run
+    /// use viewpoint_core::Browser;
     ///
-    /// let browser = Browser::launch().await?;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
     /// let context = browser.new_context().await?;
     ///
     /// // Get API context (includes browser cookies)
@@ -26,6 +27,8 @@ impl BrowserContext {
     ///
     /// // Make API requests with browser cookies
     /// let response = api.get("https://api.example.com/data").send().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -76,7 +79,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// // Login via API
     /// let api = context.request().await?;
     /// let response = api.post("https://api.example.com/login")
@@ -88,6 +97,8 @@ impl BrowserContext {
     /// context.sync_cookies_from_api(&api, "https://api.example.com").await?;
     ///
     /// // Now browser pages will have the session cookie
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

@@ -11,7 +11,13 @@ use std::sync::Once;
 use std::time::Duration;
 
 use viewpoint_core::DocumentLoadState;
-use viewpoint_test::{expect_page, TestHarness, Page, BrowserContext, Browser};
+// Note: Page and BrowserContext are used in function signatures below but the
+// #[viewpoint_test::test] macro rewrites those signatures, so these imports
+// appear unused to the compiler. We re-export them from viewpoint_test crate
+// so users can reference them in their test function parameters.
+#[allow(unused_imports)]
+use viewpoint_test::{BrowserContext, Page};
+use viewpoint_test::{expect_page, Browser, TestHarness};
 
 static TRACING_INIT: Once = Once::new();
 

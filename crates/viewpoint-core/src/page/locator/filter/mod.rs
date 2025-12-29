@@ -29,8 +29,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let items = page.locator("li").filter().has_text("Product").build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let items = page.locator("li").filter().has_text("Product");
+    /// # }
     /// ```
     #[must_use]
     pub fn has_text(self, text: impl Into<String>) -> Locator<'a> {
@@ -50,8 +54,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let items = page.locator("li").filter().has_text_exact("Product A").build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let items = page.locator("li").filter().has_text_exact("Product A");
+    /// # }
     /// ```
     #[must_use]
     pub fn has_text_exact(self, text: impl Into<String>) -> Locator<'a> {
@@ -71,8 +79,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let items = page.locator("li").filter().has_not_text("Sold Out").build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let items = page.locator("li").filter().has_not_text("Sold Out");
+    /// # }
     /// ```
     #[must_use]
     pub fn has_not_text(self, text: impl Into<String>) -> Locator<'a> {
@@ -92,8 +104,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let items = page.locator("li").filter().has_not_text_exact("Out of Stock").build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let items = page.locator("li").filter().has_not_text_exact("Out of Stock");
+    /// # }
     /// ```
     #[must_use]
     pub fn has_not_text_exact(self, text: impl Into<String>) -> Locator<'a> {
@@ -113,8 +129,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let rows = page.locator("tr").filter().has(page.locator(".active")).build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let rows = page.locator("tr").filter().has(page.locator(".active"));
+    /// # }
     /// ```
     #[must_use]
     pub fn has(self, child: Locator<'a>) -> Locator<'a> {
@@ -133,8 +153,12 @@ impl<'a> FilterBuilder<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let rows = page.locator("tr").filter().has_not(page.locator(".disabled")).build();
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # fn example(page: &Page) {
+    /// let rows = page.locator("tr").filter().has_not(page.locator(".disabled"));
+    /// # }
     /// ```
     #[must_use]
     pub fn has_not(self, child: Locator<'a>) -> Locator<'a> {

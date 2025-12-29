@@ -29,10 +29,14 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_core::DialogType;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Accept all dialogs
     /// page.on_dialog(|dialog| async move {
-    ///     println!("Dialog: {} - {}", dialog.type_(), dialog.message());
+    ///     println!("Dialog: {:?} - {}", dialog.type_(), dialog.message());
     ///     dialog.accept().await
     /// }).await;
     ///
@@ -44,6 +48,8 @@ impl Page {
     ///         dialog.accept().await
     ///     }
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_dialog<F, Fut>(&self, handler: F)
     where
@@ -70,9 +76,13 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use viewpoint_core::page::console::ConsoleMessageType;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_console(|message| async move {
-    ///     println!("[{}] {}", message.type_(), message.text());
+    ///     println!("[{:?}] {}", message.type_(), message.text());
     /// }).await;
     ///
     /// // Filter by message type
@@ -81,6 +91,8 @@ impl Page {
     ///         eprintln!("Console error: {}", message.text());
     ///     }
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_console<F, Fut>(&self, handler: F)
     where
@@ -105,13 +117,18 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_pageerror(|error| async move {
     ///     eprintln!("Page error: {}", error.message());
     ///     if let Some(stack) = error.stack() {
     ///         eprintln!("Stack trace:\n{}", stack);
     ///     }
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_pageerror<F, Fut>(&self, handler: F)
     where
@@ -137,10 +154,15 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_frameattached(|frame| async move {
     ///     println!("Frame attached: {}", frame.url());
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_frameattached<F, Fut>(&self, handler: F)
     where
@@ -161,10 +183,15 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_framenavigated(|frame| async move {
     ///     println!("Frame navigated to: {}", frame.url());
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_framenavigated<F, Fut>(&self, handler: F)
     where
@@ -186,10 +213,15 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.on_framedetached(|frame| async move {
     ///     println!("Frame detached: {}", frame.id());
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_framedetached<F, Fut>(&self, handler: F)
     where
@@ -212,13 +244,18 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let message = page.expect_console(async {
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
+    /// let message = page.expect_console(|| async {
     ///     page.locator("#log-button").click().await?;
     ///     Ok(())
     /// }).await?;
     ///
     /// println!("Console message: {}", message.text());
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expect_console<F, Fut>(&self, action: F) -> Result<ConsoleMessage, PageError>
     where
@@ -239,13 +276,18 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let error = page.expect_pageerror(async {
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
+    /// let error = page.expect_pageerror(|| async {
     ///     page.locator("#trigger-error").click().await?;
     ///     Ok(())
     /// }).await?;
     ///
     /// println!("Page error: {}", error.message());
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expect_pageerror<F, Fut>(&self, action: F) -> Result<PageErrorInfo, PageError>
     where
@@ -272,11 +314,16 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// page.on_download(|download| async move {
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
+    /// page.on_download(|mut download| async move {
     ///     let path = download.path().await.unwrap();
     ///     println!("Downloaded: {}", path.display());
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_download<F, Fut>(&self, handler: F)
     where
@@ -292,13 +339,18 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// let download = page.wait_for_download(async {
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
+    /// let mut download = page.expect_download(|| async {
     ///     page.locator("a.download").click().await?;
     ///     Ok(())
     /// }).await?;
     ///
     /// download.save_as("./my-file.pdf").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expect_download<F, Fut>(&self, action: F) -> Result<Download, PageError>
     where
@@ -338,11 +390,16 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.set_intercept_file_chooser(true).await?;
     /// page.on_filechooser(|chooser| async move {
     ///     chooser.set_files(&["./upload.txt"]).await.unwrap();
     /// }).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn on_filechooser<F, Fut>(&self, handler: F)
     where
@@ -358,14 +415,19 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.set_intercept_file_chooser(true).await?;
-    /// let chooser = page.expect_file_chooser(async {
+    /// let chooser = page.expect_file_chooser(|| async {
     ///     page.locator("input[type=file]").click().await?;
     ///     Ok(())
     /// }).await?;
     ///
     /// chooser.set_files(&["./upload.txt"]).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expect_file_chooser<F, Fut>(&self, action: F) -> Result<FileChooser, PageError>
     where

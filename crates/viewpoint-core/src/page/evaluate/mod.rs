@@ -116,6 +116,53 @@ impl JsHandle {
 }
 
 impl Page {
+    /// Low-level JavaScript evaluation for internal use.
+    ///
+    /// This method is used by locator helpers and other internal code that needs
+    /// direct JavaScript evaluation without the higher-level features of `evaluate()`.
+    ///
+    /// Key differences from `evaluate()`:
+    /// - Does not wrap expressions in function calls
+    /// - Does not await promises (caller must handle)
+    /// - Uses silent mode (no console output)
+    /// - Returns raw `serde_json::Value`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the page is closed or JavaScript throws an error.
+    pub(crate) async fn evaluate_js_raw(
+        &self,
+        expression: &str,
+    ) -> Result<serde_json::Value, PageError> {
+        if self.closed {
+            return Err(PageError::Closed);
+        }
+
+        let params = EvaluateParams {
+            expression: expression.to_string(),
+            object_group: None,
+            include_command_line_api: None,
+            silent: Some(true),
+            context_id: None,
+            return_by_value: Some(true),
+            await_promise: Some(false),
+        };
+
+        let result: EvaluateResult = self
+            .connection
+            .send_command("Runtime.evaluate", Some(params), Some(&self.session_id))
+            .await?;
+
+        if let Some(exception) = result.exception_details {
+            return Err(PageError::EvaluationFailed(exception.text));
+        }
+
+        result
+            .result
+            .value
+            .ok_or_else(|| PageError::EvaluationFailed("No result value".to_string()))
+    }
+
     /// Evaluate JavaScript in the page context.
     ///
     /// The expression is evaluated and the result is deserialized to the specified type.

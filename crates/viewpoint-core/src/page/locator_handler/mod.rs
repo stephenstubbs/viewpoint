@@ -204,17 +204,25 @@ impl super::Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Page, AriaRole};
+    /// use std::sync::Arc;
+    ///
+    /// # async fn example(page: Arc<Page>) -> Result<(), viewpoint_core::CoreError> {
     /// // Dismiss cookie banner when it appears
+    /// let page_clone = page.clone();
     /// let handle = page.add_locator_handler(
     ///     page.get_by_role(AriaRole::Button).with_name("Accept cookies"),
-    ///     || async {
-    ///         page.locator(".cookie-banner .accept").click().await
+    ///     move || {
+    ///         let page = page_clone.clone();
+    ///         async move { page.locator(".cookie-banner .accept").click().await }
     ///     }
     /// ).await;
     ///
     /// // Later, remove the handler
     /// page.remove_locator_handler(handle).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn add_locator_handler<F, Fut>(
         &self,
@@ -241,13 +249,23 @@ impl super::Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::{Page, LocatorHandlerOptions};
+    /// use std::sync::Arc;
+    ///
+    /// # async fn example(page: Arc<Page>) -> Result<(), viewpoint_core::CoreError> {
     /// // Handler that only runs once
+    /// let page_clone = page.clone();
     /// page.add_locator_handler_with_options(
     ///     page.locator(".popup"),
-    ///     || async { page.locator(".popup .close").click().await },
+    ///     move || {
+    ///         let page = page_clone.clone();
+    ///         async move { page.locator(".popup .close").click().await }
+    ///     },
     ///     LocatorHandlerOptions { times: Some(1), ..Default::default() }
     /// ).await;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn add_locator_handler_with_options<F, Fut>(
         &self,

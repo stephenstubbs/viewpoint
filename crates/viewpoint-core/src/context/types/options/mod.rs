@@ -268,10 +268,11 @@ impl ContextOptionsBuilder {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::{Browser, page::VideoOptions};
+    /// ```no_run
+    /// use viewpoint_core::{Browser, VideoOptions};
     ///
-    /// let browser = Browser::launch().await?;
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
     /// let context = browser.new_context_builder()
     ///     .record_video(VideoOptions::new("./videos"))
     ///     .build()
@@ -285,7 +286,8 @@ impl ContextOptionsBuilder {
     ///     let path = video.path().await?;
     ///     println!("Video: {}", path.display());
     /// }
-    /// ```
+    /// # Ok(())
+    /// # }
     #[must_use]
     pub fn record_video(mut self, options: crate::page::VideoOptions) -> Self {
         self.options.record_video = Some(options);

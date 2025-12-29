@@ -69,12 +69,17 @@ impl Touchscreen {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Enable touch with default settings
     /// page.touchscreen().enable().await?;
     ///
     /// // Enable touch with multiple touch points
     /// page.touchscreen().enable_with_max_points(5).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self))]
     pub async fn enable(&self) -> Result<(), LocatorError> {
@@ -155,9 +160,14 @@ impl Touchscreen {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::page::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.touchscreen().enable().await?;
     /// page.touchscreen().tap(100.0, 200.0).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(x = x, y = y))]
     pub async fn tap(&self, x: f64, y: f64) -> Result<(), LocatorError> {

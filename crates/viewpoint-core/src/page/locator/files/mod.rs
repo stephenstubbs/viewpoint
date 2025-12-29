@@ -19,7 +19,10 @@ impl Locator<'_> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Set a single file
     /// page.locator("input[type=file]").set_input_files(&["./upload.txt"]).await?;
     ///
@@ -28,6 +31,8 @@ impl Locator<'_> {
     ///
     /// // Clear the file selection
     /// page.locator("input[type=file]").set_input_files::<&str>(&[]).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self, files), fields(selector = ?self.selector, file_count = files.len()))]
     pub async fn set_input_files<P: AsRef<std::path::Path>>(&self, files: &[P]) -> Result<(), LocatorError> {
@@ -125,9 +130,10 @@ impl Locator<'_> {
     ///
     /// # Example
     ///
-    /// ```ignore
-    /// use viewpoint_core::FilePayload;
+    /// ```no_run
+    /// use viewpoint_core::{Page, FilePayload};
     ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Upload a text file from memory
     /// let payload = FilePayload::new("test.txt", "text/plain", b"Hello, World!".to_vec());
     /// page.locator("input[type=file]").set_input_files_from_buffer(&[payload]).await?;
@@ -139,6 +145,8 @@ impl Locator<'_> {
     ///
     /// // Clear files
     /// page.locator("input[type=file]").set_input_files_from_buffer(&[]).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self, files), fields(selector = ?self.selector, file_count = files.len()))]
     pub async fn set_input_files_from_buffer(

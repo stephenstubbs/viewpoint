@@ -8,7 +8,7 @@ use serde::Deserialize;
 use viewpoint_cdp::protocol::input::{
     DispatchKeyEventParams, DispatchMouseEventParams, InsertTextParams,
 };
-use viewpoint_cdp::protocol::runtime::EvaluateParams;
+use viewpoint_js::js;
 
 use super::Locator;
 use crate::error::LocatorError;
@@ -68,20 +68,21 @@ impl Locator<'_> {
 
     /// Query element information via JavaScript.
     pub(super) async fn query_element_info(&self) -> Result<ElementInfo, LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = Array.from({});
-                if (elements.length === 0) {{
-                    return {{ found: false, count: 0 }};
-                }}
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = Array.from(@{selector_expr});
+                if (elements.length === 0) {
+                    return { found: false, count: 0 };
+                }
                 const el = elements[0];
                 const rect = el.getBoundingClientRect();
                 const style = window.getComputedStyle(el);
                 const visible = rect.width > 0 && rect.height > 0 && 
-                    style.visibility !== 'hidden' && 
-                    style.display !== 'none' &&
+                    style.visibility !== "hidden" && 
+                    style.display !== "none" &&
                     parseFloat(style.opacity) > 0;
-                return {{
+                return {
                     found: true,
                     count: elements.length,
                     visible: visible,
@@ -92,12 +93,11 @@ impl Locator<'_> {
                     height: rect.height,
                     text: el.textContent,
                     tagName: el.tagName.toLowerCase()
-                }};
-            }})()",
-            self.selector.to_js_expression()
-        );
+                };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
+        let result = self.evaluate_js(&js_code).await?;
         let info: ElementInfo = serde_json::from_value(result)
             .map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
         Ok(info)
@@ -105,23 +105,25 @@ impl Locator<'_> {
 
     /// Focus the element via JavaScript.
     pub(super) async fn focus_element(&self) -> Result<(), LocatorError> {
-        let js = format!(
-            r"(function() {{
-                const elements = {};
-                if (elements.length > 0) {{
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = @{selector_expr};
+                if (elements.length > 0) {
                     elements[0].focus();
                     return true;
-                }}
+                }
                 return false;
-            }})()",
-            self.selector.to_js_expression()
-        );
+            })()
+        };
 
-        self.evaluate_js(&js).await?;
+        self.evaluate_js(&js_code).await?;
         Ok(())
     }
 
     /// Evaluate JavaScript and return the result.
+    ///
+    /// Delegates to `Page::evaluate_js_raw` for the actual evaluation.
     pub(super) async fn evaluate_js(
         &self,
         expression: &str,
@@ -130,30 +132,10 @@ impl Locator<'_> {
             return Err(LocatorError::PageClosed);
         }
 
-        let params = EvaluateParams {
-            expression: expression.to_string(),
-            object_group: None,
-            include_command_line_api: None,
-            silent: Some(true),
-            context_id: None,
-            return_by_value: Some(true),
-            await_promise: Some(false),
-        };
-
-        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
-            .page
-            .connection()
-            .send_command("Runtime.evaluate", Some(params), Some(self.page.session_id()))
-            .await?;
-
-        if let Some(exception) = result.exception_details {
-            return Err(LocatorError::EvaluationError(exception.text));
-        }
-
-        result
-            .result
-            .value
-            .ok_or_else(|| LocatorError::EvaluationError("No result value".to_string()))
+        self.page
+            .evaluate_js_raw(expression)
+            .await
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))
     }
 
     /// Dispatch a mouse event.

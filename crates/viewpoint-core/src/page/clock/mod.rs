@@ -96,8 +96,13 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.clock().install().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -120,8 +125,13 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.clock().uninstall().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -150,12 +160,17 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Using ISO string
     /// page.clock().set_fixed_time("2024-01-01T00:00:00Z").await?;
     ///
     /// // Using timestamp
     /// page.clock().set_fixed_time(1704067200000i64).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -186,9 +201,14 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.clock().set_system_time("2024-01-01T00:00:00Z").await?;
     /// // Time will now flow from 2024-01-01
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -224,10 +244,16 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use std::time::Duration;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Advance 5 seconds, firing any timers scheduled in that period
     /// let fired = page.clock().run_for(Duration::from_secs(5)).await?;
     /// println!("Fired {} timers", fired);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -252,9 +278,15 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    /// use std::time::Duration;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Skip ahead 1 hour without firing any timers
     /// page.clock().fast_forward(Duration::from_secs(3600)).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -278,9 +310,14 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Pause at noon
     /// page.clock().pause_at("2024-01-01T12:00:00Z").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -308,8 +345,13 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.clock().resume().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -333,8 +375,13 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let fired = page.clock().run_all_timers().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -358,8 +405,13 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let fired = page.clock().run_to_last().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -378,9 +430,14 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let count = page.clock().pending_timer_count().await?;
     /// println!("{} timers pending", count);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -396,10 +453,15 @@ impl<'a> Clock<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// if page.clock().is_installed().await? {
     ///     println!("Clock is mocked");
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

@@ -21,7 +21,10 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Target an element inside an iframe
     /// page.frame_locator("#my-iframe")
     ///     .locator("button")
@@ -34,6 +37,8 @@ impl Page {
     ///     .locator("input")
     ///     .fill("text")
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn frame_locator(&self, selector: impl Into<String>) -> FrameLocator<'_> {
         FrameLocator::new(self, selector)
@@ -50,9 +55,14 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let main_frame = page.main_frame().await?;
     /// println!("Main frame URL: {}", main_frame.url());
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self))]
     pub async fn main_frame(&self) -> Result<Frame, PageError> {
@@ -86,11 +96,16 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// let frames = page.frames().await?;
     /// for frame in frames {
     ///     println!("Frame: {} - {}", frame.name(), frame.url());
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self))]
     pub async fn frames(&self) -> Result<Vec<Frame>, PageError> {
@@ -144,10 +159,15 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// if let Some(frame) = page.frame("payment-frame").await? {
     ///     frame.goto("https://payment.example.com").await?;
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(name = %name))]
     pub async fn frame(&self, name: &str) -> Result<Option<Frame>, PageError> {
@@ -173,10 +193,15 @@ impl Page {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
     /// if let Some(frame) = page.frame_by_url("**/checkout/**").await? {
     ///     println!("Found checkout frame: {}", frame.url());
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(pattern = %pattern))]
     pub async fn frame_by_url(&self, pattern: &str) -> Result<Option<Frame>, PageError> {

@@ -8,7 +8,7 @@ use tracing::debug;
 use viewpoint_cdp::protocol::input::{
     DispatchKeyEventParams, DispatchMouseEventParams, InsertTextParams, MouseButton,
 };
-use viewpoint_cdp::protocol::runtime::EvaluateParams;
+use viewpoint_js::js;
 
 use super::frame_locator::FrameElementLocator;
 use crate::error::LocatorError;
@@ -220,48 +220,48 @@ impl FrameElementLocator<'_> {
         let frame_access = self.frame_locator().to_js_frame_access();
         let element_selector = self.selector().to_js_expression();
 
-        let js = format!(
-            r"(function() {{
-                const frameDoc = {frame_access};
-                if (!frameDoc) {{
-                    return {{ found: false, count: 0, error: 'Frame not found or not accessible' }};
-                }}
+        let js_code = js! {
+            (function() {
+                const frameDoc = @{frame_access};
+                if (!frameDoc) {
+                    return { found: false, count: 0, error: "Frame not found or not accessible" };
+                }
                 
                 // Create a modified expression that uses frameDoc instead of document
                 let elements;
-                try {{
-                    elements = (function() {{
+                try {
+                    elements = (function() {
                         const document = frameDoc;
-                        return Array.from({element_selector});
-                    }})();
-                }} catch (e) {{
-                    return {{ found: false, count: 0, error: e.message }};
-                }}
+                        return Array.from(@{element_selector});
+                    })();
+                } catch (e) {
+                    return { found: false, count: 0, error: e.message };
+                }
                 
-                if (elements.length === 0) {{
-                    return {{ found: false, count: 0 }};
-                }}
+                if (elements.length === 0) {
+                    return { found: false, count: 0 };
+                }
                 
                 const el = elements[0];
                 const rect = el.getBoundingClientRect();
                 
-                // Get frame's position to calculate absolute coordinates
-                let frameRect = {{ x: 0, y: 0 }};
+                // Get frame position to calculate absolute coordinates
+                let frameRect = { x: 0, y: 0 };
                 let current = frameDoc.defaultView?.frameElement;
-                while (current) {{
+                while (current) {
                     const currentRect = current.getBoundingClientRect();
                     frameRect.x += currentRect.x;
                     frameRect.y += currentRect.y;
                     current = current.ownerDocument?.defaultView?.frameElement;
-                }}
+                }
                 
                 const style = frameDoc.defaultView?.getComputedStyle(el) || window.getComputedStyle(el);
                 const visible = rect.width > 0 && rect.height > 0 && 
-                    style.visibility !== 'hidden' && 
-                    style.display !== 'none' &&
+                    style.visibility !== "hidden" && 
+                    style.display !== "none" &&
                     parseFloat(style.opacity) > 0;
                     
-                return {{
+                return {
                     found: true,
                     count: elements.length,
                     visible: visible,
@@ -271,11 +271,11 @@ impl FrameElementLocator<'_> {
                     width: rect.width,
                     height: rect.height,
                     text: el.textContent
-                }};
-            }})()"
-        );
+                };
+            })()
+        };
 
-        let result = self.evaluate_js(&js).await?;
+        let result = self.evaluate_js(&js_code).await?;
         let info: FrameElementInfo = serde_json::from_value(result)
             .map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
         Ok(info)
@@ -286,29 +286,31 @@ impl FrameElementLocator<'_> {
         let frame_access = self.frame_locator().to_js_frame_access();
         let element_selector = self.selector().to_js_expression();
 
-        let js = format!(
-            r"(function() {{
-                const frameDoc = {frame_access};
+        let js_code = js! {
+            (function() {
+                const frameDoc = @{frame_access};
                 if (!frameDoc) return false;
                 
-                const elements = (function() {{
+                const elements = (function() {
                     const document = frameDoc;
-                    return Array.from({element_selector});
-                }})();
+                    return Array.from(@{element_selector});
+                })();
                 
-                if (elements.length > 0) {{
+                if (elements.length > 0) {
                     elements[0].focus();
                     return true;
-                }}
+                }
                 return false;
-            }})()"
-        );
+            })()
+        };
 
-        self.evaluate_js(&js).await?;
+        self.evaluate_js(&js_code).await?;
         Ok(())
     }
 
     /// Evaluate JavaScript and return the result.
+    ///
+    /// Delegates to `Page::evaluate_js_raw` for the actual evaluation.
     pub(crate) async fn evaluate_js(&self, expression: &str) -> Result<serde_json::Value, LocatorError> {
         let page = self.frame_locator().page();
 
@@ -316,29 +318,9 @@ impl FrameElementLocator<'_> {
             return Err(LocatorError::PageClosed);
         }
 
-        let params = EvaluateParams {
-            expression: expression.to_string(),
-            object_group: None,
-            include_command_line_api: None,
-            silent: Some(true),
-            context_id: None,
-            return_by_value: Some(true),
-            await_promise: Some(false),
-        };
-
-        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = page
-            .connection()
-            .send_command("Runtime.evaluate", Some(params), Some(page.session_id()))
-            .await?;
-
-        if let Some(exception) = result.exception_details {
-            return Err(LocatorError::EvaluationError(exception.text));
-        }
-
-        result
-            .result
-            .value
-            .ok_or_else(|| LocatorError::EvaluationError("No result value".to_string()))
+        page.evaluate_js_raw(expression)
+            .await
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))
     }
 
     /// Dispatch a mouse event.

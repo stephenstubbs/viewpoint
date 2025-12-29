@@ -2417,7 +2417,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "viewpoint-cdp"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "base64",
  "futures-util",
@@ -2432,7 +2432,7 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-core"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "base64",
  "bytes",
@@ -2459,7 +2459,7 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-js"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2473,14 +2473,14 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-js-core"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "viewpoint-test"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "serde_json",
  "thiserror",
@@ -2495,7 +2495,7 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-test-macros"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "proc-macro2",
  "quote",

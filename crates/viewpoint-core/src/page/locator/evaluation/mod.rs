@@ -25,7 +25,10 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Get the element's computed style
     /// let color = page.locator("button")
     ///     .evaluate::<String>("getComputedStyle(element).color")
@@ -40,6 +43,8 @@ impl<'a> Locator<'a> {
     /// page.locator("input")
     ///     .evaluate::<()>("element.value = 'Hello'")
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -99,7 +104,10 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Get all element IDs
     /// let ids = page.locator("button")
     ///     .evaluate_all::<Vec<String>>("elements.map(e => e.id)")
@@ -114,6 +122,8 @@ impl<'a> Locator<'a> {
     /// let data = page.locator("[data-test]")
     ///     .evaluate_all::<Vec<String>>("elements.map(e => e.dataset.test)")
     ///     .await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -164,10 +174,15 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let handle = page.locator("button").element_handle().await?;
     /// let box_model = handle.box_model().await?;
     /// println!("Element at: {:?}", box_model);
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -224,8 +239,13 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.locator(".footer").scroll_into_view_if_needed().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -264,12 +284,17 @@ impl<'a> Locator<'a> {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// let bbox = page.locator("button").bounding_box().await?;
     /// if let Some(box_) = bbox {
     ///     println!("Element at ({}, {}), size {}x{}",
     ///         box_.x, box_.y, box_.width, box_.height);
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Returns

@@ -144,10 +144,15 @@ impl Keyboard {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.keyboard().press("Enter").await?;
     /// page.keyboard().press("Control+a").await?;
     /// page.keyboard().press("ControlOrMeta+c").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn press(&self, key: &str) -> Result<(), LocatorError> {
@@ -221,10 +226,15 @@ impl Keyboard {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.keyboard().down("Shift").await?;
     /// page.keyboard().press("a").await?; // Types 'A'
     /// page.keyboard().up("Shift").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn down(&self, key: &str) -> Result<(), LocatorError> {
@@ -292,10 +302,15 @@ impl Keyboard {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.keyboard().down("Shift").await?;
     /// // ... do stuff with Shift held
     /// page.keyboard().up("Shift").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn up(&self, key: &str) -> Result<(), LocatorError> {
@@ -341,8 +356,13 @@ impl Keyboard {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.keyboard().type_text("Hello, World!").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(text_len = text.len()))]
     pub async fn type_text(&self, text: &str) -> Result<(), LocatorError> {
@@ -409,8 +429,13 @@ impl Keyboard {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// page.keyboard().insert_text("Hello 👋 你好").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     #[instrument(level = "debug", skip(self), fields(text_len = text.len()))]
     pub async fn insert_text(&self, text: &str) -> Result<(), LocatorError> {

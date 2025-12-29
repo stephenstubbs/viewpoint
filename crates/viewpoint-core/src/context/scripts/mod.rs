@@ -17,7 +17,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// // Mock navigator.webdriver for all pages
     /// context.add_init_script(
     ///     "Object.defineProperty(navigator, 'webdriver', { get: () => false })"
@@ -25,6 +31,8 @@ impl BrowserContext {
     ///
     /// // All new pages will have this script applied
     /// let page = context.new_page().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors
@@ -76,8 +84,16 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// context.add_init_script_path("./scripts/mock-auth.js").await?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Errors

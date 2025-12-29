@@ -12,13 +12,18 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::BrowserContext;
+    ///
+    /// # async fn example(context: &BrowserContext) -> Result<(), viewpoint_core::CoreError> {
     /// // Use data-test instead of data-testid
     /// context.set_test_id_attribute("data-test").await;
     ///
     /// // Now get_by_test_id looks for data-test attribute
     /// let page = context.new_page().await?;
     /// let button = page.get_by_test_id("submit"); // looks for [data-test="submit"]
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn set_test_id_attribute(&self, name: impl Into<String>) {
         let mut attr = self.test_id_attribute.write().await;

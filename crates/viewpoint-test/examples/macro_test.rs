@@ -9,11 +9,17 @@
 //! this example primarily serves as documentation.
 //!
 //! In a real test file, you would use:
-//! ```ignore
+//! ```no_run
+//! use viewpoint_core::page::Page;
+//! use viewpoint_test::TestError;
+//!
+//! # /*
 //! #[viewpoint_test::test]
 //! async fn my_test(page: &Page) -> Result<(), TestError> {
 //!     // test code
+//!     Ok(())
 //! }
+//! # */
 //! ```
 
 use viewpoint_test::{expect_page, TestError, TestHarness};
@@ -22,18 +28,27 @@ use viewpoint_core::DocumentLoadState;
 /// Example of what the macro expands to.
 /// 
 /// The `#[viewpoint_test::test]` macro would transform:
-/// ```ignore
+/// ```no_run
+/// use viewpoint_core::page::Page;
+/// use viewpoint_test::{expect_page, TestError};
+///
+/// # /*
 /// #[viewpoint_test::test]
 /// async fn example_test(page: &Page) -> Result<(), TestError> {
 ///     page.goto("https://example.com").goto().await?;
 ///     expect_page(page).to_have_title("Example Domain").await?;
 ///     Ok(())
 /// }
+/// # */
 /// ```
 /// 
 /// Into something like:
-/// ```ignore
+/// ```no_run
+/// use viewpoint_test::{expect_page, TestError, TestHarness};
+///
+/// # /*
 /// #[tokio::test]
+/// # */
 /// async fn example_test() -> Result<(), TestError> {
 ///     let _harness = TestHarness::new().await?;
 ///     let page = _harness.page();
@@ -65,11 +80,17 @@ async fn expanded_test_example() -> Result<(), TestError> {
 /// Example with configuration options.
 /// 
 /// The macro supports various configuration options:
-/// ```ignore
+/// ```no_run
+/// use viewpoint_core::page::Page;
+/// use viewpoint_test::TestError;
+///
+/// # /*
 /// #[viewpoint_test::test(headless = false, timeout = 60000)]
 /// async fn visible_test(page: &Page) -> Result<(), TestError> {
 ///     // Test runs with visible browser and 60s timeout
+///     Ok(())
 /// }
+/// # */
 /// ```
 async fn configured_test_example() -> Result<(), TestError> {
     use std::time::Duration;
@@ -94,7 +115,12 @@ async fn configured_test_example() -> Result<(), TestError> {
 /// Example with module-scoped browser.
 /// 
 /// For faster test suites, share a browser across tests:
-/// ```ignore
+/// ```no_run
+/// use std::sync::OnceLock;
+/// use viewpoint_core::browser::Browser;
+/// use viewpoint_core::page::Page;
+/// use viewpoint_test::TestError;
+///
 /// // In your test module:
 /// static BROWSER: OnceLock<Browser> = OnceLock::new();
 /// 
@@ -106,15 +132,19 @@ async fn configured_test_example() -> Result<(), TestError> {
 ///     })
 /// }
 /// 
+/// # /*
 /// #[viewpoint_test::test(scope = "browser", browser = "shared_browser")]
 /// async fn fast_test_1(page: &Page) -> Result<(), TestError> {
 ///     // Uses shared browser, but fresh context and page
+///     Ok(())
 /// }
 /// 
 /// #[viewpoint_test::test(scope = "browser", browser = "shared_browser")]  
 /// async fn fast_test_2(page: &Page) -> Result<(), TestError> {
 ///     // Also uses shared browser
+///     Ok(())
 /// }
+/// # */
 /// ```
 
 #[tokio::main]

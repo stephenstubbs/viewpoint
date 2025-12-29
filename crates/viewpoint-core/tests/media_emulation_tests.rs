@@ -10,7 +10,7 @@ mod common;
 use std::time::Duration;
 
 use viewpoint_core::{
-    Browser, ColorScheme, DocumentLoadState, ForcedColors, ReducedMotion,
+    Browser, ColorScheme, ForcedColors, ReducedMotion,
     page::{MediaType, VisionDeficiency}
 };
 use viewpoint_js::js;

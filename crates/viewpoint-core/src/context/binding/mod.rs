@@ -101,7 +101,13 @@ impl BrowserContext {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
     /// // Expose a function to all pages
     /// context.expose_function("add", |args| async move {
     ///     let x = args[0].as_i64().unwrap_or(0);
@@ -111,6 +117,8 @@ impl BrowserContext {
     ///
     /// // Create a page - function is available
     /// let page = context.new_page().await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn expose_function<F, Fut>(&self, name: &str, callback: F)
     where
