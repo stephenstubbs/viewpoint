@@ -1,15 +1,17 @@
 //! Load state waiter implementation.
 
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use viewpoint_cdp::protocol::network::{LoadingFailedEvent, LoadingFinishedEvent, RequestWillBeSentEvent, ResponseReceivedEvent};
-use viewpoint_cdp::CdpEvent;
-use tokio::sync::{broadcast, Mutex};
-use tokio::time::{sleep, timeout, Instant};
+use tokio::sync::{Mutex, broadcast};
+use tokio::time::{Instant, sleep, timeout};
 use tracing::{debug, instrument, trace, warn};
+use viewpoint_cdp::CdpEvent;
+use viewpoint_cdp::protocol::network::{
+    LoadingFailedEvent, LoadingFinishedEvent, RequestWillBeSentEvent, ResponseReceivedEvent,
+};
 
 use super::DocumentLoadState;
 use crate::error::WaitError;
@@ -125,7 +127,10 @@ impl LoadStateWaiter {
     }
 
     /// Internal implementation of waiting for a load state.
-    async fn wait_for_state_impl(&mut self, target_state: DocumentLoadState) -> Result<(), WaitError> {
+    async fn wait_for_state_impl(
+        &mut self,
+        target_state: DocumentLoadState,
+    ) -> Result<(), WaitError> {
         let mut last_network_activity = Instant::now();
 
         loop {
@@ -136,7 +141,8 @@ impl LoadStateWaiter {
                     // For NetworkIdle, we need additional checking
                     if target_state == DocumentLoadState::NetworkIdle {
                         let pending = self.pending_requests.load(Ordering::Relaxed);
-                        if pending == 0 && last_network_activity.elapsed() >= NETWORK_IDLE_THRESHOLD {
+                        if pending == 0 && last_network_activity.elapsed() >= NETWORK_IDLE_THRESHOLD
+                        {
                             return Ok(());
                         }
                     } else {
@@ -185,10 +191,11 @@ impl LoadStateWaiter {
                             if req.frame_id.as_deref() == Some(&self.frame_id) {
                                 let mut ids = self.pending_request_ids.lock().await;
                                 if ids.insert(req.request_id.clone()) {
-                                    let count = self.pending_requests.fetch_add(1, Ordering::Relaxed) + 1;
+                                    let count =
+                                        self.pending_requests.fetch_add(1, Ordering::Relaxed) + 1;
                                     trace!(request_id = %req.request_id, pending_count = count, "Network request started");
                                     last_network_activity = Instant::now();
-                                    
+
                                     // Track the main document request (type "Document")
                                     if req.resource_type.as_deref() == Some("Document") {
                                         let mut main_req = self.main_request_id.lock().await;
@@ -211,10 +218,10 @@ impl LoadStateWaiter {
                                 let mut response_data = self.response_data.lock().await;
                                 response_data.status = Some(resp.response.status as u16);
                                 response_data.url = Some(resp.response.url.clone());
-                                
+
                                 // Copy headers
                                 response_data.headers = resp.response.headers.clone();
-                                
+
                                 trace!(
                                     status = response_data.status,
                                     url = ?response_data.url,
@@ -227,10 +234,12 @@ impl LoadStateWaiter {
                 }
                 "Network.loadingFinished" => {
                     if let Some(params) = event.params {
-                        if let Ok(finished) = serde_json::from_value::<LoadingFinishedEvent>(params) {
+                        if let Ok(finished) = serde_json::from_value::<LoadingFinishedEvent>(params)
+                        {
                             let mut ids = self.pending_request_ids.lock().await;
                             if ids.remove(&finished.request_id) {
-                                let count = self.pending_requests.fetch_sub(1, Ordering::Relaxed) - 1;
+                                let count =
+                                    self.pending_requests.fetch_sub(1, Ordering::Relaxed) - 1;
                                 trace!(request_id = %finished.request_id, pending_count = count, "Network request finished");
                                 last_network_activity = Instant::now();
                             }
@@ -242,7 +251,8 @@ impl LoadStateWaiter {
                         if let Ok(failed) = serde_json::from_value::<LoadingFailedEvent>(params) {
                             let mut ids = self.pending_request_ids.lock().await;
                             if ids.remove(&failed.request_id) {
-                                let count = self.pending_requests.fetch_sub(1, Ordering::Relaxed) - 1;
+                                let count =
+                                    self.pending_requests.fetch_sub(1, Ordering::Relaxed) - 1;
                                 trace!(request_id = %failed.request_id, pending_count = count, "Network request failed");
                                 last_network_activity = Instant::now();
                             }

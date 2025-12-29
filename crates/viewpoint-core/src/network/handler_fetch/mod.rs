@@ -1,7 +1,7 @@
 //! Fetch domain enable/disable logic for the route handler registry.
 
-use viewpoint_cdp::protocol::fetch::{EnableParams, RequestPattern as CdpRequestPattern};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::fetch::{EnableParams, RequestPattern as CdpRequestPattern};
 
 use crate::error::NetworkError;
 

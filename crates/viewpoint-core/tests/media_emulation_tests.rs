@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use viewpoint_core::{
     Browser, ColorScheme, ForcedColors, ReducedMotion,
-    page::{MediaType, VisionDeficiency}
+    page::{MediaType, VisionDeficiency},
 };
 use viewpoint_js::js;
 
@@ -65,10 +65,16 @@ async fn test_media_type_print() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate print media
@@ -79,10 +85,11 @@ async fn test_media_type_print() {
         .expect("Failed to emulate media");
 
     // Check if print media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("print").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("print").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Print media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -99,10 +106,16 @@ async fn test_media_type_screen() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate screen media
@@ -113,10 +126,11 @@ async fn test_media_type_screen() {
         .expect("Failed to emulate media");
 
     // Check if screen media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("screen").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("screen").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Screen media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -137,10 +151,16 @@ async fn test_color_scheme_dark() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate dark color scheme
@@ -151,10 +171,11 @@ async fn test_color_scheme_dark() {
         .expect("Failed to emulate media");
 
     // Check if dark color scheme media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-color-scheme: dark)").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-color-scheme: dark)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Dark color scheme media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -171,10 +192,16 @@ async fn test_color_scheme_light() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate light color scheme
@@ -185,10 +212,11 @@ async fn test_color_scheme_light() {
         .expect("Failed to emulate media");
 
     // Check if light color scheme media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-color-scheme: light)").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-color-scheme: light)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Light color scheme media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -209,10 +237,16 @@ async fn test_reduced_motion() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate reduced motion
@@ -223,10 +257,11 @@ async fn test_reduced_motion() {
         .expect("Failed to emulate media");
 
     // Check if reduced motion media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-reduced-motion: reduce)").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-reduced-motion: reduce)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Reduced motion media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -243,10 +278,16 @@ async fn test_no_motion_preference() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate no motion preference
@@ -257,10 +298,11 @@ async fn test_no_motion_preference() {
         .expect("Failed to emulate media");
 
     // Check if no-preference matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-reduced-motion: no-preference)").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-reduced-motion: no-preference)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "No preference motion media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -281,10 +323,16 @@ async fn test_forced_colors() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate forced colors
@@ -295,10 +343,11 @@ async fn test_forced_colors() {
         .expect("Failed to emulate media");
 
     // Check if forced colors media query matches
-    let matches: bool = page.evaluate(js!{ window.matchMedia("(forced-colors: active)").matches })
+    let matches: bool = page
+        .evaluate(js! { window.matchMedia("(forced-colors: active)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(matches, "Forced colors media query should match");
 
     browser.close().await.expect("Failed to close browser");
@@ -319,10 +368,16 @@ async fn test_media_combined() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate multiple settings at once
@@ -334,14 +389,16 @@ async fn test_media_combined() {
         .expect("Failed to emulate media");
 
     // Check both media queries match
-    let dark_matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-color-scheme: dark)").matches })
+    let dark_matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-color-scheme: dark)").matches })
         .await
         .expect("Failed to evaluate");
-    
-    let motion_matches: bool = page.evaluate(js!{ window.matchMedia("(prefers-reduced-motion: reduce)").matches })
+
+    let motion_matches: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-reduced-motion: reduce)").matches })
         .await
         .expect("Failed to evaluate");
-    
+
     assert!(dark_matches, "Dark color scheme should match");
     assert!(motion_matches, "Reduced motion should match");
 
@@ -359,10 +416,16 @@ async fn test_media_clear() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // First, set dark mode
@@ -373,7 +436,8 @@ async fn test_media_clear() {
         .expect("Failed to emulate media");
 
     // Verify it's set
-    let dark_before: bool = page.evaluate(js!{ window.matchMedia("(prefers-color-scheme: dark)").matches })
+    let dark_before: bool = page
+        .evaluate(js! { window.matchMedia("(prefers-color-scheme: dark)").matches })
         .await
         .expect("Failed to evaluate");
     assert!(dark_before, "Dark mode should be set");
@@ -402,10 +466,16 @@ async fn test_vision_deficiency_deuteranopia() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Emulate deuteranopia
@@ -427,10 +497,16 @@ async fn test_vision_deficiency_protanopia() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Emulate protanopia
     page.emulate_vision_deficiency(VisionDeficiency::Protanopia)
@@ -451,10 +527,16 @@ async fn test_vision_deficiency_tritanopia() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Emulate tritanopia
     page.emulate_vision_deficiency(VisionDeficiency::Tritanopia)
@@ -475,10 +557,16 @@ async fn test_vision_deficiency_achromatopsia() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Emulate achromatopsia
     page.emulate_vision_deficiency(VisionDeficiency::Achromatopsia)
@@ -499,10 +587,16 @@ async fn test_vision_deficiency_clear() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MEDIA_QUERY_HTML).set().await.expect("Failed to set content");
+    page.set_content(MEDIA_QUERY_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Set a vision deficiency
     page.emulate_vision_deficiency(VisionDeficiency::Deuteranopia)

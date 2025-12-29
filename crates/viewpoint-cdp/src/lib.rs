@@ -27,6 +27,6 @@ pub mod error;
 pub mod protocol;
 pub mod transport;
 
-pub use connection::CdpConnection;
+pub use connection::{BrowserVersion, CdpConnection, CdpConnectionOptions, discover_websocket_url};
 pub use error::CdpError;
 pub use transport::{CdpEvent, CdpMessage, CdpRequest, CdpResponse};

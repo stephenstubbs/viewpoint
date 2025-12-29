@@ -1,6 +1,5 @@
 //! Common test utilities and setup for integration tests.
 
-
 use std::sync::Once;
 use std::time::Duration;
 
@@ -35,9 +34,16 @@ pub async fn launch_browser() -> Browser {
 }
 
 /// Launch a browser with a context and page ready.
-pub async fn launch_with_page() -> (Browser, viewpoint_core::BrowserContext, viewpoint_core::Page) {
+pub async fn launch_with_page() -> (
+    Browser,
+    viewpoint_core::BrowserContext,
+    viewpoint_core::Page,
+) {
     let browser = launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
     (browser, context, page)
 }

@@ -11,7 +11,7 @@ use viewpoint_cdp::protocol::runtime::{EvaluateParams, EvaluateResult, ReleaseOb
 use crate::error::PageError;
 use crate::page::Page;
 
-use super::{wrap_expression, JsHandle, DEFAULT_TIMEOUT};
+use super::{DEFAULT_TIMEOUT, JsHandle, wrap_expression};
 
 /// Polling mode for `wait_for_function`.
 #[derive(Debug, Clone, Copy, Default)]
@@ -147,7 +147,11 @@ impl<'a> WaitForFunctionBuilder<'a> {
 
         let handle = if is_truthy {
             result.result.object_id.map(|id| {
-                JsHandle::new(id, self.page.session_id.clone(), self.page.connection.clone())
+                JsHandle::new(
+                    id,
+                    self.page.session_id.clone(),
+                    self.page.connection.clone(),
+                )
             })
         } else {
             // Release non-truthy object references

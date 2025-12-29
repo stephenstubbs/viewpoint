@@ -21,8 +21,7 @@ pub type MonotonicTime = f64;
 pub type TimeSinceEpoch = f64;
 
 /// Resource type as it was perceived by the rendering engine.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ResourceType {
     /// Document resource.
     Document,
@@ -62,7 +61,6 @@ pub enum ResourceType {
     #[default]
     Other,
 }
-
 
 /// HTTP request data.
 #[derive(Debug, Clone, Deserialize)]

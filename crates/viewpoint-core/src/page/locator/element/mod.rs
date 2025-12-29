@@ -3,8 +3,8 @@
 //! Unlike [`Locator`], an `ElementHandle` is bound to a specific element instance.
 //! If the element is removed from the DOM, the handle becomes stale.
 
-use crate::error::LocatorError;
 use crate::Page;
+use crate::error::LocatorError;
 
 /// A bounding box representing an element's position and size.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -57,7 +57,8 @@ impl ElementHandle<'_> {
             model: Option<BoxModel>,
         }
 
-        let result: BoxModelResult = self.page
+        let result: BoxModelResult = self
+            .page
             .connection()
             .send_command(
                 "DOM.getBoxModel",
@@ -80,7 +81,8 @@ impl ElementHandle<'_> {
             result: viewpoint_cdp::protocol::runtime::RemoteObject,
         }
 
-        let result: CallResult = self.page
+        let result: CallResult = self
+            .page
             .connection()
             .send_command(
                 "Runtime.callFunctionOn",
@@ -93,7 +95,9 @@ impl ElementHandle<'_> {
             )
             .await?;
 
-        Ok(result.result.value
+        Ok(result
+            .result
+            .value
             .and_then(|v| v.as_bool())
             .unwrap_or(false))
     }
@@ -125,7 +129,8 @@ impl ElementHandle<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
-        let result: CallResult = self.page
+        let result: CallResult = self
+            .page
             .connection()
             .send_command(
                 "Runtime.callFunctionOn",

@@ -9,9 +9,7 @@ use tracing::{debug, instrument};
 use viewpoint_cdp::protocol::emulation::{
     ClearGeolocationOverrideParams, SetGeolocationOverrideParams,
 };
-use viewpoint_cdp::protocol::network::{
-    EmulateNetworkConditionsParams, SetExtraHTTPHeadersParams,
-};
+use viewpoint_cdp::protocol::network::{EmulateNetworkConditionsParams, SetExtraHTTPHeadersParams};
 
 use super::BrowserContext;
 use crate::error::ContextError;
@@ -221,7 +219,8 @@ impl<'a> SetGeolocationBuilder<'a> {
 // Make the builder awaitable
 impl<'a> std::future::IntoFuture for SetGeolocationBuilder<'a> {
     type Output = Result<(), ContextError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
+    type IntoFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.await_())

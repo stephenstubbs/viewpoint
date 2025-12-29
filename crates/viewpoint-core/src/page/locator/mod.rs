@@ -30,6 +30,8 @@
 //! ```
 
 mod actions;
+pub mod aria;
+mod aria_js;
 mod aria_role;
 mod builders;
 mod debug;
@@ -40,16 +42,14 @@ mod filter;
 mod helpers;
 mod queries;
 mod select;
-pub mod aria;
-mod aria_js;
 pub(crate) mod selector;
 
 use std::time::Duration;
 
+pub use aria::{AriaCheckedState, AriaSnapshot};
 pub use builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
 pub use element::{BoundingBox, BoxModel, ElementHandle};
 pub use filter::{FilterBuilder, RoleLocatorBuilder};
-pub use aria::{AriaCheckedState, AriaSnapshot};
 pub use selector::{AriaRole, Selector, TextOptions};
 
 use crate::Page;
@@ -97,7 +97,11 @@ impl<'a> Locator<'a> {
     }
 
     /// Create a new locator with custom options.
-    pub(crate) fn with_options(page: &'a Page, selector: Selector, options: LocatorOptions) -> Self {
+    pub(crate) fn with_options(
+        page: &'a Page,
+        selector: Selector,
+        options: LocatorOptions,
+    ) -> Self {
         Self {
             page,
             selector,
@@ -211,10 +215,7 @@ impl<'a> Locator<'a> {
     pub fn and(&self, other: Locator<'a>) -> Locator<'a> {
         Locator {
             page: self.page,
-            selector: Selector::And(
-                Box::new(self.selector.clone()),
-                Box::new(other.selector),
-            ),
+            selector: Selector::And(Box::new(self.selector.clone()), Box::new(other.selector)),
             options: self.options.clone(),
         }
     }
@@ -236,10 +237,7 @@ impl<'a> Locator<'a> {
     pub fn or(&self, other: Locator<'a>) -> Locator<'a> {
         Locator {
             page: self.page,
-            selector: Selector::Or(
-                Box::new(self.selector.clone()),
-                Box::new(other.selector),
-            ),
+            selector: Selector::Or(Box::new(self.selector.clone()), Box::new(other.selector)),
             options: self.options.clone(),
         }
     }

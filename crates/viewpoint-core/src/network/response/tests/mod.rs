@@ -21,15 +21,18 @@ fn test_security_details_from_cdp() {
         subject_name: "*.example.com".to_string(),
         san_list: vec!["example.com".to_string(), "*.example.com".to_string()],
         issuer: "DigiCert SHA2 Extended Validation Server CA".to_string(),
-        valid_from: 1609459200.0,  // 2021-01-01
-        valid_to: 1640995200.0,    // 2022-01-01
+        valid_from: 1609459200.0, // 2021-01-01
+        valid_to: 1640995200.0,   // 2022-01-01
     };
 
     let details = SecurityDetails::from(cdp_details);
 
     assert_eq!(details.protocol, "TLS 1.3");
     assert_eq!(details.subject_name, "*.example.com");
-    assert_eq!(details.issuer, "DigiCert SHA2 Extended Validation Server CA");
+    assert_eq!(
+        details.issuer,
+        "DigiCert SHA2 Extended Validation Server CA"
+    );
     assert_eq!(details.valid_from, 1609459200.0);
     assert_eq!(details.valid_to, 1640995200.0);
     assert_eq!(details.san_list.len(), 2);

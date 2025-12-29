@@ -12,11 +12,9 @@ async fn test_create_standalone_context() {
 
 #[tokio::test]
 async fn test_context_with_base_url() {
-    let api = APIRequestContext::new(
-        APIContextOptions::new().base_url("https://api.example.com"),
-    )
-    .await
-    .expect("Failed to create API context");
+    let api = APIRequestContext::new(APIContextOptions::new().base_url("https://api.example.com"))
+        .await
+        .expect("Failed to create API context");
 
     assert_eq!(api.base_url(), Some("https://api.example.com"));
 }

@@ -10,7 +10,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::{oneshot, RwLock};
+use tokio::sync::{RwLock, oneshot};
 use tracing::debug;
 
 use viewpoint_cdp::CdpConnection;
@@ -19,9 +19,8 @@ use crate::error::PageError;
 use crate::page::Page;
 
 /// Type alias for the popup event handler function.
-pub type PopupEventHandler = Box<
-    dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
->;
+pub type PopupEventHandler =
+    Box<dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Manager for page-level popup events.
 pub struct PopupManager {
@@ -52,9 +51,7 @@ impl PopupManager {
         F: Fn(Page) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        let boxed_handler: PopupEventHandler = Box::new(move |page| {
-            Box::pin(handler(page))
-        });
+        let boxed_handler: PopupEventHandler = Box::new(move |page| Box::pin(handler(page)));
         let mut h = self.handler.write().await;
         *h = Some(boxed_handler);
     }
@@ -154,10 +151,7 @@ impl Page {
     /// Returns an error if:
     /// - The action fails
     /// - No popup is opened within the timeout (30 seconds by default)
-    pub fn wait_for_popup<F, Fut>(
-        &self,
-        action: F,
-    ) -> WaitForPopupBuilder<'_, F, Fut>
+    pub fn wait_for_popup<F, Fut>(&self, action: F) -> WaitForPopupBuilder<'_, F, Fut>
     where
         F: FnOnce() -> Fut,
         Fut: Future<Output = Result<(), crate::error::LocatorError>>,
@@ -202,12 +196,14 @@ where
     ///
     /// Returns the popup page that was opened during the action.
     pub async fn wait(mut self) -> Result<Page, PageError> {
-        use viewpoint_cdp::protocol::target_domain::{AttachToTargetParams, AttachToTargetResult, TargetCreatedEvent};
+        use viewpoint_cdp::protocol::target_domain::{
+            AttachToTargetParams, AttachToTargetResult, TargetCreatedEvent,
+        };
 
         let connection = self.page.connection().clone();
         let target_id = self.page.target_id().to_string();
         let _session_id = self.page.session_id().to_string();
-        
+
         // Create a channel to receive the popup
         let (tx, rx) = oneshot::channel::<Page>();
         let tx = Arc::new(tokio::sync::Mutex::new(Some(tx)));
@@ -223,49 +219,71 @@ where
             while let Ok(event) = events.recv().await {
                 if event.method == "Target.targetCreated" {
                     if let Some(params) = &event.params {
-                        if let Ok(created_event) = serde_json::from_value::<TargetCreatedEvent>(params.clone()) {
+                        if let Ok(created_event) =
+                            serde_json::from_value::<TargetCreatedEvent>(params.clone())
+                        {
                             let info = &created_event.target_info;
-                            
+
                             // Check if this is a popup opened by our page
-                            if info.target_type == "page" 
+                            if info.target_type == "page"
                                 && info.opener_id.as_deref() == Some(&target_id_clone)
                             {
                                 debug!("Popup detected: {}", info.target_id);
-                                
+
                                 // Attach to the popup target
-                                let attach_result: Result<AttachToTargetResult, _> = connection_clone
-                                    .send_command(
-                                        "Target.attachToTarget",
-                                        Some(AttachToTargetParams {
-                                            target_id: info.target_id.clone(),
-                                            flatten: Some(true),
-                                        }),
-                                        None,
-                                    )
-                                    .await;
+                                let attach_result: Result<AttachToTargetResult, _> =
+                                    connection_clone
+                                        .send_command(
+                                            "Target.attachToTarget",
+                                            Some(AttachToTargetParams {
+                                                target_id: info.target_id.clone(),
+                                                flatten: Some(true),
+                                            }),
+                                            None,
+                                        )
+                                        .await;
 
                                 if let Ok(attach) = attach_result {
                                     // Enable required domains on the popup
                                     let popup_session = &attach.session_id;
-                                    
+
                                     let _ = connection_clone
-                                        .send_command::<(), serde_json::Value>("Page.enable", None, Some(popup_session))
+                                        .send_command::<(), serde_json::Value>(
+                                            "Page.enable",
+                                            None,
+                                            Some(popup_session),
+                                        )
                                         .await;
                                     let _ = connection_clone
-                                        .send_command::<(), serde_json::Value>("Network.enable", None, Some(popup_session))
+                                        .send_command::<(), serde_json::Value>(
+                                            "Network.enable",
+                                            None,
+                                            Some(popup_session),
+                                        )
                                         .await;
                                     let _ = connection_clone
-                                        .send_command::<(), serde_json::Value>("Runtime.enable", None, Some(popup_session))
+                                        .send_command::<(), serde_json::Value>(
+                                            "Runtime.enable",
+                                            None,
+                                            Some(popup_session),
+                                        )
                                         .await;
 
                                     // Get the main frame ID
-                                    let frame_tree: Result<viewpoint_cdp::protocol::page::GetFrameTreeResult, _> = connection_clone
-                                        .send_command("Page.getFrameTree", None::<()>, Some(popup_session))
+                                    let frame_tree: Result<
+                                        viewpoint_cdp::protocol::page::GetFrameTreeResult,
+                                        _,
+                                    > = connection_clone
+                                        .send_command(
+                                            "Page.getFrameTree",
+                                            None::<()>,
+                                            Some(popup_session),
+                                        )
                                         .await;
 
                                     if let Ok(tree) = frame_tree {
                                         let frame_id = tree.frame_tree.frame.id;
-                                        
+
                                         // Create the popup Page
                                         let popup = Page::new(
                                             connection_clone.clone(),
@@ -295,17 +313,16 @@ where
 
         // Wait for the popup or timeout
         let result = match action_result {
-            Ok(()) => {
-                match tokio::time::timeout(self.timeout, rx).await {
-                    Ok(Ok(popup)) => Ok(popup),
-                    Ok(Err(_)) => Err(PageError::EvaluationFailed(
-                        "Popup channel closed unexpectedly".to_string(),
-                    )),
-                    Err(_) => Err(PageError::EvaluationFailed(
-                        format!("wait_for_popup timed out after {:?}", self.timeout),
-                    )),
-                }
-            }
+            Ok(()) => match tokio::time::timeout(self.timeout, rx).await {
+                Ok(Ok(popup)) => Ok(popup),
+                Ok(Err(_)) => Err(PageError::EvaluationFailed(
+                    "Popup channel closed unexpectedly".to_string(),
+                )),
+                Err(_) => Err(PageError::EvaluationFailed(format!(
+                    "wait_for_popup timed out after {:?}",
+                    self.timeout
+                ))),
+            },
             Err(e) => Err(PageError::EvaluationFailed(e.to_string())),
         };
 

@@ -38,8 +38,8 @@ mod harness;
 pub use config::{TestConfig, TestConfigBuilder};
 pub use error::{AssertionError, TestError};
 pub use expect::{
-    expect, expect_page, Expectable, LocatorAssertions, PageAssertions,
-    SoftAssertionError, SoftAssertions, SoftLocatorAssertions, SoftPageAssertions,
+    Expectable, LocatorAssertions, PageAssertions, SoftAssertionError, SoftAssertions,
+    SoftLocatorAssertions, SoftPageAssertions, expect, expect_page,
 };
 pub use harness::TestHarness;
 

@@ -53,9 +53,11 @@ fn test_nested_braces_in_interpolation() {
     let (segments, has_interp) = parse_interpolations("#{vec![1, 2]}");
     assert!(has_interp);
     // Should have parsed as a single interpolation
-    assert!(segments
-        .iter()
-        .any(|s| matches!(s, Segment::ValueInterpolation(_))));
+    assert!(
+        segments
+            .iter()
+            .any(|s| matches!(s, Segment::ValueInterpolation(_)))
+    );
 }
 
 #[test]
@@ -126,8 +128,7 @@ fn test_at_without_brace() {
 
 #[test]
 fn test_mixed_value_and_raw_interpolation() {
-    let (segments, has_interp) =
-        parse_interpolations("@{expr}.setAttribute('data-id', #{id})");
+    let (segments, has_interp) = parse_interpolations("@{expr}.setAttribute('data-id', #{id})");
     assert!(has_interp);
     // Segments: RawInterpolation, Literal(".setAttribute('data-id', "), ValueInterpolation, Literal(")")
     assert_eq!(segments.len(), 4);
@@ -164,7 +165,9 @@ fn test_multiple_raw_interpolations() {
 fn test_nested_braces_in_raw_interpolation() {
     let (segments, has_interp) = parse_interpolations("@{func()}");
     assert!(has_interp);
-    assert!(segments
-        .iter()
-        .any(|s| matches!(s, Segment::RawInterpolation(_))));
+    assert!(
+        segments
+            .iter()
+            .any(|s| matches!(s, Segment::RawInterpolation(_)))
+    );
 }

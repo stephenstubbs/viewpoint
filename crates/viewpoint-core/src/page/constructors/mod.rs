@@ -17,7 +17,7 @@ use super::mouse::Mouse;
 use super::popup;
 use super::touchscreen::Touchscreen;
 use super::video::{Video, VideoOptions};
-use super::{Page, DEFAULT_TEST_ID_ATTRIBUTE};
+use super::{DEFAULT_TEST_ID_ATTRIBUTE, Page};
 
 impl Page {
     /// Create a new page.

@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, instrument, trace};
 use viewpoint_cdp::protocol::runtime::{
     CallFunctionOnParams, EvaluateParams, EvaluateResult, ReleaseObjectParams,

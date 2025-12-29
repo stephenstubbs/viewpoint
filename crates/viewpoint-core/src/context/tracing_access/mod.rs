@@ -2,8 +2,8 @@
 //!
 //! This module provides the tracing controller access method.
 
-use super::trace::Tracing;
 use super::BrowserContext;
+use super::trace::Tracing;
 
 impl BrowserContext {
     /// Get a tracing controller for recording test execution traces.

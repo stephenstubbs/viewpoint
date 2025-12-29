@@ -54,10 +54,15 @@ impl Page {
     ///
     /// Returns an error if the file cannot be read or the script cannot be added.
     #[instrument(level = "info", skip(self), fields(path = %path.as_ref().display()))]
-    pub async fn add_init_script_path(&self, path: impl AsRef<std::path::Path>) -> Result<String, PageError> {
-        let content = tokio::fs::read_to_string(path.as_ref()).await.map_err(|e| {
-            PageError::EvaluationFailed(format!("Failed to read init script file: {e}"))
-        })?;
+    pub async fn add_init_script_path(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<String, PageError> {
+        let content = tokio::fs::read_to_string(path.as_ref())
+            .await
+            .map_err(|e| {
+                PageError::EvaluationFailed(format!("Failed to read init script file: {e}"))
+            })?;
 
         self.add_init_script(&content).await
     }

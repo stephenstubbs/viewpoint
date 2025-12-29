@@ -248,7 +248,9 @@ macro_rules! impl_to_js_value_int {
     };
 }
 
-impl_to_js_value_int!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+impl_to_js_value_int!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+);
 
 // Implement for floats
 impl ToJsValue for f32 {
@@ -348,5 +350,3 @@ impl ToJsValue for serde_json::Value {
         }
     }
 }
-
-

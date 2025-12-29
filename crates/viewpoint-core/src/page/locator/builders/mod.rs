@@ -5,8 +5,10 @@
 
 use std::time::Duration;
 
-use viewpoint_cdp::protocol::input::{DispatchKeyEventParams, DispatchMouseEventParams, MouseButton};
 use tracing::{debug, instrument};
+use viewpoint_cdp::protocol::input::{
+    DispatchKeyEventParams, DispatchMouseEventParams, MouseButton,
+};
 
 use super::Locator;
 use crate::error::LocatorError;
@@ -112,11 +114,17 @@ impl<'l, 'a> ClickBuilder<'l, 'a> {
         let (x, y) = if self.force {
             let info = self.locator.query_element_info().await?;
             if !info.found {
-                return Err(LocatorError::NotFound(format!("{:?}", self.locator.selector)));
+                return Err(LocatorError::NotFound(format!(
+                    "{:?}",
+                    self.locator.selector
+                )));
             }
-            
+
             if let Some((offset_x, offset_y)) = self.position {
-                (info.x.unwrap_or(0.0) + offset_x, info.y.unwrap_or(0.0) + offset_y)
+                (
+                    info.x.unwrap_or(0.0) + offset_x,
+                    info.y.unwrap_or(0.0) + offset_y,
+                )
             } else {
                 (
                     info.x.unwrap_or(0.0) + info.width.unwrap_or(0.0) / 2.0,
@@ -125,7 +133,7 @@ impl<'l, 'a> ClickBuilder<'l, 'a> {
             }
         } else {
             let info = self.locator.wait_for_actionable().await?;
-            
+
             if let Some((offset_x, offset_y)) = self.position {
                 (
                     info.x.expect("visible element has x") + offset_x,
@@ -133,8 +141,10 @@ impl<'l, 'a> ClickBuilder<'l, 'a> {
                 )
             } else {
                 (
-                    info.x.expect("visible element has x") + info.width.expect("visible element has width") / 2.0,
-                    info.y.expect("visible element has y") + info.height.expect("visible element has height") / 2.0,
+                    info.x.expect("visible element has x")
+                        + info.width.expect("visible element has width") / 2.0,
+                    info.y.expect("visible element has y")
+                        + info.height.expect("visible element has height") / 2.0,
                 )
             }
         };
@@ -170,7 +180,8 @@ impl<'l, 'a> ClickBuilder<'l, 'a> {
 
 impl<'l> std::future::IntoFuture for ClickBuilder<'l, '_> {
     type Output = Result<(), LocatorError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
+    type IntoFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.send())
@@ -218,8 +229,10 @@ impl<'l, 'a> TypeBuilder<'l, 'a> {
 
         for ch in self.text.chars() {
             let char_str = ch.to_string();
-            self.locator.dispatch_key_event(DispatchKeyEventParams::char(&char_str)).await?;
-            
+            self.locator
+                .dispatch_key_event(DispatchKeyEventParams::char(&char_str))
+                .await?;
+
             if let Some(delay) = self.delay {
                 tokio::time::sleep(delay).await;
             }
@@ -231,7 +244,8 @@ impl<'l, 'a> TypeBuilder<'l, 'a> {
 
 impl<'l> std::future::IntoFuture for TypeBuilder<'l, '_> {
     type Output = Result<(), LocatorError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
+    type IntoFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.send())
@@ -290,11 +304,17 @@ impl<'l, 'a> HoverBuilder<'l, 'a> {
         let (x, y) = if self.force {
             let info = self.locator.query_element_info().await?;
             if !info.found {
-                return Err(LocatorError::NotFound(format!("{:?}", self.locator.selector)));
+                return Err(LocatorError::NotFound(format!(
+                    "{:?}",
+                    self.locator.selector
+                )));
             }
-            
+
             if let Some((offset_x, offset_y)) = self.position {
-                (info.x.unwrap_or(0.0) + offset_x, info.y.unwrap_or(0.0) + offset_y)
+                (
+                    info.x.unwrap_or(0.0) + offset_x,
+                    info.y.unwrap_or(0.0) + offset_y,
+                )
             } else {
                 (
                     info.x.unwrap_or(0.0) + info.width.unwrap_or(0.0) / 2.0,
@@ -303,7 +323,7 @@ impl<'l, 'a> HoverBuilder<'l, 'a> {
             }
         } else {
             let info = self.locator.wait_for_actionable().await?;
-            
+
             if let Some((offset_x, offset_y)) = self.position {
                 (
                     info.x.expect("visible element has x") + offset_x,
@@ -311,8 +331,10 @@ impl<'l, 'a> HoverBuilder<'l, 'a> {
                 )
             } else {
                 (
-                    info.x.expect("visible element has x") + info.width.expect("visible element has width") / 2.0,
-                    info.y.expect("visible element has y") + info.height.expect("visible element has height") / 2.0,
+                    info.x.expect("visible element has x")
+                        + info.width.expect("visible element has width") / 2.0,
+                    info.y.expect("visible element has y")
+                        + info.height.expect("visible element has height") / 2.0,
                 )
             }
         };
@@ -331,7 +353,8 @@ impl<'l, 'a> HoverBuilder<'l, 'a> {
 
 impl<'l> std::future::IntoFuture for HoverBuilder<'l, '_> {
     type Output = Result<(), LocatorError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
+    type IntoFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'l>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.send())
@@ -390,11 +413,17 @@ impl<'l, 'a> TapBuilder<'l, 'a> {
         let (x, y) = if self.force {
             let info = self.locator.query_element_info().await?;
             if !info.found {
-                return Err(LocatorError::NotFound(format!("{:?}", self.locator.selector)));
+                return Err(LocatorError::NotFound(format!(
+                    "{:?}",
+                    self.locator.selector
+                )));
             }
-            
+
             if let Some((offset_x, offset_y)) = self.position {
-                (info.x.unwrap_or(0.0) + offset_x, info.y.unwrap_or(0.0) + offset_y)
+                (
+                    info.x.unwrap_or(0.0) + offset_x,
+                    info.y.unwrap_or(0.0) + offset_y,
+                )
             } else {
                 (
                     info.x.unwrap_or(0.0) + info.width.unwrap_or(0.0) / 2.0,
@@ -403,7 +432,7 @@ impl<'l, 'a> TapBuilder<'l, 'a> {
             }
         } else {
             let info = self.locator.wait_for_actionable().await?;
-            
+
             if let Some((offset_x, offset_y)) = self.position {
                 (
                     info.x.expect("visible element has x") + offset_x,
@@ -411,8 +440,10 @@ impl<'l, 'a> TapBuilder<'l, 'a> {
                 )
             } else {
                 (
-                    info.x.expect("visible element has x") + info.width.expect("visible element has width") / 2.0,
-                    info.y.expect("visible element has y") + info.height.expect("visible element has height") / 2.0,
+                    info.x.expect("visible element has x")
+                        + info.width.expect("visible element has width") / 2.0,
+                    info.y.expect("visible element has y")
+                        + info.height.expect("visible element has height") / 2.0,
                 )
             }
         };
@@ -420,7 +451,11 @@ impl<'l, 'a> TapBuilder<'l, 'a> {
         debug!(x, y, modifiers = self.modifiers, "Tapping element");
 
         if self.modifiers != 0 {
-            self.locator.page.touchscreen().tap_with_modifiers(x, y, self.modifiers).await
+            self.locator
+                .page
+                .touchscreen()
+                .tap_with_modifiers(x, y, self.modifiers)
+                .await
         } else {
             self.locator.page.touchscreen().tap(x, y).await
         }

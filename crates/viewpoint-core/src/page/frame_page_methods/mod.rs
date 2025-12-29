@@ -4,9 +4,9 @@
 
 use tracing::instrument;
 
+use super::Page;
 use super::frame::Frame;
 use super::frame_locator::FrameLocator;
-use super::Page;
 use crate::error::PageError;
 
 // =========================================================================

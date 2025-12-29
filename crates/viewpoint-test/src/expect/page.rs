@@ -61,11 +61,10 @@ impl<'a> PageAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let url = self
-                .page
-                .url()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get URL", expected, e.to_string()))?;
+            let url =
+                self.page.url().await.map_err(|e| {
+                    AssertionError::new("Failed to get URL", expected, e.to_string())
+                })?;
 
             let matches = url == expected;
             let expected_match = !self.is_negated;
@@ -103,11 +102,10 @@ impl<'a> PageAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let url = self
-                .page
-                .url()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get URL", expected, e.to_string()))?;
+            let url =
+                self.page.url().await.map_err(|e| {
+                    AssertionError::new("Failed to get URL", expected, e.to_string())
+                })?;
 
             let contains = url.contains(expected);
             let expected_match = !self.is_negated;
@@ -145,11 +143,10 @@ impl<'a> PageAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let title = self
-                .page
-                .title()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get title", expected, e.to_string()))?;
+            let title =
+                self.page.title().await.map_err(|e| {
+                    AssertionError::new("Failed to get title", expected, e.to_string())
+                })?;
 
             let matches = title == expected;
             let expected_match = !self.is_negated;
@@ -187,11 +184,10 @@ impl<'a> PageAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let title = self
-                .page
-                .title()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get title", expected, e.to_string()))?;
+            let title =
+                self.page.title().await.map_err(|e| {
+                    AssertionError::new("Failed to get title", expected, e.to_string())
+                })?;
 
             let contains = title.contains(expected);
             let expected_match = !self.is_negated;

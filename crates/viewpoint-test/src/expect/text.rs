@@ -37,11 +37,9 @@ impl<'a> TextAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let text = self
-                .locator
-                .text_content()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text content", expected, e.to_string()))?;
+            let text = self.locator.text_content().await.map_err(|e| {
+                AssertionError::new("Failed to get text content", expected, e.to_string())
+            })?;
 
             let actual = text.as_deref().unwrap_or("");
             let matches = actual.trim() == expected;
@@ -80,11 +78,9 @@ impl<'a> TextAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let text = self
-                .locator
-                .text_content()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text content", expected, e.to_string()))?;
+            let text = self.locator.text_content().await.map_err(|e| {
+                AssertionError::new("Failed to get text content", expected, e.to_string())
+            })?;
 
             let actual = text.as_deref().unwrap_or("");
             let contains = actual.contains(expected);
@@ -123,15 +119,20 @@ impl<'a> TextAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .all_text_contents()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text contents", format!("{expected:?}"), e.to_string()))?;
+            let actual = self.locator.all_text_contents().await.map_err(|e| {
+                AssertionError::new(
+                    "Failed to get text contents",
+                    format!("{expected:?}"),
+                    e.to_string(),
+                )
+            })?;
 
             let actual_trimmed: Vec<&str> = actual.iter().map(|s| s.trim()).collect();
             let matches = actual_trimmed.len() == expected.len()
-                && actual_trimmed.iter().zip(expected.iter()).all(|(a, e)| a == e);
+                && actual_trimmed
+                    .iter()
+                    .zip(expected.iter())
+                    .all(|(a, e)| a == e);
             let expected_match = !self.is_negated;
 
             if matches == expected_match {
@@ -163,14 +164,19 @@ impl<'a> TextAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .all_text_contents()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get text contents", format!("{expected:?}"), e.to_string()))?;
+            let actual = self.locator.all_text_contents().await.map_err(|e| {
+                AssertionError::new(
+                    "Failed to get text contents",
+                    format!("{expected:?}"),
+                    e.to_string(),
+                )
+            })?;
 
             let matches = actual.len() == expected.len()
-                && actual.iter().zip(expected.iter()).all(|(a, e)| a.contains(e));
+                && actual
+                    .iter()
+                    .zip(expected.iter())
+                    .all(|(a, e)| a.contains(e));
             let expected_match = !self.is_negated;
 
             if matches == expected_match {

@@ -14,8 +14,8 @@ mod routing_impl;
 mod scripts;
 pub mod storage;
 mod storage_restore;
-pub mod trace;
 mod test_id;
+pub mod trace;
 mod tracing_access;
 pub mod types;
 mod weberror;
@@ -30,25 +30,25 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
 
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::target_domain::{
     DisposeBrowserContextParams, GetTargetsParams, GetTargetsResult,
 };
-use viewpoint_cdp::CdpConnection;
 
 use crate::error::ContextError;
 use crate::page::Page;
 
 pub use events::{ContextEventManager, HandlerId};
-pub use weberror::WebErrorHandler;
 pub use storage::{StorageStateBuilder, StorageStateOptions};
-pub use trace::{Tracing, TracingOptions};
 use trace::TracingState;
+pub use trace::{Tracing, TracingOptions};
 pub use types::{
     ColorScheme, ContextOptions, ContextOptionsBuilder, Cookie, ForcedColors, Geolocation,
     HttpCredentials, IndexedDbDatabase, IndexedDbEntry, IndexedDbIndex, IndexedDbObjectStore,
-    LocalStorageEntry, Permission, ReducedMotion, SameSite, StorageOrigin,
-    StorageState, StorageStateSource, ViewportSize,
+    LocalStorageEntry, Permission, ReducedMotion, SameSite, StorageOrigin, StorageState,
+    StorageStateSource, ViewportSize,
 };
+pub use weberror::WebErrorHandler;
 // Re-export WebError for context-level usage
 pub use crate::page::page_error::WebError;
 
@@ -72,6 +72,12 @@ pub const DEFAULT_TEST_ID_ATTRIBUTE: &str = "data-testid";
 /// - **Event Handling**: Listen for page creation and context close events
 /// - **Init Scripts**: Scripts that run before every page load
 /// - **Custom Test ID**: Configure which attribute is used for test IDs
+///
+/// # Ownership
+///
+/// Contexts can be either "owned" (created by us) or "external" (discovered when
+/// connecting to an existing browser). When closing an external context, the
+/// underlying browser context is not disposed - only our connection to it is closed.
 pub struct BrowserContext {
     /// CDP connection.
     connection: Arc<CdpConnection>,
@@ -79,6 +85,9 @@ pub struct BrowserContext {
     context_id: String,
     /// Whether the context has been closed.
     closed: bool,
+    /// Whether we own this context (created it) vs discovered it.
+    /// Owned contexts are disposed when closed; external contexts are not.
+    owned: bool,
     /// Created pages (weak tracking for `pages()` method).
     pages: Arc<RwLock<Vec<PageInfo>>>,
     /// Default timeout for actions.
@@ -111,8 +120,12 @@ impl std::fmt::Debug for BrowserContext {
         f.debug_struct("BrowserContext")
             .field("context_id", &self.context_id)
             .field("closed", &self.closed)
+            .field("owned", &self.owned)
             .field("default_timeout", &self.default_timeout)
-            .field("default_navigation_timeout", &self.default_navigation_timeout)
+            .field(
+                "default_navigation_timeout",
+                &self.default_navigation_timeout,
+            )
             .finish_non_exhaustive()
     }
 }
@@ -139,6 +152,7 @@ impl BrowserContext {
             connection: connection.clone(),
             context_id: context_id.clone(),
             closed: false,
+            owned: true, // We created this context
             pages: Arc::new(RwLock::new(Vec::new())),
             default_timeout: Duration::from_secs(30),
             default_navigation_timeout: Duration::from_secs(30),
@@ -172,12 +186,48 @@ impl BrowserContext {
             connection: connection.clone(),
             context_id: context_id.clone(),
             closed: false,
+            owned: true, // We created this context
             pages: Arc::new(RwLock::new(Vec::new())),
             default_timeout: options.default_timeout.unwrap_or(Duration::from_secs(30)),
             default_navigation_timeout: options
                 .default_navigation_timeout
                 .unwrap_or(Duration::from_secs(30)),
             options,
+            weberror_handler: Arc::new(RwLock::new(None)),
+            event_manager: Arc::new(ContextEventManager::new()),
+            route_registry,
+            binding_registry,
+            init_scripts: Arc::new(RwLock::new(Vec::new())),
+            test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
+            har_recorder: Arc::new(RwLock::new(None)),
+            tracing_state: Arc::new(RwLock::new(TracingState::default())),
+        };
+        ctx.start_weberror_listener();
+        ctx
+    }
+
+    /// Create a wrapper for an existing browser context.
+    ///
+    /// This is used when connecting to an already-running browser to wrap
+    /// contexts that existed before our connection. External contexts are
+    /// not disposed when closed - only our connection to them is closed.
+    pub(crate) fn from_existing(connection: Arc<CdpConnection>, context_id: String) -> Self {
+        let is_default = context_id.is_empty();
+        debug!(context_id = %context_id, is_default = is_default, "Wrapping existing BrowserContext");
+        let route_registry = Arc::new(routing::ContextRouteRegistry::new(
+            connection.clone(),
+            context_id.clone(),
+        ));
+        let binding_registry = Arc::new(binding::ContextBindingRegistry::new());
+        let ctx = Self {
+            connection: connection.clone(),
+            context_id: context_id.clone(),
+            closed: false,
+            owned: false, // We didn't create this context
+            pages: Arc::new(RwLock::new(Vec::new())),
+            default_timeout: Duration::from_secs(30),
+            default_navigation_timeout: Duration::from_secs(30),
+            options: ContextOptions::default(),
             weberror_handler: Arc::new(RwLock::new(None)),
             event_manager: Arc::new(ContextEventManager::new()),
             route_registry,
@@ -323,8 +373,17 @@ impl BrowserContext {
             .target_infos
             .into_iter()
             .filter(|t| {
-                t.browser_context_id.as_deref() == Some(&self.context_id)
-                    && t.target_type == "page"
+                // For the default context (empty string ID), match targets with no context ID
+                // or with an empty context ID
+                let matches_context = if self.context_id.is_empty() {
+                    // Default context: match targets without a context ID or with empty context ID
+                    t.browser_context_id.as_deref().is_none()
+                        || t.browser_context_id.as_deref() == Some("")
+                } else {
+                    // Named context: exact match
+                    t.browser_context_id.as_deref() == Some(&self.context_id)
+                };
+                matches_context && t.target_type == "page"
             })
             .map(|t| PageInfo {
                 target_id: t.target_id,
@@ -333,6 +392,21 @@ impl BrowserContext {
             .collect();
 
         Ok(pages)
+    }
+
+    /// Check if this context is owned (created by us) or external.
+    ///
+    /// External contexts are discovered when connecting to an already-running browser.
+    /// They are not disposed when closed.
+    pub fn is_owned(&self) -> bool {
+        self.owned
+    }
+
+    /// Check if this is the default browser context.
+    ///
+    /// The default context represents the browser's main profile and has an empty ID.
+    pub fn is_default(&self) -> bool {
+        self.context_id.is_empty()
     }
 
     // Cookie methods are in cookies.rs
@@ -404,10 +478,14 @@ impl BrowserContext {
 
     /// Close this browser context and all its pages.
     ///
+    /// For contexts we created (owned), this disposes the context via CDP.
+    /// For external contexts (discovered when connecting to an existing browser),
+    /// this only closes our connection without disposing the context.
+    ///
     /// # Errors
     ///
     /// Returns an error if closing fails.
-    #[instrument(level = "info", skip(self), fields(context_id = %self.context_id))]
+    #[instrument(level = "info", skip(self), fields(context_id = %self.context_id, owned = self.owned))]
     pub async fn close(&mut self) -> Result<(), ContextError> {
         if self.closed {
             debug!("Context already closed");
@@ -428,15 +506,22 @@ impl BrowserContext {
         // Emit close event before cleanup
         self.event_manager.emit_close().await;
 
-        self.connection
-            .send_command::<_, serde_json::Value>(
-                "Target.disposeBrowserContext",
-                Some(DisposeBrowserContextParams {
-                    browser_context_id: self.context_id.clone(),
-                }),
-                None,
-            )
-            .await?;
+        // Only dispose the context if we own it
+        // External contexts (from connecting to existing browser) should not be disposed
+        if self.owned && !self.context_id.is_empty() {
+            debug!("Disposing owned browser context");
+            self.connection
+                .send_command::<_, serde_json::Value>(
+                    "Target.disposeBrowserContext",
+                    Some(DisposeBrowserContextParams {
+                        browser_context_id: self.context_id.clone(),
+                    }),
+                    None,
+                )
+                .await?;
+        } else {
+            debug!("Skipping dispose for external/default context");
+        }
 
         // Clear all event handlers
         self.event_manager.clear().await;

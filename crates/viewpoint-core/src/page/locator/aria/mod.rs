@@ -73,7 +73,6 @@ pub enum AriaCheckedState {
     Mixed,
 }
 
-
 impl AriaSnapshot {
     /// Create a new empty ARIA snapshot.
     pub fn new() -> Self {
@@ -113,19 +112,19 @@ impl AriaSnapshot {
 
     fn write_yaml(&self, output: &mut String, indent: usize) {
         let prefix = "  ".repeat(indent);
-        
+
         // Write role and name on the same line
         if let Some(ref role) = self.role {
             output.push_str(&prefix);
             output.push_str("- ");
             output.push_str(role);
-            
+
             if let Some(ref name) = self.name {
                 output.push_str(" \"");
                 output.push_str(&name.replace('"', "\\\""));
                 output.push('"');
             }
-            
+
             // Add relevant attributes
             if let Some(disabled) = self.disabled {
                 if disabled {
@@ -152,9 +151,9 @@ impl AriaSnapshot {
             if let Some(level) = self.level {
                 output.push_str(&format!(" [level={level}]"));
             }
-            
+
             output.push('\n');
-            
+
             // Write children
             for child in &self.children {
                 child.write_yaml(output, indent + 1);
@@ -168,32 +167,32 @@ impl AriaSnapshot {
     pub fn from_yaml(yaml: &str) -> Result<Self, LocatorError> {
         let mut root = AriaSnapshot::new();
         root.role = Some("root".to_string());
-        
+
         let mut stack: Vec<(usize, AriaSnapshot)> = vec![(0, root)];
-        
+
         for line in yaml.lines() {
             if line.trim().is_empty() {
                 continue;
             }
-            
+
             // Calculate indent
             let indent = line.chars().take_while(|c| *c == ' ').count() / 2;
             let trimmed = line.trim();
-            
+
             if !trimmed.starts_with('-') {
                 continue;
             }
-            
+
             let content = trimmed[1..].trim();
-            
+
             // Parse role and name
             let (role, name, attrs) = parse_aria_line(content)?;
-            
+
             let mut node = AriaSnapshot::with_role(role);
             if let Some(n) = name {
                 node.name = Some(n);
             }
-            
+
             // Apply attributes
             for attr in attrs {
                 match attr.as_str() {
@@ -210,7 +209,7 @@ impl AriaSnapshot {
                     _ => {}
                 }
             }
-            
+
             // Find parent and add as child
             while stack.len() > 1 && stack.last().is_some_and(|(i, _)| *i >= indent) {
                 let (_, child) = stack.pop().unwrap();
@@ -218,10 +217,10 @@ impl AriaSnapshot {
                     parent.children.push(child);
                 }
             }
-            
+
             stack.push((indent, node));
         }
-        
+
         // Pop remaining items
         while stack.len() > 1 {
             let (_, child) = stack.pop().unwrap();
@@ -229,7 +228,7 @@ impl AriaSnapshot {
                 parent.children.push(child);
             }
         }
-        
+
         Ok(stack.pop().map(|(_, s)| s).unwrap_or_default())
     }
 
@@ -278,7 +277,11 @@ impl AriaSnapshot {
         }
 
         for (i, expected_child) in expected.children.iter().enumerate() {
-            if !self.children.get(i).is_some_and(|c| c.matches(expected_child)) {
+            if !self
+                .children
+                .get(i)
+                .is_some_and(|c| c.matches(expected_child))
+            {
                 return false;
             }
         }
@@ -323,29 +326,31 @@ impl fmt::Display for AriaSnapshot {
 fn parse_aria_line(content: &str) -> Result<(String, Option<String>, Vec<String>), LocatorError> {
     let mut parts = content.splitn(2, ' ');
     let role = parts.next().unwrap_or("").to_string();
-    
+
     if role.is_empty() {
-        return Err(LocatorError::EvaluationError("Empty role in aria snapshot".to_string()));
+        return Err(LocatorError::EvaluationError(
+            "Empty role in aria snapshot".to_string(),
+        ));
     }
-    
+
     let rest = parts.next().unwrap_or("");
     let mut name = None;
     let mut attrs = Vec::new();
-    
+
     // Parse name (quoted string)
     if let Some(start) = rest.find('"') {
         if let Some(end) = rest[start + 1..].find('"') {
             name = Some(rest[start + 1..start + 1 + end].replace("\\\"", "\""));
         }
     }
-    
+
     // Parse attributes [attr] or [attr=value]
     for part in rest.split('[') {
         if let Some(end) = part.find(']') {
             attrs.push(part[..end].to_string());
         }
     }
-    
+
     Ok((role, name, attrs))
 }
 
@@ -359,7 +364,7 @@ fn matches_name(pattern: &str, actual: &str) -> bool {
                 let regex_str = &pattern[1..end];
                 let flags = &pattern[end + 1..];
                 let case_insensitive = flags.contains('i');
-                
+
                 let regex_result = if case_insensitive {
                     regex::RegexBuilder::new(regex_str)
                         .case_insensitive(true)
@@ -367,14 +372,14 @@ fn matches_name(pattern: &str, actual: &str) -> bool {
                 } else {
                     regex::Regex::new(regex_str)
                 };
-                
+
                 if let Ok(re) = regex_result {
                     return re.is_match(actual);
                 }
             }
         }
     }
-    
+
     // Exact match
     pattern == actual
 }

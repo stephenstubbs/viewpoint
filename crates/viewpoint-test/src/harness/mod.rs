@@ -215,10 +215,9 @@ impl TestHarness {
     ///
     /// Returns an error if page creation fails or if no context is available.
     pub async fn new_page(&self) -> Result<Page, TestError> {
-        let context = self
-            .context
-            .as_ref()
-            .ok_or_else(|| TestError::Setup("No context available (harness created with from_context)".to_string()))?;
+        let context = self.context.as_ref().ok_or_else(|| {
+            TestError::Setup("No context available (harness created with from_context)".to_string())
+        })?;
 
         context
             .new_page()
@@ -236,7 +235,11 @@ impl TestHarness {
     /// Returns an error if cleanup fails.
     #[instrument(level = "info", name = "TestHarness::close", skip(self))]
     pub async fn close(mut self) -> Result<(), TestError> {
-        info!(owns_browser = self.owns_browser, owns_context = self.owns_context, "Closing test harness");
+        info!(
+            owns_browser = self.owns_browser,
+            owns_context = self.owns_context,
+            "Closing test harness"
+        );
 
         // Close page
         if let Err(e) = self.page.close().await {
@@ -271,7 +274,11 @@ impl Drop for TestHarness {
         // We can't do async cleanup in Drop, so we rely on the underlying
         // types' Drop implementations. Browser::drop will kill the process
         // if we own it.
-        debug!(owns_browser = self.owns_browser, owns_context = self.owns_context, "TestHarness dropped");
+        debug!(
+            owns_browser = self.owns_browser,
+            owns_context = self.owns_context,
+            "TestHarness dropped"
+        );
     }
 }
 

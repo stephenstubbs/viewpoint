@@ -258,7 +258,8 @@ impl<'a> LocatorAssertions<'a> {
         loop {
             let actual = self.get_selected_values().await?;
             let expected_set: std::collections::HashSet<&str> = expected.iter().copied().collect();
-            let actual_set: std::collections::HashSet<&str> = actual.iter().map(std::string::String::as_str).collect();
+            let actual_set: std::collections::HashSet<&str> =
+                actual.iter().map(std::string::String::as_str).collect();
             let matches = expected_set == actual_set;
             let expected_match = !self.is_negated;
 
@@ -377,11 +378,9 @@ impl<'a> LocatorAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .aria_snapshot()
-                .await
-                .map_err(|e| AssertionError::new("Failed to get ARIA snapshot", "snapshot", e.to_string()))?;
+            let actual = self.locator.aria_snapshot().await.map_err(|e| {
+                AssertionError::new("Failed to get ARIA snapshot", "snapshot", e.to_string())
+            })?;
 
             let matches = actual.matches(expected);
             let expected_match = !self.is_negated;
@@ -416,9 +415,17 @@ impl<'a> LocatorAssertions<'a> {
     ///
     /// Returns an error if the YAML parsing fails, the assertion fails, or the
     /// element cannot be queried.
-    pub async fn to_match_aria_snapshot_yaml(&self, expected_yaml: &str) -> Result<(), AssertionError> {
-        let expected = viewpoint_core::AriaSnapshot::from_yaml(expected_yaml)
-            .map_err(|e| AssertionError::new("Failed to parse expected ARIA snapshot", expected_yaml, e.to_string()))?;
+    pub async fn to_match_aria_snapshot_yaml(
+        &self,
+        expected_yaml: &str,
+    ) -> Result<(), AssertionError> {
+        let expected = viewpoint_core::AriaSnapshot::from_yaml(expected_yaml).map_err(|e| {
+            AssertionError::new(
+                "Failed to parse expected ARIA snapshot",
+                expected_yaml,
+                e.to_string(),
+            )
+        })?;
         self.to_match_aria_snapshot(&expected).await
     }
 

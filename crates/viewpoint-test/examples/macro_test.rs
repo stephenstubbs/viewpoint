@@ -22,11 +22,11 @@
 //! # */
 //! ```
 
-use viewpoint_test::{expect_page, TestError, TestHarness};
 use viewpoint_core::DocumentLoadState;
+use viewpoint_test::{TestError, TestHarness, expect_page};
 
 /// Example of what the macro expands to.
-/// 
+///
 /// The `#[viewpoint_test::test]` macro would transform:
 /// ```no_run
 /// use viewpoint_core::page::Page;
@@ -41,7 +41,7 @@ use viewpoint_core::DocumentLoadState;
 /// }
 /// # */
 /// ```
-/// 
+///
 /// Into something like:
 /// ```no_run
 /// use viewpoint_test::{expect_page, TestError, TestHarness};
@@ -62,23 +62,23 @@ use viewpoint_core::DocumentLoadState;
 async fn expanded_test_example() -> Result<(), TestError> {
     let harness = TestHarness::new().await?;
     let page = harness.page();
-    
+
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await
         .map_err(|e| TestError::Core(e.into()))?;
-    
+
     expect_page(page)
         .to_have_title("Example Domain")
         .await
         .map_err(TestError::Assertion)?;
-    
+
     Ok(())
 }
 
 /// Example with configuration options.
-/// 
+///
 /// The macro supports various configuration options:
 /// ```no_run
 /// use viewpoint_core::page::Page;
@@ -94,26 +94,26 @@ async fn expanded_test_example() -> Result<(), TestError> {
 /// ```
 async fn configured_test_example() -> Result<(), TestError> {
     use std::time::Duration;
-    
+
     let harness = TestHarness::builder()
         .headless(false)
         .timeout(Duration::from_secs(60))
         .build()
         .await?;
-    
+
     let page = harness.page();
-    
+
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await
         .map_err(|e| TestError::Core(e.into()))?;
-    
+
     Ok(())
 }
 
 /// Example with module-scoped browser.
-/// 
+///
 /// For faster test suites, share a browser across tests:
 /// ```no_run
 /// use std::sync::OnceLock;
@@ -123,7 +123,7 @@ async fn configured_test_example() -> Result<(), TestError> {
 ///
 /// // In your test module:
 /// static BROWSER: OnceLock<Browser> = OnceLock::new();
-/// 
+///
 /// fn shared_browser() -> &'static Browser {
 ///     BROWSER.get_or_init(|| {
 ///         tokio::runtime::Runtime::new().unwrap()
@@ -131,14 +131,14 @@ async fn configured_test_example() -> Result<(), TestError> {
 ///             .unwrap()
 ///     })
 /// }
-/// 
+///
 /// # /*
 /// #[viewpoint_test::test(scope = "browser", browser = "shared_browser")]
 /// async fn fast_test_1(page: &Page) -> Result<(), TestError> {
 ///     // Uses shared browser, but fresh context and page
 ///     Ok(())
 /// }
-/// 
+///
 /// #[viewpoint_test::test(scope = "browser", browser = "shared_browser")]  
 /// async fn fast_test_2(page: &Page) -> Result<(), TestError> {
 ///     // Also uses shared browser
@@ -150,18 +150,18 @@ async fn configured_test_example() -> Result<(), TestError> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Viewpoint Macro Example ===\n");
-    
+
     println!("This example demonstrates the #[viewpoint_test::test] macro.\n");
-    
+
     println!("Running expanded_test_example...");
     expanded_test_example().await?;
     println!("  Passed!\n");
-    
+
     println!("Running configured_test_example (non-headless)...");
     configured_test_example().await?;
     println!("  Passed!\n");
-    
+
     println!("=== All Examples Complete ===");
-    
+
     Ok(())
 }

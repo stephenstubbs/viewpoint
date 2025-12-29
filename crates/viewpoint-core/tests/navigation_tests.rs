@@ -16,14 +16,17 @@ use common::init_tracing;
 #[tokio::test]
 async fn test_navigation_on_closed_page() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let mut page = context.new_page().await.expect("Failed to create page");
 
     // Close the page first
@@ -33,7 +36,7 @@ async fn test_navigation_on_closed_page() {
     // Attempt navigation on closed page should fail
     let result = page.goto("https://example.com").goto().await;
     assert!(result.is_err(), "Navigation on closed page should fail");
-    
+
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
@@ -42,14 +45,17 @@ async fn test_navigation_on_closed_page() {
 #[tokio::test]
 async fn test_basic_navigation() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to example.com
@@ -75,14 +81,17 @@ async fn test_basic_navigation() {
 #[tokio::test]
 async fn test_navigation_dom_content_loaded() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate with DomContentLoaded wait
@@ -108,14 +117,17 @@ async fn test_navigation_dom_content_loaded() {
 #[tokio::test]
 async fn test_navigation_with_timeout() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate with a generous timeout
@@ -141,14 +153,17 @@ async fn test_navigation_with_timeout() {
 #[tokio::test]
 async fn test_navigation_with_referer() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate with a custom referer
@@ -170,14 +185,17 @@ async fn test_navigation_with_referer() {
 #[tokio::test]
 async fn test_navigation_back_forward() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to first page
@@ -203,20 +221,29 @@ async fn test_navigation_back_forward() {
     // Go back
     let back_response = page.go_back().await.expect("Failed to go back");
     assert!(back_response.is_some(), "Go back should have a response");
-    
+
     // Wait for navigation to complete
     tokio::time::sleep(Duration::from_millis(500)).await;
     let back_url = page.url().await.expect("Failed to get URL after back");
-    assert!(back_url.contains("example.com"), "Should be back to first page");
+    assert!(
+        back_url.contains("example.com"),
+        "Should be back to first page"
+    );
 
     // Go forward
     let forward_response = page.go_forward().await.expect("Failed to go forward");
-    assert!(forward_response.is_some(), "Go forward should have a response");
-    
+    assert!(
+        forward_response.is_some(),
+        "Go forward should have a response"
+    );
+
     // Wait for navigation to complete
     tokio::time::sleep(Duration::from_millis(500)).await;
     let forward_url = page.url().await.expect("Failed to get URL after forward");
-    assert!(forward_url.contains("httpbin.org"), "Should be forward to second page");
+    assert!(
+        forward_url.contains("httpbin.org"),
+        "Should be forward to second page"
+    );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -226,14 +253,17 @@ async fn test_navigation_back_forward() {
 #[tokio::test]
 async fn test_page_reload() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to a page
@@ -246,28 +276,31 @@ async fn test_page_reload() {
     let url_before = page.url().await.expect("Failed to get URL");
 
     // Set a marker in the page to verify reload clears it
-    let _: serde_json::Value = page.evaluate(js!{ window.testMarker = "set" })
+    let _: serde_json::Value = page
+        .evaluate(js! { window.testMarker = "set" })
         .await
         .expect("Failed to set marker");
 
     // Verify marker is set
-    let marker_before: String = page.evaluate(js!{ window.testMarker || "" })
+    let marker_before: String = page
+        .evaluate(js! { window.testMarker || "" })
         .await
         .expect("Failed to get marker before reload");
     assert_eq!(marker_before, "set", "Marker should be set");
 
     // Reload the page
     let _response = page.reload().await.expect("Failed to reload");
-    
+
     // Wait for the page to fully reload
     tokio::time::sleep(Duration::from_millis(500)).await;
-    
+
     // Verify URL is the same
     let url_after = page.url().await.expect("Failed to get URL after reload");
     assert_eq!(url_before, url_after);
 
     // Verify the marker was cleared (page was reloaded)
-    let marker_after: String = page.evaluate(js!{ window.testMarker || "" })
+    let marker_after: String = page
+        .evaluate(js! { window.testMarker || "" })
         .await
         .expect("Failed to get marker after reload");
     assert_eq!(marker_after, "", "Marker should be cleared after reload");
@@ -280,21 +313,27 @@ async fn test_page_reload() {
 #[tokio::test]
 async fn test_go_back_no_history() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Try to go back without any navigation history
     let result = page.go_back().await.expect("go_back should not error");
-    
+
     // Should return None when there's no history
-    assert!(result.is_none(), "Go back with no history should return None");
+    assert!(
+        result.is_none(),
+        "Go back with no history should return None"
+    );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -304,14 +343,17 @@ async fn test_go_back_no_history() {
 #[tokio::test]
 async fn test_go_forward_no_history() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to a page first
@@ -322,10 +364,16 @@ async fn test_go_forward_no_history() {
         .expect("Failed to navigate");
 
     // Try to go forward without any forward history
-    let result = page.go_forward().await.expect("go_forward should not error");
-    
+    let result = page
+        .go_forward()
+        .await
+        .expect("go_forward should not error");
+
     // Should return None when there's no forward history
-    assert!(result.is_none(), "Go forward with no forward history should return None");
+    assert!(
+        result.is_none(),
+        "Go forward with no forward history should return None"
+    );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");

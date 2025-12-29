@@ -8,16 +8,16 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tracing::{debug, trace};
-use viewpoint_cdp::protocol::{
-    WebSocketClosedEvent, WebSocketCreatedEvent, WebSocketFrameReceivedEvent,
-    WebSocketFrameSentEvent, WebSocketFrame as CdpWebSocketFrame,
-};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::{
+    WebSocketClosedEvent, WebSocketCreatedEvent, WebSocketFrame as CdpWebSocketFrame,
+    WebSocketFrameReceivedEvent, WebSocketFrameSentEvent,
+};
 
 /// A WebSocket connection being monitored.
 ///
@@ -237,9 +237,8 @@ impl WebSocketFrame {
 }
 
 /// Type alias for the WebSocket event handler function.
-pub type WebSocketEventHandler = Box<
-    dyn Fn(WebSocket) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
->;
+pub type WebSocketEventHandler =
+    Box<dyn Fn(WebSocket) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Manager for WebSocket events on a page.
 pub struct WebSocketManager {
@@ -273,9 +272,7 @@ impl WebSocketManager {
         F: Fn(WebSocket) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        let boxed_handler: WebSocketEventHandler = Box::new(move |ws| {
-            Box::pin(handler(ws))
-        });
+        let boxed_handler: WebSocketEventHandler = Box::new(move |ws| Box::pin(handler(ws)));
         let mut h = self.handler.write().await;
         *h = Some(boxed_handler);
 
@@ -303,7 +300,7 @@ impl WebSocketManager {
 
         tokio::spawn(async move {
             debug!("WebSocket manager started listening for events");
-            
+
             while let Ok(event) = events.recv().await {
                 // Filter events for this session
                 if event.session_id.as_deref() != Some(&session_id) {
@@ -313,17 +310,22 @@ impl WebSocketManager {
                 match event.method.as_str() {
                     "Network.webSocketCreated" => {
                         if let Some(params) = &event.params {
-                            if let Ok(created) = serde_json::from_value::<WebSocketCreatedEvent>(params.clone()) {
-                                trace!("WebSocket created: {} -> {}", created.request_id, created.url);
-                                
+                            if let Ok(created) =
+                                serde_json::from_value::<WebSocketCreatedEvent>(params.clone())
+                            {
+                                trace!(
+                                    "WebSocket created: {} -> {}",
+                                    created.request_id, created.url
+                                );
+
                                 let ws = WebSocket::new(created.request_id.clone(), created.url);
-                                
+
                                 // Store the WebSocket
                                 {
                                     let mut sockets = websockets.write().await;
                                     sockets.insert(created.request_id, ws.clone());
                                 }
-                                
+
                                 // Call the handler
                                 let h = handler.read().await;
                                 if let Some(ref handler_fn) = *h {
@@ -334,9 +336,11 @@ impl WebSocketManager {
                     }
                     "Network.webSocketClosed" => {
                         if let Some(params) = &event.params {
-                            if let Ok(closed) = serde_json::from_value::<WebSocketClosedEvent>(params.clone()) {
+                            if let Ok(closed) =
+                                serde_json::from_value::<WebSocketClosedEvent>(params.clone())
+                            {
                                 trace!("WebSocket closed: {}", closed.request_id);
-                                
+
                                 let sockets = websockets.read().await;
                                 if let Some(ws) = sockets.get(&closed.request_id) {
                                     ws.mark_closed();
@@ -346,9 +350,11 @@ impl WebSocketManager {
                     }
                     "Network.webSocketFrameSent" => {
                         if let Some(params) = &event.params {
-                            if let Ok(frame_event) = serde_json::from_value::<WebSocketFrameSentEvent>(params.clone()) {
+                            if let Ok(frame_event) =
+                                serde_json::from_value::<WebSocketFrameSentEvent>(params.clone())
+                            {
                                 trace!("WebSocket frame sent: {}", frame_event.request_id);
-                                
+
                                 let sockets = websockets.read().await;
                                 if let Some(ws) = sockets.get(&frame_event.request_id) {
                                     let frame = WebSocketFrame::from_cdp(&frame_event.response);
@@ -359,9 +365,12 @@ impl WebSocketManager {
                     }
                     "Network.webSocketFrameReceived" => {
                         if let Some(params) = &event.params {
-                            if let Ok(frame_event) = serde_json::from_value::<WebSocketFrameReceivedEvent>(params.clone()) {
+                            if let Ok(frame_event) = serde_json::from_value::<
+                                WebSocketFrameReceivedEvent,
+                            >(params.clone())
+                            {
                                 trace!("WebSocket frame received: {}", frame_event.request_id);
-                                
+
                                 let sockets = websockets.read().await;
                                 if let Some(ws) = sockets.get(&frame_event.request_id) {
                                     let frame = WebSocketFrame::from_cdp(&frame_event.response);
@@ -373,7 +382,7 @@ impl WebSocketManager {
                     _ => {}
                 }
             }
-            
+
             debug!("WebSocket manager stopped listening");
         });
     }

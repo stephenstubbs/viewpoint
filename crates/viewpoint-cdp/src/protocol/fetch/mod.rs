@@ -21,8 +21,7 @@ pub struct HeaderEntry {
 }
 
 /// Stage at which to begin intercepting requests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum RequestStage {
     /// Intercept before the request is sent.
     #[default]
@@ -30,7 +29,6 @@ pub enum RequestStage {
     /// Intercept after the response is received (but before response body is received).
     Response,
 }
-
 
 /// Request pattern for interception.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -296,7 +294,9 @@ impl RequestPausedEvent {
         if let Some(code) = self.response_status_code {
             matches!(code, 301 | 302 | 303 | 307 | 308)
                 && self.response_headers.as_ref().is_some_and(|headers| {
-                    headers.iter().any(|h| h.name.eq_ignore_ascii_case("location"))
+                    headers
+                        .iter()
+                        .any(|h| h.name.eq_ignore_ascii_case("location"))
                 })
         } else {
             false
@@ -332,8 +332,7 @@ pub struct AuthRequiredEvent {
 // =============================================================================
 
 /// Network level fetch failure reason.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ErrorReason {
     /// Generic failure.
     #[default]
@@ -365,7 +364,6 @@ pub enum ErrorReason {
     /// Blocked by response.
     BlockedByResponse,
 }
-
 
 impl ErrorReason {
     /// Get the CDP string representation of this error reason.

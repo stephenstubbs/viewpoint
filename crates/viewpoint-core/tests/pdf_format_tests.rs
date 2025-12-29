@@ -51,10 +51,16 @@ async fn test_pdf_default() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Wait for content to render
     tokio::time::sleep(Duration::from_millis(100)).await;
@@ -63,9 +69,12 @@ async fn test_pdf_default() {
 
     // Verify PDF was generated
     assert!(!pdf_data.is_empty(), "PDF data should not be empty");
-    
+
     // Check PDF magic bytes (%PDF-)
-    assert!(pdf_data.starts_with(b"%PDF-"), "PDF should start with %PDF- header");
+    assert!(
+        pdf_data.starts_with(b"%PDF-"),
+        "PDF should start with %PDF- header"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -85,13 +94,20 @@ async fn test_pdf_paper_size_a4() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .format(PaperFormat::A4)
         .generate()
         .await
@@ -114,13 +130,20 @@ async fn test_pdf_paper_size_letter() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .format(PaperFormat::Letter)
         .generate()
         .await
@@ -143,13 +166,20 @@ async fn test_pdf_paper_size_legal() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .format(PaperFormat::Legal)
         .generate()
         .await
@@ -172,14 +202,24 @@ async fn test_pdf_paper_size_custom() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
-        .format(PaperFormat::Custom { width: 5.0, height: 7.0 })
+    let pdf_data = page
+        .pdf()
+        .format(PaperFormat::Custom {
+            width: 5.0,
+            height: 7.0,
+        })
         .generate()
         .await
         .expect("Failed to generate PDF");
@@ -205,13 +245,20 @@ async fn test_pdf_landscape() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .landscape(true)
         .generate()
         .await
@@ -234,13 +281,20 @@ async fn test_pdf_portrait() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .landscape(false)
         .generate()
         .await
@@ -267,13 +321,20 @@ async fn test_pdf_margins() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .margins(Margins::new(1.0, 0.5, 1.0, 0.5))
         .generate()
         .await
@@ -296,13 +357,20 @@ async fn test_pdf_margin_uniform() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .margin(0.5)
         .generate()
         .await
@@ -325,13 +393,20 @@ async fn test_pdf_margin_zero() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .margin(0.0)
         .generate()
         .await
@@ -358,13 +433,20 @@ async fn test_pdf_scale() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .scale(0.5)
         .generate()
         .await

@@ -5,13 +5,13 @@
 
 use std::time::Duration;
 
+use super::super::Page;
 use super::super::console::ConsoleMessage;
 use super::super::dialog::Dialog;
 use super::super::download::Download;
 use super::super::file_chooser::FileChooser;
 use super::super::frame::Frame;
 use super::super::page_error::PageError as PageErrorInfo;
-use super::super::Page;
 use crate::error::{LocatorError, PageError};
 
 /// Default timeout for navigation and event waiting.
@@ -264,10 +264,12 @@ impl Page {
     {
         let timeout = DEFAULT_NAVIGATION_TIMEOUT;
         let console_future = self.event_manager.wait_for_console(timeout);
-        
+
         // Perform the action
-        action().await.map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
-        
+        action()
+            .await
+            .map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
+
         // Wait for the console message
         console_future.await
     }
@@ -296,10 +298,12 @@ impl Page {
     {
         let timeout = DEFAULT_NAVIGATION_TIMEOUT;
         let pageerror_future = self.event_manager.wait_for_pageerror(timeout);
-        
+
         // Perform the action
-        action().await.map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
-        
+        action()
+            .await
+            .map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
+
         // Wait for the page error
         pageerror_future.await
     }
@@ -363,10 +367,12 @@ impl Page {
         // Start waiting and then perform action
         let timeout = DEFAULT_NAVIGATION_TIMEOUT;
         let download_future = self.event_manager.wait_for_download(timeout);
-        
+
         // Perform the action
-        action().await.map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
-        
+        action()
+            .await
+            .map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
+
         // Wait for the download
         download_future.await
     }
@@ -436,10 +442,12 @@ impl Page {
     {
         let timeout = DEFAULT_NAVIGATION_TIMEOUT;
         let chooser_future = self.event_manager.wait_for_file_chooser(timeout);
-        
+
         // Perform the action
-        action().await.map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
-        
+        action()
+            .await
+            .map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
+
         // Wait for the file chooser
         chooser_future.await
     }

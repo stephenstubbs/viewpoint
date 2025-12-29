@@ -18,16 +18,16 @@ use chrono::Utc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
 
-use viewpoint_cdp::protocol::tracing as cdp_tracing;
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::tracing as cdp_tracing;
 
 use crate::context::PageInfo;
 use crate::error::ContextError;
 use crate::network::har::HarPage;
 
-pub use types::{ActionEntry, TracingOptions};
-pub(crate) use types::TracingState;
 use types::SourceFileEntry;
+pub(crate) use types::TracingState;
+pub use types::{ActionEntry, TracingOptions};
 
 /// Tracing manager for recording test execution traces.
 ///
@@ -477,10 +477,7 @@ impl Tracing {
     }
 
     /// Capture a DOM snapshot and add it to the trace.
-    pub(crate) async fn capture_dom_snapshot(
-        &self,
-        session_id: &str,
-    ) -> Result<(), ContextError> {
+    pub(crate) async fn capture_dom_snapshot(&self, session_id: &str) -> Result<(), ContextError> {
         capture::capture_dom_snapshot(&self.connection, &self.state, session_id).await
     }
 
@@ -490,7 +487,8 @@ impl Tracing {
         session_id: &str,
         action_name: Option<&str>,
     ) -> Result<(), ContextError> {
-        capture::capture_action_context(&self.connection, &self.state, session_id, action_name).await
+        capture::capture_action_context(&self.connection, &self.state, session_id, action_name)
+            .await
     }
 }
 

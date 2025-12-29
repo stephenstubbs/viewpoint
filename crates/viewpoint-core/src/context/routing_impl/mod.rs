@@ -98,7 +98,9 @@ impl BrowserContext {
         if self.is_closed() {
             return Err(NetworkError::Aborted);
         }
-        self.route_registry.route_predicate(predicate, handler).await
+        self.route_registry
+            .route_predicate(predicate, handler)
+            .await
     }
 
     /// Unregister handlers matching the given pattern.
@@ -149,8 +151,12 @@ impl BrowserContext {
     /// Returns an error if:
     /// - The HAR file cannot be read or parsed
     /// - The context is closed
-    pub async fn route_from_har(&self, path: impl AsRef<std::path::Path>) -> Result<(), NetworkError> {
-        self.route_from_har_with_options(path, HarReplayOptions::default()).await
+    pub async fn route_from_har(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), NetworkError> {
+        self.route_from_har_with_options(path, HarReplayOptions::default())
+            .await
     }
 
     /// Route requests from a HAR file with options for all pages in this context.
@@ -222,7 +228,7 @@ impl BrowserContext {
         let handler = Arc::new(
             crate::network::HarReplayHandler::from_file(path)
                 .await?
-                .with_options(options)
+                .with_options(options),
         );
 
         // Route all requests through the HAR handler

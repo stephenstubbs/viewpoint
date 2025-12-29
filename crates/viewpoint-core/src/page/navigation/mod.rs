@@ -8,7 +8,7 @@ use tracing::{debug, info, instrument};
 use crate::error::NavigationError;
 use crate::wait::DocumentLoadState;
 
-use super::{Page, DEFAULT_NAVIGATION_TIMEOUT};
+use super::{DEFAULT_NAVIGATION_TIMEOUT, Page};
 
 /// Response from a navigation.
 #[derive(Debug, Clone)]
@@ -185,7 +185,12 @@ impl<'a> GotoBuilder<'a> {
     pub async fn goto(self) -> Result<NavigationResponse, NavigationError> {
         debug!("Executing navigation via GotoBuilder");
         self.page
-            .navigate_internal(&self.url, self.wait_until, self.timeout, self.referer.as_deref())
+            .navigate_internal(
+                &self.url,
+                self.wait_until,
+                self.timeout,
+                self.referer.as_deref(),
+            )
             .await
     }
 }
@@ -218,7 +223,11 @@ impl Page {
         // Check if we can go back
         let history: viewpoint_cdp::protocol::page::GetNavigationHistoryResult = self
             .connection
-            .send_command("Page.getNavigationHistory", None::<()>, Some(&self.session_id))
+            .send_command(
+                "Page.getNavigationHistory",
+                None::<()>,
+                Some(&self.session_id),
+            )
             .await?;
 
         if history.current_index <= 0 {
@@ -231,15 +240,20 @@ impl Page {
         self.connection
             .send_command::<_, serde_json::Value>(
                 "Page.navigateToHistoryEntry",
-                Some(viewpoint_cdp::protocol::page::NavigateToHistoryEntryParams {
-                    entry_id: previous_entry.id,
-                }),
+                Some(
+                    viewpoint_cdp::protocol::page::NavigateToHistoryEntryParams {
+                        entry_id: previous_entry.id,
+                    },
+                ),
                 Some(&self.session_id),
             )
             .await?;
 
         info!("Navigated back to {}", previous_entry.url);
-        Ok(Some(NavigationResponse::new(previous_entry.url.clone(), self.frame_id.clone())))
+        Ok(Some(NavigationResponse::new(
+            previous_entry.url.clone(),
+            self.frame_id.clone(),
+        )))
     }
 
     /// Navigate forward in history.
@@ -254,7 +268,11 @@ impl Page {
         // Check if we can go forward
         let history: viewpoint_cdp::protocol::page::GetNavigationHistoryResult = self
             .connection
-            .send_command("Page.getNavigationHistory", None::<()>, Some(&self.session_id))
+            .send_command(
+                "Page.getNavigationHistory",
+                None::<()>,
+                Some(&self.session_id),
+            )
             .await?;
 
         let next_index = history.current_index as usize + 1;
@@ -268,15 +286,20 @@ impl Page {
         self.connection
             .send_command::<_, serde_json::Value>(
                 "Page.navigateToHistoryEntry",
-                Some(viewpoint_cdp::protocol::page::NavigateToHistoryEntryParams {
-                    entry_id: next_entry.id,
-                }),
+                Some(
+                    viewpoint_cdp::protocol::page::NavigateToHistoryEntryParams {
+                        entry_id: next_entry.id,
+                    },
+                ),
                 Some(&self.session_id),
             )
             .await?;
 
         info!("Navigated forward to {}", next_entry.url);
-        Ok(Some(NavigationResponse::new(next_entry.url.clone(), self.frame_id.clone())))
+        Ok(Some(NavigationResponse::new(
+            next_entry.url.clone(),
+            self.frame_id.clone(),
+        )))
     }
 
     /// Reload the current page.

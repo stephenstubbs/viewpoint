@@ -12,7 +12,11 @@ use std::time::Duration;
 use viewpoint_core::{Browser, DocumentLoadState, Selector};
 
 /// Helper function to launch browser and get a page.
-async fn setup() -> (Browser, viewpoint_core::BrowserContext, viewpoint_core::Page) {
+async fn setup() -> (
+    Browser,
+    viewpoint_core::BrowserContext,
+    viewpoint_core::Page,
+) {
     common::launch_with_page().await
 }
 
@@ -97,7 +101,10 @@ async fn test_locator_is_visible() {
 
     // Check visibility
     let heading = page.locator("h1");
-    let visible = heading.is_visible().await.expect("Failed to check visibility");
+    let visible = heading
+        .is_visible()
+        .await
+        .expect("Failed to check visibility");
     assert!(visible);
 
     // Non-existent element should not be visible
@@ -152,7 +159,10 @@ async fn test_locator_fill_and_type() {
 
     // Fill in the customer name field
     let customer_name = page.locator("input[name='custname']");
-    customer_name.fill("John Doe").await.expect("Failed to fill");
+    customer_name
+        .fill("John Doe")
+        .await
+        .expect("Failed to fill");
 
     // Type in the phone field
     let phone = page.locator("input[name='custtel']");
@@ -432,7 +442,10 @@ async fn test_locator_input_value() {
     input.fill("Test Value").await.expect("Failed to fill");
 
     // Get the value back
-    let value = input.input_value().await.expect("Failed to get input value");
+    let value = input
+        .input_value()
+        .await
+        .expect("Failed to get input value");
     assert_eq!(value, "Test Value");
 
     browser.close().await.expect("Failed to close browser");

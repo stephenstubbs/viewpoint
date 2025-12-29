@@ -11,11 +11,11 @@ use std::time::Instant;
 
 use tokio::sync::RwLock;
 use tracing::{debug, info};
-use viewpoint_cdp::protocol::{
-    ScreencastFormat, ScreencastFrameAckParams, ScreencastFrameEvent,
-    StartScreencastParams, StopScreencastParams,
-};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::{
+    ScreencastFormat, ScreencastFrameAckParams, ScreencastFrameEvent, StartScreencastParams,
+    StopScreencastParams,
+};
 
 use crate::error::PageError;
 
@@ -83,8 +83,7 @@ pub(super) struct RecordedFrame {
 }
 
 /// Internal state for video recording.
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(super) struct VideoState {
     /// Whether recording is active.
     pub(super) recording: bool,
@@ -97,7 +96,6 @@ pub(super) struct VideoState {
     /// Generated video path (set when recording stops).
     pub(super) video_path: Option<PathBuf>,
 }
-
 
 /// Video recording controller for a page.
 ///
@@ -178,7 +176,9 @@ impl Video {
         // Ensure video directory exists
         tokio::fs::create_dir_all(&state.options.dir)
             .await
-            .map_err(|e| PageError::EvaluationFailed(format!("Failed to create video directory: {e}")))?;
+            .map_err(|e| {
+                PageError::EvaluationFailed(format!("Failed to create video directory: {e}"))
+            })?;
 
         // Build screencast params
         let mut params = StartScreencastParams::new()
@@ -206,7 +206,7 @@ impl Video {
         state.frames.clear();
 
         info!("Started video recording");
-        
+
         // Start the frame listener
         self.start_frame_listener();
 
@@ -229,7 +229,9 @@ impl Video {
 
                 if event.method == "Page.screencastFrame" {
                     if let Some(params) = &event.params {
-                        if let Ok(frame_event) = serde_json::from_value::<ScreencastFrameEvent>(params.clone()) {
+                        if let Ok(frame_event) =
+                            serde_json::from_value::<ScreencastFrameEvent>(params.clone())
+                        {
                             // Check if we're still recording
                             let is_recording = {
                                 let s = state.read().await;
@@ -280,7 +282,9 @@ impl Video {
             if let Some(ref path) = state.video_path {
                 return Ok(path.clone());
             }
-            return Err(PageError::EvaluationFailed("Video recording not started".to_string()));
+            return Err(PageError::EvaluationFailed(
+                "Video recording not started".to_string(),
+            ));
         }
 
         // Stop screencast
@@ -306,26 +310,38 @@ impl Video {
     /// Generate the video file from recorded frames.
     async fn generate_video(&self, state: &VideoState) -> Result<PathBuf, PageError> {
         if state.frames.is_empty() {
-            return Err(PageError::EvaluationFailed("No frames recorded".to_string()));
+            return Err(PageError::EvaluationFailed(
+                "No frames recorded".to_string(),
+            ));
         }
 
         // Generate a unique filename
         let filename = format!(
             "video-{}.webm",
-            uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("unknown")
+            uuid::Uuid::new_v4()
+                .to_string()
+                .split('-')
+                .next()
+                .unwrap_or("unknown")
         );
         let video_path = state.options.dir.join(&filename);
 
         // For now, we save frames as individual images and create a simple container
         // A full WebM encoder would require additional dependencies (ffmpeg, vpx, etc.)
         // This is a simplified implementation that saves frames to a directory
-        
+
         // Create a frames directory
-        let frames_dir = state.options.dir.join(format!("frames-{}", 
-            uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("unknown")));
-        tokio::fs::create_dir_all(&frames_dir)
-            .await
-            .map_err(|e| PageError::EvaluationFailed(format!("Failed to create frames directory: {e}")))?;
+        let frames_dir = state.options.dir.join(format!(
+            "frames-{}",
+            uuid::Uuid::new_v4()
+                .to_string()
+                .split('-')
+                .next()
+                .unwrap_or("unknown")
+        ));
+        tokio::fs::create_dir_all(&frames_dir).await.map_err(|e| {
+            PageError::EvaluationFailed(format!("Failed to create frames directory: {e}"))
+        })?;
 
         // Save each frame
         for (i, frame) in state.frames.iter().enumerate() {
@@ -342,10 +358,13 @@ impl Video {
             "frame_count": state.frames.len(),
             "frames_dir": frames_dir.to_string_lossy(),
         });
-        
-        tokio::fs::write(&video_path, serde_json::to_string_pretty(&metadata).unwrap())
-            .await
-            .map_err(|e| PageError::EvaluationFailed(format!("Failed to write video metadata: {e}")))?;
+
+        tokio::fs::write(
+            &video_path,
+            serde_json::to_string_pretty(&metadata).unwrap(),
+        )
+        .await
+        .map_err(|e| PageError::EvaluationFailed(format!("Failed to write video metadata: {e}")))?;
 
         debug!("Saved {} frames to {:?}", state.frames.len(), frames_dir);
 
@@ -371,17 +390,17 @@ impl Video {
     /// ```
     pub async fn path(&self) -> Result<PathBuf, PageError> {
         let state = self.state.read().await;
-        
+
         if let Some(ref path) = state.video_path {
             return Ok(path.clone());
         }
-        
+
         if state.recording {
             return Err(PageError::EvaluationFailed(
-                "Video is still recording. Call stop_recording() first.".to_string()
+                "Video is still recording. Call stop_recording() first.".to_string(),
             ));
         }
-        
+
         Err(PageError::EvaluationFailed("No video recorded".to_string()))
     }
 
@@ -426,7 +445,9 @@ impl super::Page {
     /// # }
     /// ```
     pub fn video(&self) -> Option<&Video> {
-        self.video_controller.as_ref().map(std::convert::AsRef::as_ref)
+        self.video_controller
+            .as_ref()
+            .map(std::convert::AsRef::as_ref)
     }
 
     /// Start video recording (internal use).
@@ -439,7 +460,9 @@ impl super::Page {
     }
 
     /// Stop video recording and get the path (internal use).
-    pub(crate) async fn stop_video_recording(&self) -> Result<Option<std::path::PathBuf>, PageError> {
+    pub(crate) async fn stop_video_recording(
+        &self,
+    ) -> Result<Option<std::path::PathBuf>, PageError> {
         if let Some(ref video) = self.video_controller {
             Ok(Some(video.stop_recording().await?))
         } else {
@@ -447,5 +470,3 @@ impl super::Page {
         }
     }
 }
-
-

@@ -123,7 +123,7 @@ impl Download {
     pub async fn path(&mut self) -> Result<PathBuf, NetworkError> {
         // Wait for the path to be available
         let mut path_rx = self.path_rx.clone();
-        
+
         loop {
             {
                 let path = path_rx.borrow();
@@ -132,11 +132,13 @@ impl Download {
                     return Ok(p.clone());
                 }
             }
-            
+
             // Check if we've failed
             if self.failure.is_some() {
                 return Err(NetworkError::IoError(
-                    self.failure.clone().unwrap_or_else(|| "Unknown download error".to_string()),
+                    self.failure
+                        .clone()
+                        .unwrap_or_else(|| "Unknown download error".to_string()),
                 ));
             }
 
@@ -160,12 +162,12 @@ impl Download {
     #[instrument(level = "debug", skip(self), fields(guid = %self.guid, dest = %dest.as_ref().display()))]
     pub async fn save_as(&mut self, dest: impl AsRef<Path>) -> Result<(), NetworkError> {
         let source = self.path().await?;
-        
+
         debug!("Copying download to destination");
         tokio::fs::copy(&source, dest.as_ref())
             .await
             .map_err(|e| NetworkError::IoError(e.to_string()))?;
-        
+
         Ok(())
     }
 

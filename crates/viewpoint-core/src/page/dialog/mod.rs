@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
-use viewpoint_cdp::protocol::{DialogType, HandleJavaScriptDialogParams};
-use viewpoint_cdp::CdpConnection;
 use tracing::{debug, instrument};
+use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::{DialogType, HandleJavaScriptDialogParams};
 
 use crate::error::PageError;
 

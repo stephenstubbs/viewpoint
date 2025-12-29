@@ -7,10 +7,10 @@ use std::time::Duration;
 
 use tokio::sync::Mutex;
 use tracing::{debug, instrument};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::input::{
     DispatchMouseEventParams, DispatchMouseWheelParams, MouseButton, MouseEventType,
 };
-use viewpoint_cdp::CdpConnection;
 
 use crate::error::LocatorError;
 
@@ -160,7 +160,10 @@ impl Mouse {
         let y = state.y;
         drop(state);
 
-        debug!("Mouse wheel at ({}, {}): delta=({}, {})", x, y, delta_x, delta_y);
+        debug!(
+            "Mouse wheel at ({}, {}): delta=({}, {})",
+            x, y, delta_x, delta_y
+        );
 
         let params = DispatchMouseWheelParams {
             event_type: MouseEventType::MouseWheel,
@@ -239,7 +242,10 @@ impl Mouse {
             (state.x, state.y)
         };
 
-        debug!("Mouse down at ({}, {}), button={:?}, count={}", x, y, button, click_count);
+        debug!(
+            "Mouse down at ({}, {}), button={:?}, count={}",
+            x, y, button, click_count
+        );
 
         let mut params = DispatchMouseEventParams::mouse_down(x, y, button);
         params.click_count = Some(click_count);
@@ -268,7 +274,10 @@ impl Mouse {
             (state.x, state.y)
         };
 
-        debug!("Mouse up at ({}, {}), button={:?}, count={}", x, y, button, click_count);
+        debug!(
+            "Mouse up at ({}, {}), button={:?}, count={}",
+            x, y, button, click_count
+        );
 
         let mut params = DispatchMouseEventParams::mouse_up(x, y, button);
         params.click_count = Some(click_count);
@@ -313,7 +322,10 @@ impl MoveBuilder<'_> {
     /// Execute the move.
     #[instrument(level = "debug", skip(self), fields(x = self.x, y = self.y, steps = self.steps))]
     pub async fn send(self) -> Result<(), LocatorError> {
-        debug!("Moving mouse to ({}, {}) in {} steps", self.x, self.y, self.steps);
+        debug!(
+            "Moving mouse to ({}, {}) in {} steps",
+            self.x, self.y, self.steps
+        );
         self.mouse.move_internal(self.x, self.y, self.steps).await
     }
 }
@@ -358,19 +370,26 @@ impl ClickBuilder<'_> {
     /// Execute the click.
     #[instrument(level = "debug", skip(self), fields(x = self.x, y = self.y, button = ?self.button))]
     pub async fn send(self) -> Result<(), LocatorError> {
-        debug!("Clicking at ({}, {}), button={:?}", self.x, self.y, self.button);
+        debug!(
+            "Clicking at ({}, {}), button={:?}",
+            self.x, self.y, self.button
+        );
 
         // Move to position
         self.mouse.move_(self.x, self.y).send().await?;
 
         // Click
-        self.mouse.down_internal(self.button, self.click_count).await?;
+        self.mouse
+            .down_internal(self.button, self.click_count)
+            .await?;
 
         if let Some(delay) = self.delay {
             tokio::time::sleep(delay).await;
         }
 
-        self.mouse.up_internal(self.button, self.click_count).await?;
+        self.mouse
+            .up_internal(self.button, self.click_count)
+            .await?;
 
         Ok(())
     }
@@ -402,7 +421,9 @@ impl DownBuilder<'_> {
     /// Execute the mouse down.
     #[instrument(level = "debug", skip(self), fields(button = ?self.button))]
     pub async fn send(self) -> Result<(), LocatorError> {
-        self.mouse.down_internal(self.button, self.click_count).await
+        self.mouse
+            .down_internal(self.button, self.click_count)
+            .await
     }
 }
 

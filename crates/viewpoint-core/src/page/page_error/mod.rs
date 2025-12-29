@@ -56,23 +56,25 @@ impl PageError {
                 return value.to_string();
             }
         }
-        
+
         // Fall back to the exception text
         self.exception_details.text.clone()
     }
 
     /// Get the full stack trace as a string.
     pub fn stack(&self) -> Option<String> {
-        self.exception_details.exception.as_ref().and_then(|exc| {
-            exc.description.clone()
-        })
+        self.exception_details
+            .exception
+            .as_ref()
+            .and_then(|exc| exc.description.clone())
     }
 
     /// Get the error name (e.g., "`TypeError`", "`ReferenceError`").
     pub fn name(&self) -> Option<String> {
-        self.exception_details.exception.as_ref().and_then(|exc| {
-            exc.class_name.clone()
-        })
+        self.exception_details
+            .exception
+            .as_ref()
+            .and_then(|exc| exc.class_name.clone())
     }
 
     /// Get the URL where the error occurred.

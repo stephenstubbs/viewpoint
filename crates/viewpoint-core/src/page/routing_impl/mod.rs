@@ -6,7 +6,9 @@
 use std::future::Future;
 
 use crate::error::NetworkError;
-use crate::network::{Route, UrlMatcher, UrlPattern, WaitForRequestBuilder, WaitForResponseBuilder, WebSocket};
+use crate::network::{
+    Route, UrlMatcher, UrlPattern, WaitForRequestBuilder, WaitForResponseBuilder, WebSocket,
+};
 
 use super::Page;
 
@@ -101,7 +103,9 @@ impl Page {
         if self.closed {
             return Err(NetworkError::Aborted);
         }
-        self.route_registry.route_predicate(predicate, handler).await
+        self.route_registry
+            .route_predicate(predicate, handler)
+            .await
     }
 
     /// Unregister handlers matching the given pattern.
@@ -173,8 +177,12 @@ impl Page {
     /// Returns an error if:
     /// - The HAR file cannot be read or parsed
     /// - The page is closed
-    pub async fn route_from_har(&self, path: impl AsRef<std::path::Path>) -> Result<(), NetworkError> {
-        self.route_from_har_with_options(path, crate::network::HarReplayOptions::default()).await
+    pub async fn route_from_har(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), NetworkError> {
+        self.route_from_har_with_options(path, crate::network::HarReplayOptions::default())
+            .await
     }
 
     /// Route requests from a HAR file with options.
@@ -224,7 +232,7 @@ impl Page {
         let handler = std::sync::Arc::new(
             crate::network::HarReplayHandler::from_file(path)
                 .await?
-                .with_options(options)
+                .with_options(options),
         );
 
         // Route all requests through the HAR handler

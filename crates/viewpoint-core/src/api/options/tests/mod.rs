@@ -8,7 +8,10 @@ fn test_options_builder() {
         .ignore_https_errors(true)
         .header("Authorization", "Bearer token");
 
-    assert_eq!(options.base_url, Some("https://api.example.com".to_string()));
+    assert_eq!(
+        options.base_url,
+        Some("https://api.example.com".to_string())
+    );
     assert_eq!(options.timeout, Some(Duration::from_secs(30)));
     assert!(options.ignore_https_errors);
     assert_eq!(

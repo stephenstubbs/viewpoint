@@ -23,9 +23,11 @@ macro_rules! soft_assert {
         match $self.assertions.$method().await {
             Ok(()) => {}
             Err(e) => {
-                $self.errors.lock().unwrap().push(
-                    SoftAssertionError::new($assertion_name, e.to_string())
-                );
+                $self
+                    .errors
+                    .lock()
+                    .unwrap()
+                    .push(SoftAssertionError::new($assertion_name, e.to_string()));
             }
         }
     };
@@ -35,7 +37,7 @@ macro_rules! soft_assert {
             Err(e) => {
                 $self.errors.lock().unwrap().push(
                     SoftAssertionError::new($assertion_name, e.to_string())
-                        .with_expected($expected.to_string())
+                        .with_expected($expected.to_string()),
                 );
             }
         }
@@ -90,7 +92,11 @@ impl SoftLocatorAssertions<'_> {
     pub async fn to_have_attribute(&self, name: impl AsRef<str>, value: impl AsRef<str>) {
         let name_str = name.as_ref().to_string();
         let value_str = value.as_ref().to_string();
-        match self.assertions.to_have_attribute(&name_str, &value_str).await {
+        match self
+            .assertions
+            .to_have_attribute(&name_str, &value_str)
+            .await
+        {
             Ok(()) => {}
             Err(e) => {
                 self.errors.lock().unwrap().push(
@@ -98,7 +104,7 @@ impl SoftLocatorAssertions<'_> {
                         format!("to_have_attribute({name_str})"),
                         e.to_string(),
                     )
-                    .with_expected(&value_str)
+                    .with_expected(&value_str),
                 );
             }
         }
@@ -123,7 +129,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_count", e.to_string())
-                        .with_expected(expected.to_string())
+                        .with_expected(expected.to_string()),
                 );
             }
         }
@@ -136,7 +142,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_count_greater_than", e.to_string())
-                        .with_expected(format!("> {n}"))
+                        .with_expected(format!("> {n}")),
                 );
             }
         }
@@ -149,7 +155,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_count_less_than", e.to_string())
-                        .with_expected(format!("< {n}"))
+                        .with_expected(format!("< {n}")),
                 );
             }
         }
@@ -162,7 +168,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_count_at_least", e.to_string())
-                        .with_expected(format!(">= {n}"))
+                        .with_expected(format!(">= {n}")),
                 );
             }
         }
@@ -175,7 +181,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_count_at_most", e.to_string())
-                        .with_expected(format!("<= {n}"))
+                        .with_expected(format!("<= {n}")),
                 );
             }
         }
@@ -188,7 +194,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_match_aria_snapshot", e.to_string())
-                        .with_expected(expected.to_yaml())
+                        .with_expected(expected.to_yaml()),
                 );
             }
         }
@@ -196,12 +202,16 @@ impl SoftLocatorAssertions<'_> {
 
     /// Assert element's ARIA snapshot matches expected YAML string (soft).
     pub async fn to_match_aria_snapshot_yaml(&self, expected_yaml: &str) {
-        match self.assertions.to_match_aria_snapshot_yaml(expected_yaml).await {
+        match self
+            .assertions
+            .to_match_aria_snapshot_yaml(expected_yaml)
+            .await
+        {
             Ok(()) => {}
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_match_aria_snapshot_yaml", e.to_string())
-                        .with_expected(expected_yaml.to_string())
+                        .with_expected(expected_yaml.to_string()),
                 );
             }
         }
@@ -214,7 +224,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_texts", e.to_string())
-                        .with_expected(format!("{expected:?}"))
+                        .with_expected(format!("{expected:?}")),
                 );
             }
         }
@@ -227,7 +237,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_contain_texts", e.to_string())
-                        .with_expected(format!("{expected:?}"))
+                        .with_expected(format!("{expected:?}")),
                 );
             }
         }
@@ -240,7 +250,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_classes", e.to_string())
-                        .with_expected(format!("{expected_classes:?}"))
+                        .with_expected(format!("{expected_classes:?}")),
                 );
             }
         }
@@ -253,7 +263,7 @@ impl SoftLocatorAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_values", e.to_string())
-                        .with_expected(format!("{expected:?}"))
+                        .with_expected(format!("{expected:?}")),
                 );
             }
         }

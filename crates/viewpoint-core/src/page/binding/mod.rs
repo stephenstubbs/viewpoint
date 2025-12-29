@@ -11,8 +11,8 @@ use std::sync::Arc;
 
 use tokio::sync::RwLock;
 use tracing::{debug, trace, warn};
-use viewpoint_cdp::protocol::runtime::{AddBindingParams, BindingCalledEvent};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::runtime::{AddBindingParams, BindingCalledEvent};
 
 use crate::error::PageError;
 
@@ -20,7 +20,9 @@ use crate::error::PageError;
 ///
 /// The callback receives a vector of JSON arguments and returns a JSON result.
 pub type BindingCallback = Box<
-    dyn Fn(Vec<serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<serde_json::Value, String>> + Send>>
+    dyn Fn(
+            Vec<serde_json::Value>,
+        ) -> Pin<Box<dyn Future<Output = Result<serde_json::Value, String>> + Send>>
         + Send
         + Sync,
 >;
@@ -129,10 +131,8 @@ impl BindingManager {
             .await?;
 
         // Store the callback
-        let boxed_callback: BindingCallback = Box::new(move |args| {
-            Box::pin(callback(args))
-        });
-        
+        let boxed_callback: BindingCallback = Box::new(move |args| Box::pin(callback(args)));
+
         {
             let mut bindings = self.bindings.write().await;
             bindings.insert(name.to_string(), boxed_callback);
@@ -171,7 +171,10 @@ impl BindingManager {
 
     /// Start listening for binding call events.
     async fn start_listening(&self) {
-        if self.is_listening.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        if self
+            .is_listening
+            .swap(true, std::sync::atomic::Ordering::SeqCst)
+        {
             // Already listening
             return;
         }
@@ -192,12 +195,15 @@ impl BindingManager {
 
                 if event.method == "Runtime.bindingCalled" {
                     if let Some(params) = &event.params {
-                        if let Ok(binding_event) = serde_json::from_value::<BindingCalledEvent>(params.clone()) {
+                        if let Ok(binding_event) =
+                            serde_json::from_value::<BindingCalledEvent>(params.clone())
+                        {
                             trace!("Binding called: {}", binding_event.name);
 
                             // Parse the payload
-                            let payload: Result<BindingPayload, _> = serde_json::from_str(&binding_event.payload);
-                            
+                            let payload: Result<BindingPayload, _> =
+                                serde_json::from_str(&binding_event.payload);
+
                             if let Ok(payload) = payload {
                                 let bindings_guard = bindings.read().await;
                                 if let Some(callback) = bindings_guard.get(&binding_event.name) {
@@ -218,7 +224,8 @@ impl BindingManager {
                                             }})();
                                             ",
                                             seq = payload.seq,
-                                            value = serde_json::to_string(&value).unwrap_or_else(|_| "null".to_string())
+                                            value = serde_json::to_string(&value)
+                                                .unwrap_or_else(|_| "null".to_string())
                                         ),
                                         Err(error) => format!(
                                             r"
@@ -231,22 +238,27 @@ impl BindingManager {
                                             }})();
                                             ",
                                             seq = payload.seq,
-                                            error = serde_json::to_string(&error).unwrap_or_else(|_| "\"Unknown error\"".to_string())
+                                            error =
+                                                serde_json::to_string(&error).unwrap_or_else(
+                                                    |_| "\"Unknown error\"".to_string()
+                                                )
                                         ),
                                     };
 
                                     let _ = connection
                                         .send_command::<_, serde_json::Value>(
                                             "Runtime.evaluate",
-                                            Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                                                expression: resolve_script,
-                                                object_group: None,
-                                                include_command_line_api: None,
-                                                silent: Some(true),
-                                                context_id: None,
-                                                return_by_value: Some(true),
-                                                await_promise: Some(false),
-                                            }),
+                                            Some(
+                                                viewpoint_cdp::protocol::runtime::EvaluateParams {
+                                                    expression: resolve_script,
+                                                    object_group: None,
+                                                    include_command_line_api: None,
+                                                    silent: Some(true),
+                                                    context_id: None,
+                                                    return_by_value: Some(true),
+                                                    await_promise: Some(false),
+                                                },
+                                            ),
                                             Some(&session_id),
                                         )
                                         .await;
@@ -366,7 +378,11 @@ impl super::Page {
     /// - The function is re-bound after each navigation
     /// - Arguments and return values must be JSON-serializable
     /// - Errors returned from the callback will reject the JavaScript promise
-    pub async fn expose_function<F, Fut>(&self, name: &str, callback: F) -> Result<(), crate::error::PageError>
+    pub async fn expose_function<F, Fut>(
+        &self,
+        name: &str,
+        callback: F,
+    ) -> Result<(), crate::error::PageError>
     where
         F: Fn(Vec<serde_json::Value>) -> Fut + Send + Sync + 'static,
         Fut: std::future::Future<Output = Result<serde_json::Value, String>> + Send + 'static,

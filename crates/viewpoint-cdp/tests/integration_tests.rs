@@ -11,8 +11,8 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Once;
 use std::time::Duration;
 
-use viewpoint_cdp::protocol::target_domain::{GetTargetsParams, GetTargetsResult};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::target_domain::{GetTargetsParams, GetTargetsResult};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -42,7 +42,12 @@ fn launch_chromium() -> (Child, String) {
             "/usr/bin/chromium",
             "/usr/bin/chromium-browser",
         ] {
-            if Command::new("which").arg(path).output().map(|o| o.status.success()).unwrap_or(false) {
+            if Command::new("which")
+                .arg(path)
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+            {
                 return path.to_string();
             }
         }
@@ -75,7 +80,10 @@ fn launch_chromium() -> (Child, String) {
         }
     }
 
-    assert!(!ws_url.is_empty(), "Failed to get WebSocket URL from Chromium");
+    assert!(
+        !ws_url.is_empty(),
+        "Failed to get WebSocket URL from Chromium"
+    );
 
     (child, ws_url)
 }
@@ -84,7 +92,7 @@ fn launch_chromium() -> (Child, String) {
 #[tokio::test]
 async fn test_cdp_connection() {
     init_tracing();
-    
+
     let (mut child, ws_url) = launch_chromium();
 
     // Connect to the browser
@@ -101,7 +109,10 @@ async fn test_cdp_connection() {
     // Should have at least one target (the browser)
     println!("Found {} targets", result.target_infos.len());
     for target in &result.target_infos {
-        println!("  - {} ({}): {}", target.target_type, target.target_id, target.url);
+        println!(
+            "  - {} ({}): {}",
+            target.target_type, target.target_id, target.url
+        );
     }
 
     // Clean up
@@ -112,7 +123,7 @@ async fn test_cdp_connection() {
 #[tokio::test]
 async fn test_cdp_session_commands() {
     init_tracing();
-    
+
     let (mut child, ws_url) = launch_chromium();
 
     let conn = CdpConnection::connect(&ws_url)
@@ -129,7 +140,10 @@ async fn test_cdp_session_commands() {
         .await
         .expect("Failed to create browser context");
 
-    println!("Created browser context: {}", create_result.browser_context_id);
+    println!(
+        "Created browser context: {}",
+        create_result.browser_context_id
+    );
 
     // Create a target (page) in the context
     let target_result: viewpoint_cdp::protocol::target_domain::CreateTargetResult = conn
@@ -154,10 +168,12 @@ async fn test_cdp_session_commands() {
     let attach_result: viewpoint_cdp::protocol::target_domain::AttachToTargetResult = conn
         .send_command(
             "Target.attachToTarget",
-            Some(viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
-                target_id: target_result.target_id.clone(),
-                flatten: Some(true),
-            }),
+            Some(
+                viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
+                    target_id: target_result.target_id.clone(),
+                    flatten: Some(true),
+                },
+            ),
             None,
         )
         .await
@@ -166,9 +182,13 @@ async fn test_cdp_session_commands() {
     println!("Attached with session: {}", attach_result.session_id);
 
     // Enable Page domain on the session
-    conn.send_command::<(), serde_json::Value>("Page.enable", None, Some(&attach_result.session_id))
-        .await
-        .expect("Failed to enable Page domain");
+    conn.send_command::<(), serde_json::Value>(
+        "Page.enable",
+        None,
+        Some(&attach_result.session_id),
+    )
+    .await
+    .expect("Failed to enable Page domain");
 
     // Navigate the page
     let nav_result: viewpoint_cdp::protocol::page::NavigateResult = conn
@@ -186,7 +206,11 @@ async fn test_cdp_session_commands() {
         .expect("Failed to navigate");
 
     println!("Navigated to frame: {}", nav_result.frame_id);
-    assert!(nav_result.error_text.is_none(), "Navigation failed: {:?}", nav_result.error_text);
+    assert!(
+        nav_result.error_text.is_none(),
+        "Navigation failed: {:?}",
+        nav_result.error_text
+    );
 
     // Clean up
     let _ = child.kill();
@@ -196,7 +220,7 @@ async fn test_cdp_session_commands() {
 #[tokio::test]
 async fn test_cdp_event_subscription() {
     init_tracing();
-    
+
     let (mut child, ws_url) = launch_chromium();
 
     let conn = CdpConnection::connect(&ws_url)
@@ -235,19 +259,25 @@ async fn test_cdp_event_subscription() {
     let attach_result: viewpoint_cdp::protocol::target_domain::AttachToTargetResult = conn
         .send_command(
             "Target.attachToTarget",
-            Some(viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
-                target_id: target_result.target_id,
-                flatten: Some(true),
-            }),
+            Some(
+                viewpoint_cdp::protocol::target_domain::AttachToTargetParams {
+                    target_id: target_result.target_id,
+                    flatten: Some(true),
+                },
+            ),
             None,
         )
         .await
         .expect("Failed to attach to target");
 
     // Enable Page domain
-    conn.send_command::<(), serde_json::Value>("Page.enable", None, Some(&attach_result.session_id))
-        .await
-        .expect("Failed to enable Page domain");
+    conn.send_command::<(), serde_json::Value>(
+        "Page.enable",
+        None,
+        Some(&attach_result.session_id),
+    )
+    .await
+    .expect("Failed to enable Page domain");
 
     // Navigate and check for events
     conn.send_command::<_, viewpoint_cdp::protocol::page::NavigateResult>(
@@ -285,7 +315,7 @@ async fn test_cdp_event_subscription() {
 #[tokio::test]
 async fn test_cdp_command_with_timeout() {
     init_tracing();
-    
+
     let (mut child, ws_url) = launch_chromium();
 
     let conn = CdpConnection::connect(&ws_url)
@@ -314,7 +344,7 @@ async fn test_cdp_command_with_timeout() {
 #[tokio::test]
 async fn test_connection_error_after_browser_kill() {
     init_tracing();
-    
+
     let (mut child, ws_url) = launch_chromium();
 
     let conn = CdpConnection::connect(&ws_url)
@@ -331,7 +361,7 @@ async fn test_connection_error_after_browser_kill() {
     // Kill the browser process
     child.kill().expect("Failed to kill browser");
     child.wait().expect("Failed to wait for browser exit");
-    
+
     // Give the connection time to detect the disconnection
     tokio::time::sleep(Duration::from_millis(100)).await;
 
@@ -340,7 +370,10 @@ async fn test_connection_error_after_browser_kill() {
         .send_command("Target.getTargets", Some(GetTargetsParams::default()), None)
         .await;
 
-    assert!(error_result.is_err(), "Command should fail after browser is killed");
+    assert!(
+        error_result.is_err(),
+        "Command should fail after browser is killed"
+    );
     let err = error_result.unwrap_err();
     println!("Got expected error: {}", err);
 }
@@ -349,10 +382,10 @@ async fn test_connection_error_after_browser_kill() {
 #[tokio::test]
 async fn test_connection_to_invalid_url() {
     init_tracing();
-    
+
     // Try to connect to a non-existent endpoint
     let result = CdpConnection::connect("ws://127.0.0.1:19999/devtools/browser/invalid").await;
-    
+
     assert!(result.is_err(), "Connection to invalid URL should fail");
     let err = result.unwrap_err();
     println!("Got expected error for invalid URL: {}", err);
@@ -362,10 +395,10 @@ async fn test_connection_to_invalid_url() {
 #[tokio::test]
 async fn test_connection_to_malformed_url() {
     init_tracing();
-    
+
     // Completely invalid URL
     let result = CdpConnection::connect("not-a-valid-websocket-url").await;
-    
+
     assert!(result.is_err(), "Connection to malformed URL should fail");
     let err = result.unwrap_err();
     println!("Got expected error for malformed URL: {}", err);
@@ -426,7 +459,10 @@ mod fetch_tests {
     #[test]
     fn test_auth_challenge_response() {
         let creds = AuthChallengeResponse::provide_credentials("user", "pass");
-        assert_eq!(creds.response, AuthChallengeResponseType::ProvideCredentials);
+        assert_eq!(
+            creds.response,
+            AuthChallengeResponseType::ProvideCredentials
+        );
         assert_eq!(creds.username, Some("user".to_string()));
         assert_eq!(creds.password, Some("pass".to_string()));
 

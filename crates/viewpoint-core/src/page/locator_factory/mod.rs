@@ -4,7 +4,7 @@
 //! locator instances for finding elements on the page.
 
 use crate::page::locator::{AriaRole, Locator, RoleLocatorBuilder, Selector};
-use crate::page::{Page, DEFAULT_TEST_ID_ATTRIBUTE};
+use crate::page::{DEFAULT_TEST_ID_ATTRIBUTE, Page};
 
 impl Page {
     /// Create a locator for elements matching a CSS selector.

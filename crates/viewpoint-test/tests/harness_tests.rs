@@ -5,7 +5,7 @@
 use std::sync::Once;
 use std::time::Duration;
 use viewpoint_core::DocumentLoadState;
-use viewpoint_test::{expect, expect_page, TestConfig, TestHarness};
+use viewpoint_test::{TestConfig, TestHarness, expect, expect_page};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -136,10 +136,7 @@ async fn test_harness_from_context() {
         .await
         .expect("should launch browser");
 
-    let context = browser
-        .new_context()
-        .await
-        .expect("should create context");
+    let context = browser.new_context().await.expect("should create context");
 
     // Create harness from existing context
     let harness = TestHarness::from_context(&context)
@@ -336,7 +333,7 @@ async fn test_expect_not_negation() {
         .expect("should navigate");
 
     let heading = page.locator("h1");
-    
+
     // not().to_have_text() should pass when text doesn't match
     expect(&heading)
         .not()
@@ -360,19 +357,19 @@ async fn test_expect_to_be_checked() {
 
     // Find an unchecked checkbox
     let checkbox = page.locator("input[type='checkbox'][value='cheese']");
-    
+
     // Check it
     checkbox.check().await.expect("should check");
-    
+
     // Verify it's checked
     expect(&checkbox)
         .to_be_checked()
         .await
         .expect("checkbox should be checked");
-    
+
     // Uncheck it
     checkbox.uncheck().await.expect("should uncheck");
-    
+
     // Verify it's not checked
     expect(&checkbox)
         .not()
@@ -391,7 +388,7 @@ async fn test_harness_close_explicit() {
 
     let harness = TestHarness::new().await.expect("should create harness");
     let page = harness.page();
-    
+
     // Do some work
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
@@ -410,13 +407,13 @@ async fn test_harness_cleanup_on_drop() {
     {
         let harness = TestHarness::new().await.expect("should create harness");
         let page = harness.page();
-        
+
         page.goto("https://example.com")
             .wait_until(DocumentLoadState::DomContentLoaded)
             .goto()
             .await
             .expect("should navigate");
-        
+
         // harness will be dropped here
     }
 

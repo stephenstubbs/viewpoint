@@ -31,9 +31,9 @@ impl Video {
 
         // Ensure parent directory exists
         if let Some(parent) = target_path.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| PageError::EvaluationFailed(format!("Failed to create directory: {e}")))?;
+            tokio::fs::create_dir_all(parent).await.map_err(|e| {
+                PageError::EvaluationFailed(format!("Failed to create directory: {e}"))
+            })?;
         }
 
         // Copy the video file
@@ -114,9 +114,11 @@ pub(super) async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), Pag
         .await
         .map_err(|e| PageError::EvaluationFailed(format!("Failed to read directory: {e}")))?;
 
-    while let Some(entry) = entries.next_entry().await.map_err(|e| {
-        PageError::EvaluationFailed(format!("Failed to read directory entry: {e}"))
-    })? {
+    while let Some(entry) = entries
+        .next_entry()
+        .await
+        .map_err(|e| PageError::EvaluationFailed(format!("Failed to read directory entry: {e}")))?
+    {
         let src_path = entry.path();
         let dst_path = dst.join(entry.file_name());
 

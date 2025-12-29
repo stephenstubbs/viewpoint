@@ -123,7 +123,9 @@ impl Request {
     /// # Errors
     ///
     /// Returns an error if the data is not valid JSON or doesn't match type T.
-    pub fn post_data_json<T: serde::de::DeserializeOwned>(&self) -> Result<Option<T>, serde_json::Error> {
+    pub fn post_data_json<T: serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<Option<T>, serde_json::Error> {
         match &self.post_data {
             Some(data) => serde_json::from_str(data).map(Some),
             None => Ok(None),

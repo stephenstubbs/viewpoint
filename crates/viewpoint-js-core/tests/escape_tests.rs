@@ -1,8 +1,8 @@
 //! Tests for escape functions and ToJsValue trait.
 
 use viewpoint_js_core::{
-    escape_for_css_attr, escape_js_contents, escape_js_contents_single, escape_js_string,
-    escape_js_string_single, ToJsValue,
+    ToJsValue, escape_for_css_attr, escape_js_contents, escape_js_contents_single,
+    escape_js_string, escape_js_string_single,
 };
 
 // ==========================================================================
@@ -104,7 +104,10 @@ fn test_css_attr_in_queryselector() {
 fn test_css_attr_in_queryselectorall() {
     let id = "my-test-id";
     let attr_value = escape_for_css_attr(id);
-    let selector = format!(r#"document.querySelectorAll('[data-testid={}]')"#, attr_value);
+    let selector = format!(
+        r#"document.querySelectorAll('[data-testid={}]')"#,
+        attr_value
+    );
     assert_eq!(
         selector,
         r#"document.querySelectorAll('[data-testid=\"my-test-id\"]')"#
@@ -286,10 +289,7 @@ fn test_single_quote_newlines() {
 
 #[test]
 fn test_single_quote_mixed() {
-    assert_eq!(
-        escape_js_string_single("it's a\ntest"),
-        r"'it\'s a\ntest'"
-    );
+    assert_eq!(escape_js_string_single("it's a\ntest"), r"'it\'s a\ntest'");
 }
 
 // ==========================================================================

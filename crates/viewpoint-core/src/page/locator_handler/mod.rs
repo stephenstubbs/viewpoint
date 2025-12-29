@@ -11,27 +11,22 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument, warn};
 
-use super::locator::{Locator, Selector};
 use super::Page;
+use super::locator::{Locator, Selector};
 use crate::error::LocatorError;
 
 /// Type alias for locator handler function.
-pub type LocatorHandlerFn = Arc<
-    dyn Fn() -> Pin<Box<dyn Future<Output = Result<(), LocatorError>> + Send>>
-        + Send
-        + Sync,
->;
+pub type LocatorHandlerFn =
+    Arc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<(), LocatorError>> + Send>> + Send + Sync>;
 
 /// Options for locator handlers.
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct LocatorHandlerOptions {
     /// Whether to skip waiting after the handler runs.
     pub no_wait_after: bool,
     /// Maximum number of times the handler can run. None means unlimited.
     pub times: Option<u32>,
 }
-
 
 /// Internal representation of a registered handler.
 #[derive(Clone)]
@@ -87,14 +82,16 @@ impl LocatorHandlerManager {
         selector: Selector,
         handler: F,
         options: LocatorHandlerOptions,
-    ) -> u64 
+    ) -> u64
     where
         F: Fn() -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<(), LocatorError>> + Send + 'static,
     {
-        let id = self.next_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let id = self
+            .next_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let handler_fn: LocatorHandlerFn = Arc::new(move || Box::pin(handler()));
-        
+
         let registered = RegisteredHandler {
             id,
             selector,
@@ -115,7 +112,7 @@ impl LocatorHandlerManager {
         let mut handlers = self.handlers.write().await;
         let initial_len = handlers.len();
         handlers.retain(|h| h.id != id);
-        
+
         if handlers.len() < initial_len {
             debug!(handler_id = id, "Locator handler removed");
         } else {
@@ -129,18 +126,21 @@ impl LocatorHandlerManager {
     #[instrument(level = "debug", skip(self, page))]
     pub async fn try_handle_blocking(&self, page: &Page) -> bool {
         let handlers = self.handlers.read().await;
-        
+
         for handler in handlers.iter() {
             // Check if the selector matches a visible element
             let locator = Locator::new(page, handler.selector.clone());
-            
+
             if let Ok(is_visible) = locator.is_visible().await {
                 if is_visible {
                     let handler_id = handler.id;
-                    debug!(handler_id = handler_id, "Handler selector matched, running handler");
+                    debug!(
+                        handler_id = handler_id,
+                        "Handler selector matched, running handler"
+                    );
                     let handler_fn = handler.handler.clone();
                     drop(handlers); // Release read lock before running handler
-                    
+
                     if let Err(e) = handler_fn().await {
                         warn!(handler_id = handler_id, "Locator handler failed: {}", e);
                     } else {
@@ -148,23 +148,26 @@ impl LocatorHandlerManager {
                         let mut handlers = self.handlers.write().await;
                         if let Some(handler) = handlers.iter_mut().find(|h| h.id == handler_id) {
                             handler.run_count += 1;
-                            
+
                             if let Some(times) = handler.options.times {
                                 if handler.run_count >= times {
-                                    debug!(handler_id = handler_id, "Handler reached times limit, removing");
+                                    debug!(
+                                        handler_id = handler_id,
+                                        "Handler reached times limit, removing"
+                                    );
                                     handlers.retain(|h| h.id != handler_id);
                                 }
                             }
                         }
-                        
+
                         return true;
                     }
-                    
+
                     return false;
                 }
             }
         }
-        
+
         false
     }
 }
@@ -287,7 +290,9 @@ impl super::Page {
 
     /// Remove a locator handler.
     pub async fn remove_locator_handler(&self, handle: LocatorHandlerHandle) {
-        self.locator_handler_manager.remove_handler_by_id(handle.id()).await;
+        self.locator_handler_manager
+            .remove_handler_by_id(handle.id())
+            .await;
     }
 
     /// Get the locator handler manager.

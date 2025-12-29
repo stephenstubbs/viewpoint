@@ -61,7 +61,10 @@ impl<'a> FulfillBuilder<'a> {
 
     /// Set multiple response headers.
     #[must_use]
-    pub fn headers(mut self, headers: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>) -> Self {
+    pub fn headers(
+        mut self,
+        headers: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+    ) -> Self {
         for (name, value) in headers {
             self.headers.push(HeaderEntry {
                 name: name.into(),
@@ -158,9 +161,9 @@ impl<'a> FulfillBuilder<'a> {
     pub async fn send(self) -> Result<(), NetworkError> {
         use base64::Engine;
 
-        let body = self.body.map(|b| {
-            base64::engine::general_purpose::STANDARD.encode(&b)
-        });
+        let body = self
+            .body
+            .map(|b| base64::engine::general_purpose::STANDARD.encode(&b));
 
         let params = FulfillRequestParams {
             request_id: self.route.request_id().to_string(),
@@ -226,7 +229,10 @@ impl<'a> ContinueBuilder<'a> {
 
     /// Set multiple request headers.
     #[must_use]
-    pub fn headers(mut self, headers: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>) -> Self {
+    pub fn headers(
+        mut self,
+        headers: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+    ) -> Self {
         for (name, value) in headers {
             self.headers.push(HeaderEntry {
                 name: name.into(),
@@ -253,9 +259,9 @@ impl<'a> ContinueBuilder<'a> {
     pub async fn send(self) -> Result<(), NetworkError> {
         use base64::Engine;
 
-        let post_data = self.post_data.map(|d| {
-            base64::engine::general_purpose::STANDARD.encode(&d)
-        });
+        let post_data = self
+            .post_data
+            .map(|d| base64::engine::general_purpose::STANDARD.encode(&d));
 
         let params = ContinueRequestParams {
             request_id: self.route.request_id().to_string(),

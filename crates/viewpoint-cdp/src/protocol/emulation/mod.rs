@@ -384,7 +384,6 @@ pub enum VisionDeficiency {
     Tritanopia,
 }
 
-
 /// Parameters for Emulation.setEmulatedVisionDeficiency.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

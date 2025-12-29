@@ -1,7 +1,7 @@
 //! API request context for making HTTP requests.
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use reqwest::cookie::Jar;
 use tracing::{debug, info};
@@ -103,9 +103,11 @@ impl APIRequestContext {
     }
 
     /// Build the reqwest client with the given options.
-    fn build_client(options: &APIContextOptions, cookie_jar: Arc<Jar>) -> Result<reqwest::Client, APIError> {
-        let mut builder = reqwest::Client::builder()
-            .cookie_provider(cookie_jar);
+    fn build_client(
+        options: &APIContextOptions,
+        cookie_jar: Arc<Jar>,
+    ) -> Result<reqwest::Client, APIError> {
+        let mut builder = reqwest::Client::builder().cookie_provider(cookie_jar);
 
         // Set timeout if specified
         if let Some(timeout) = options.timeout {
@@ -127,7 +129,9 @@ impl APIRequestContext {
             let mut proxy = reqwest::Proxy::all(&proxy_config.server)
                 .map_err(|e| APIError::BuildError(format!("Invalid proxy URL: {e}")))?;
 
-            if let (Some(username), Some(password)) = (&proxy_config.username, &proxy_config.password) {
+            if let (Some(username), Some(password)) =
+                (&proxy_config.username, &proxy_config.password)
+            {
                 proxy = proxy.basic_auth(username, password);
             }
 
@@ -138,7 +142,9 @@ impl APIRequestContext {
         // Note: reqwest doesn't have built-in preemptive basic auth at client level,
         // so we'll handle this via default headers
 
-        builder.build().map_err(|e| APIError::BuildError(e.to_string()))
+        builder
+            .build()
+            .map_err(|e| APIError::BuildError(e.to_string()))
     }
 
     /// Get the default headers including any authentication.

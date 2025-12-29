@@ -7,9 +7,9 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use viewpoint_cdp::protocol::dom::SetFileInputFilesParams;
-use viewpoint_cdp::CdpConnection;
 use tracing::{debug, instrument};
+use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::dom::SetFileInputFilesParams;
 
 use crate::error::LocatorError;
 

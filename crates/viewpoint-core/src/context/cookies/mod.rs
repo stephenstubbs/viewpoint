@@ -4,15 +4,15 @@
 
 use tracing::{debug, instrument};
 
-use viewpoint_cdp::protocol::{CookieParam, CookieSameSite};
 use viewpoint_cdp::protocol::storage::{
     ClearCookiesParams as StorageClearCookiesParams,
     DeleteCookiesParams as StorageDeleteCookiesParams, GetCookiesParams as StorageGetCookiesParams,
     GetCookiesResult as StorageGetCookiesResult, SetCookiesParams as StorageSetCookiesParams,
 };
+use viewpoint_cdp::protocol::{CookieParam, CookieSameSite};
 
-use super::types::{Cookie, SameSite};
 use super::BrowserContext;
+use super::types::{Cookie, SameSite};
 use crate::error::ContextError;
 
 impl BrowserContext {
@@ -108,7 +108,10 @@ impl BrowserContext {
             .connection()
             .send_command(
                 "Storage.getCookies",
-                Some(StorageGetCookiesParams::new().browser_context_id(self.context_id().to_string())),
+                Some(
+                    StorageGetCookiesParams::new()
+                        .browser_context_id(self.context_id().to_string()),
+                ),
                 None,
             )
             .await?;
@@ -190,7 +193,10 @@ impl BrowserContext {
     /// # Errors
     ///
     /// Returns an error if getting cookies fails.
-    pub async fn cookies_for_url(&self, url: impl Into<String>) -> Result<Vec<Cookie>, ContextError> {
+    pub async fn cookies_for_url(
+        &self,
+        url: impl Into<String>,
+    ) -> Result<Vec<Cookie>, ContextError> {
         self.cookies_for_urls(vec![url.into()]).await
     }
 
@@ -208,7 +214,10 @@ impl BrowserContext {
         self.connection()
             .send_command::<_, serde_json::Value>(
                 "Storage.clearCookies",
-                Some(StorageClearCookiesParams::new().browser_context_id(self.context_id().to_string())),
+                Some(
+                    StorageClearCookiesParams::new()
+                        .browser_context_id(self.context_id().to_string()),
+                ),
                 None,
             )
             .await?;
@@ -281,10 +290,7 @@ impl<'a> ClearCookiesBuilder<'a> {
         let cookies = self.context.cookies().await?;
 
         for cookie in cookies {
-            let matches_name = self
-                .name
-                .as_ref()
-                .is_none_or(|n| cookie.name == *n);
+            let matches_name = self.name.as_ref().is_none_or(|n| cookie.name == *n);
             let matches_domain = self
                 .domain
                 .as_ref()
@@ -306,7 +312,11 @@ impl<'a> ClearCookiesBuilder<'a> {
 
                 self.context
                     .connection()
-                    .send_command::<_, serde_json::Value>("Storage.deleteCookies", Some(params), None)
+                    .send_command::<_, serde_json::Value>(
+                        "Storage.deleteCookies",
+                        Some(params),
+                        None,
+                    )
                     .await?;
             }
         }

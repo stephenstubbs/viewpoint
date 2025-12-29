@@ -3,11 +3,11 @@
 use std::sync::Arc;
 use tracing::{debug, info, instrument};
 
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::emulation::{
     MediaFeature, SetDeviceMetricsOverrideParams, SetEmulatedMediaParams,
     SetEmulatedVisionDeficiencyParams, ViewportSize, VisionDeficiency as CdpVisionDeficiency,
 };
-use viewpoint_cdp::CdpConnection;
 
 use super::Page;
 use crate::context::{ColorScheme, ForcedColors, ReducedMotion};
@@ -203,7 +203,11 @@ impl<'a> EmulateMediaBuilder<'a> {
         }
 
         let media = self.media.map(|m| m.as_str().to_string());
-        let features_opt = if features.is_empty() { None } else { Some(features) };
+        let features_opt = if features.is_empty() {
+            None
+        } else {
+            Some(features)
+        };
 
         debug!(
             media = ?media,
@@ -240,8 +244,8 @@ impl<'a> EmulateMediaBuilder<'a> {
             .send_command::<_, serde_json::Value>(
                 "Emulation.setEmulatedMedia",
                 Some(SetEmulatedMediaParams {
-                    media: Some(String::new()),  // Empty string clears media type
-                    features: Some(Vec::new()),  // Empty array clears features
+                    media: Some(String::new()), // Empty string clears media type
+                    features: Some(Vec::new()), // Empty array clears features
                 }),
                 Some(self.session_id),
             )

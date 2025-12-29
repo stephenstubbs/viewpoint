@@ -2,11 +2,11 @@
 //!
 //! Methods for evaluating JavaScript expressions on elements.
 
-use viewpoint_cdp::protocol::runtime::EvaluateParams;
 use tracing::{debug, instrument};
+use viewpoint_cdp::protocol::runtime::EvaluateParams;
 
-use super::element::{BoundingBox, ElementHandle};
 use super::Locator;
+use super::element::{BoundingBox, ElementHandle};
 use crate::error::LocatorError;
 
 impl<'a> Locator<'a> {
@@ -85,9 +85,13 @@ impl<'a> Locator<'a> {
             return Err(LocatorError::EvaluationError(error.to_string()));
         }
 
-        let value = result.get("__viewpoint_result").cloned().unwrap_or(serde_json::Value::Null);
-        serde_json::from_value(value)
-            .map_err(|e| LocatorError::EvaluationError(format!("Failed to deserialize result: {e}")))
+        let value = result
+            .get("__viewpoint_result")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        serde_json::from_value(value).map_err(|e| {
+            LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
+        })
     }
 
     /// Evaluate a JavaScript expression on all matching elements.
@@ -158,9 +162,13 @@ impl<'a> Locator<'a> {
             return Err(LocatorError::EvaluationError(error.to_string()));
         }
 
-        let value = result.get("__viewpoint_result").cloned().unwrap_or(serde_json::Value::Null);
-        serde_json::from_value(value)
-            .map_err(|e| LocatorError::EvaluationError(format!("Failed to deserialize result: {e}")))
+        let value = result
+            .get("__viewpoint_result")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        serde_json::from_value(value).map_err(|e| {
+            LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
+        })
     }
 
     /// Get a raw element handle for the first matching element.
@@ -217,14 +225,20 @@ impl<'a> Locator<'a> {
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .page
             .connection()
-            .send_command("Runtime.evaluate", Some(params), Some(self.page.session_id()))
+            .send_command(
+                "Runtime.evaluate",
+                Some(params),
+                Some(self.page.session_id()),
+            )
             .await?;
 
         if let Some(exception) = result.exception_details {
             return Err(LocatorError::EvaluationError(exception.text));
         }
 
-        let object_id = result.result.object_id
+        let object_id = result
+            .result
+            .object_id
             .ok_or_else(|| LocatorError::NotFound(format!("{:?}", self.selector)))?;
 
         Ok(ElementHandle {
@@ -270,7 +284,10 @@ impl<'a> Locator<'a> {
         );
 
         let result = self.evaluate_js(&js).await?;
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
         }
@@ -307,14 +324,19 @@ impl<'a> Locator<'a> {
     /// Returns an error if the element cannot be found.
     pub async fn bounding_box(&self) -> Result<Option<BoundingBox>, LocatorError> {
         let info = self.query_element_info().await?;
-        
+
         if !info.found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
         }
 
         match (info.x, info.y, info.width, info.height) {
             (Some(x), Some(y), Some(width), Some(height)) if width > 0.0 && height > 0.0 => {
-                Ok(Some(BoundingBox { x, y, width, height }))
+                Ok(Some(BoundingBox {
+                    x,
+                    y,
+                    width,
+                    height,
+                }))
             }
             _ => Ok(None),
         }

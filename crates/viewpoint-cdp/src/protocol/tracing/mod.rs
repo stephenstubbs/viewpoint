@@ -16,7 +16,6 @@ pub enum TransferMode {
     ReturnAsStream,
 }
 
-
 /// Stream format for trace data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -29,7 +28,6 @@ pub enum StreamFormat {
     Proto,
 }
 
-
 /// Stream compression type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -41,7 +39,6 @@ pub enum StreamCompression {
     /// Gzip compression.
     Gzip,
 }
-
 
 /// Tracing backend type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,7 +53,6 @@ pub enum TracingBackend {
     /// Use system tracing.
     System,
 }
-
 
 // ============================================================================
 // Tracing.start

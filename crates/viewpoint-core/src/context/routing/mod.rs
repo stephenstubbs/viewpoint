@@ -10,7 +10,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Weak};
 
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tracing::debug;
 
 use viewpoint_cdp::CdpConnection;
@@ -78,9 +78,9 @@ impl ContextRouteRegistry {
             page_registries: RwLock::new(Vec::new()),
         }
     }
-    
+
     /// Register a page's route registry with this context.
-    /// 
+    ///
     /// When a new route is added to the context, Fetch will be enabled on all
     /// registered page registries before the `route()` call returns.
     pub async fn register_page_registry(&self, registry: &Arc<RouteHandlerRegistry>) {
@@ -89,9 +89,9 @@ impl ContextRouteRegistry {
         registries.retain(|weak| weak.strong_count() > 0);
         registries.push(Arc::downgrade(registry));
     }
-    
+
     /// Enable Fetch domain on all registered pages.
-    /// 
+    ///
     /// This is called when a new route is added to ensure all pages can intercept requests.
     async fn enable_fetch_on_all_pages(&self) -> Result<(), NetworkError> {
         let registries = self.page_registries.read().await;
@@ -102,9 +102,9 @@ impl ContextRouteRegistry {
         }
         Ok(())
     }
-    
+
     /// Subscribe to route change notifications.
-    /// 
+    ///
     /// Pages use this to know when they need to enable Fetch domain
     /// for newly added context routes.
     pub fn subscribe_route_changes(&self) -> broadcast::Receiver<RouteChangeNotification> {
@@ -142,15 +142,17 @@ impl ContextRouteRegistry {
             handler,
         });
         drop(handlers); // Release write lock before enabling Fetch
-        
+
         // Synchronously enable Fetch on all existing pages before returning.
         // This ensures that navigation that happens immediately after route()
         // will be intercepted by this route.
         self.enable_fetch_on_all_pages().await?;
-        
+
         // Notify subscribers that a route was added (for future pages and as backup)
         // Ignore send errors (no subscribers is fine)
-        let _ = self.route_change_tx.send(RouteChangeNotification::RouteAdded);
+        let _ = self
+            .route_change_tx
+            .send(RouteChangeNotification::RouteAdded);
 
         Ok(())
     }
@@ -160,7 +162,11 @@ impl ContextRouteRegistry {
     /// # Errors
     ///
     /// Returns an error if registering the route handler fails.
-    pub async fn route_predicate<P, H, Fut>(&self, predicate: P, handler: H) -> Result<(), NetworkError>
+    pub async fn route_predicate<P, H, Fut>(
+        &self,
+        predicate: P,
+        handler: H,
+    ) -> Result<(), NetworkError>
     where
         P: Fn(&str) -> bool + Send + Sync + 'static,
         H: Fn(Route) -> Fut + Send + Sync + 'static,
@@ -188,12 +194,14 @@ impl ContextRouteRegistry {
             handler,
         });
         drop(handlers); // Release write lock before enabling Fetch
-        
+
         // Synchronously enable Fetch on all existing pages
         self.enable_fetch_on_all_pages().await?;
-        
+
         // Notify subscribers that a route was added
-        let _ = self.route_change_tx.send(RouteChangeNotification::RouteAdded);
+        let _ = self
+            .route_change_tx
+            .send(RouteChangeNotification::RouteAdded);
 
         Ok(())
     }
@@ -231,7 +239,10 @@ impl ContextRouteRegistry {
     ///
     /// Returns an error if applying routes to the page fails.
     #[deprecated(note = "Use set_context_routes on RouteHandlerRegistry instead")]
-    pub async fn apply_to_page(&self, page_registry: &RouteHandlerRegistry) -> Result<(), NetworkError> {
+    pub async fn apply_to_page(
+        &self,
+        page_registry: &RouteHandlerRegistry,
+    ) -> Result<(), NetworkError> {
         let handlers = self.handlers.read().await;
 
         for handler in handlers.iter() {
@@ -242,15 +253,15 @@ impl ContextRouteRegistry {
             // For now, we'll use a catch-all pattern and filter in the handler
             // This is a simplification - a full implementation would need
             // to serialize/deserialize patterns
-            
+
             // Note: This is a simplified approach. In practice, we would need
             // to properly copy the pattern logic to the page registry.
-            page_registry.route("*", move |route| {
-                let handler = handler_clone.clone();
-                async move {
-                    handler(route).await
-                }
-            }).await?;
+            page_registry
+                .route("*", move |route| {
+                    let handler = handler_clone.clone();
+                    async move { handler(route).await }
+                })
+                .await?;
         }
 
         Ok(())
@@ -260,35 +271,45 @@ impl ContextRouteRegistry {
     ///
     /// Returns `Some(handler)` if a matching handler is found, `None` otherwise.
     /// This is called by page route registries as a fallback.
-    pub async fn find_handler(&self, url: &str) -> Option<Arc<
-        dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>>
-            + Send
-            + Sync,
-    >> {
+    pub async fn find_handler(
+        &self,
+        url: &str,
+    ) -> Option<
+        Arc<
+            dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>>
+                + Send
+                + Sync,
+        >,
+    > {
         let handlers = self.handlers.read().await;
-        
+
         // Find matching handlers (in reverse order - LIFO)
         for handler in handlers.iter().rev() {
             if handler.pattern.matches(url) {
                 return Some(handler.handler.clone());
             }
         }
-        
+
         None
     }
-    
+
     /// Find all matching handlers for a URL.
     ///
     /// Returns all handlers that match the URL in reverse order (LIFO).
     /// This is used for fallback chaining - handlers are tried in order
     /// until one handles the request.
-    pub async fn find_all_handlers(&self, url: &str) -> Vec<Arc<
-        dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>>
-            + Send
-            + Sync,
-    >> {
+    pub async fn find_all_handlers(
+        &self,
+        url: &str,
+    ) -> Vec<
+        Arc<
+            dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>>
+                + Send
+                + Sync,
+        >,
+    > {
         let handlers = self.handlers.read().await;
-        
+
         // Collect all matching handlers (in reverse order - LIFO)
         handlers
             .iter()

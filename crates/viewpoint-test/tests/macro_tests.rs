@@ -15,9 +15,9 @@ use viewpoint_core::DocumentLoadState;
 // #[viewpoint_test::test] macro rewrites those signatures, so these imports
 // appear unused to the compiler. We re-export them from viewpoint_test crate
 // so users can reference them in their test function parameters.
+use viewpoint_test::{Browser, TestHarness, expect_page};
 #[allow(unused_imports)]
 use viewpoint_test::{BrowserContext, Page};
-use viewpoint_test::{expect_page, Browser, TestHarness};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -43,14 +43,14 @@ fn init_tracing() {
 #[viewpoint_test::test]
 async fn test_macro_page_fixture(page: Page) {
     init_tracing();
-    
+
     // Verify the page is working
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await
         .expect("should navigate");
-    
+
     expect_page(&page)
         .to_have_title("Example Domain")
         .await
@@ -61,11 +61,11 @@ async fn test_macro_page_fixture(page: Page) {
 #[viewpoint_test::test]
 async fn test_macro_multiple_fixtures(page: Page, context: BrowserContext) {
     init_tracing();
-    
+
     // Both fixtures should be available and working
     assert!(!page.is_closed(), "page should not be closed");
     assert!(!context.is_closed(), "context should not be closed");
-    
+
     // Navigate to verify page works
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
@@ -78,7 +78,7 @@ async fn test_macro_multiple_fixtures(page: Page, context: BrowserContext) {
 #[viewpoint_test::test(headless = true)]
 async fn test_macro_headless_configuration(page: Page) {
     init_tracing();
-    
+
     // The test runs in headless mode - verify page works
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
@@ -91,7 +91,7 @@ async fn test_macro_headless_configuration(page: Page) {
 #[viewpoint_test::test(timeout = 60000)]
 async fn test_macro_timeout_configuration(page: Page) {
     init_tracing();
-    
+
     // The test has a 60 second timeout - verify page works
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
@@ -104,7 +104,7 @@ async fn test_macro_timeout_configuration(page: Page) {
 #[viewpoint_test::test(headless = true, timeout = 45000)]
 async fn test_macro_combined_configuration(page: Page) {
     init_tracing();
-    
+
     // Both configurations should be applied
     page.goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
@@ -145,7 +145,7 @@ async fn test_harness_browser_scope() {
 
     // Clean up harness first
     drop(harness);
-    
+
     // Then close the browser
     browser.close().await.expect("should close browser");
 }
@@ -161,10 +161,8 @@ async fn test_harness_context_scope() {
         .launch()
         .await
         .expect("should launch browser");
-    
-    let context = browser.new_context()
-        .await
-        .expect("should create context");
+
+    let context = browser.new_context().await.expect("should create context");
 
     // Create harness from the context - simulates context scope
     let harness = TestHarness::from_context(&context)
@@ -200,8 +198,11 @@ async fn test_harness_from_browser_ownership() {
         .expect("should create harness");
 
     // Browser should be None (we don't own it)
-    assert!(harness.browser().is_none(), "harness should not own browser");
-    
+    assert!(
+        harness.browser().is_none(),
+        "harness should not own browser"
+    );
+
     // But context and page should be available
     assert!(harness.context().is_some(), "context should be available");
     assert!(!harness.page().is_closed(), "page should be open");
@@ -220,19 +221,23 @@ async fn test_harness_from_context_ownership() {
         .launch()
         .await
         .expect("should launch browser");
-    
-    let context = browser.new_context()
-        .await
-        .expect("should create context");
+
+    let context = browser.new_context().await.expect("should create context");
 
     let harness = TestHarness::from_context(&context)
         .await
         .expect("should create harness");
 
     // Neither browser nor context should be owned
-    assert!(harness.browser().is_none(), "harness should not own browser");
-    assert!(harness.context().is_none(), "harness should not own context");
-    
+    assert!(
+        harness.browser().is_none(),
+        "harness should not own browser"
+    );
+    assert!(
+        harness.context().is_none(),
+        "harness should not own context"
+    );
+
     // But page should be available
     assert!(!harness.page().is_closed(), "page should be open");
 
@@ -249,10 +254,10 @@ async fn test_default_harness_is_headless() {
     init_tracing();
 
     let harness = TestHarness::new().await.expect("should create harness");
-    
+
     // Default config should be headless
     assert!(harness.config().headless, "default should be headless");
-    
+
     // Default timeout should be 30 seconds
     assert_eq!(
         harness.config().timeout,

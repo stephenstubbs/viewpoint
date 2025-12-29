@@ -94,15 +94,22 @@ async fn test_pdf_header_template() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     let header = r#"<div style="font-size: 10px; text-align: center; width: 100%;">Header - <span class="title"></span></div>"#;
-    
-    let pdf_data = page.pdf()
+
+    let pdf_data = page
+        .pdf()
         .header_template(header)
         .generate()
         .await
@@ -125,15 +132,22 @@ async fn test_pdf_footer_template() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     let footer = r#"<div style="font-size: 10px; text-align: center; width: 100%;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>"#;
-    
-    let pdf_data = page.pdf()
+
+    let pdf_data = page
+        .pdf()
         .footer_template(footer)
         .generate()
         .await
@@ -156,16 +170,23 @@ async fn test_pdf_header_footer_combined() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     let header = r#"<div style="font-size: 10px;">Document Header</div>"#;
     let footer = r#"<div style="font-size: 10px;">Page <span class="pageNumber"></span></div>"#;
-    
-    let pdf_data = page.pdf()
+
+    let pdf_data = page
+        .pdf()
         .header_template(header)
         .footer_template(footer)
         .generate()
@@ -193,14 +214,21 @@ async fn test_pdf_page_ranges() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MULTI_PAGE_HTML).set().await.expect("Failed to set content");
+    page.set_content(MULTI_PAGE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
     // Generate PDF with only pages 1-3
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .page_ranges("1-3")
         .generate()
         .await
@@ -223,14 +251,21 @@ async fn test_pdf_page_ranges_non_contiguous() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MULTI_PAGE_HTML).set().await.expect("Failed to set content");
+    page.set_content(MULTI_PAGE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
     // Generate PDF with pages 1-2 and 5
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .page_ranges("1-2, 5")
         .generate()
         .await
@@ -257,13 +292,20 @@ async fn test_pdf_background_graphics() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(BACKGROUND_HTML).set().await.expect("Failed to set content");
+    page.set_content(BACKGROUND_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .print_background(true)
         .generate()
         .await
@@ -286,13 +328,20 @@ async fn test_pdf_no_background_graphics() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(BACKGROUND_HTML).set().await.expect("Failed to set content");
+    page.set_content(BACKGROUND_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .print_background(false)
         .generate()
         .await
@@ -319,17 +368,24 @@ async fn test_pdf_save_to_file() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Create a temp directory for the PDF
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let pdf_path = temp_dir.path().join("test-output.pdf");
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .path(&pdf_path)
         .generate()
         .await
@@ -341,10 +397,13 @@ async fn test_pdf_save_to_file() {
 
     // Verify file was created
     assert!(pdf_path.exists(), "PDF file should exist");
-    
+
     // Verify file content
     let file_content = std::fs::read(&pdf_path).expect("Failed to read PDF file");
-    assert_eq!(file_content, pdf_data, "File content should match returned data");
+    assert_eq!(
+        file_content, pdf_data,
+        "File content should match returned data"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -364,16 +423,23 @@ async fn test_pdf_combined_options() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(MULTI_PAGE_HTML).set().await.expect("Failed to set content");
+    page.set_content(MULTI_PAGE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
     let header = r#"<div style="font-size: 10px;">My Document</div>"#;
     let footer = r#"<div style="font-size: 10px;">Page <span class="pageNumber"></span></div>"#;
 
-    let pdf_data = page.pdf()
+    let pdf_data = page
+        .pdf()
         .format(PaperFormat::A4)
         .landscape(true)
         .margins(Margins::new(1.0, 0.75, 1.0, 0.75))
@@ -407,11 +473,17 @@ async fn test_pdf_on_closed_page() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let mut page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(SIMPLE_HTML).set().await.expect("Failed to set content");
-    
+    page.set_content(SIMPLE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
+
     // Close the page
     page.close().await.expect("Failed to close page");
     assert!(page.is_closed());

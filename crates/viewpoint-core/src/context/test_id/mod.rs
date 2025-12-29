@@ -40,7 +40,9 @@ impl BrowserContext {
     /// Get the test ID attribute synchronously (for internal use).
     pub(crate) fn test_id_attribute_blocking(&self) -> String {
         // Use try_read to avoid blocking; fall back to default if lock is held
-        self.test_id_attribute
-            .try_read().map_or_else(|_| DEFAULT_TEST_ID_ATTRIBUTE.to_string(), |guard| guard.clone())
+        self.test_id_attribute.try_read().map_or_else(
+            |_| DEFAULT_TEST_ID_ATTRIBUTE.to_string(),
+            |guard| guard.clone(),
+        )
     }
 }

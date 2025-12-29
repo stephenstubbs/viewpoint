@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::{oneshot, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, oneshot};
 use tracing::{debug, warn};
 use viewpoint_cdp::CdpConnection;
 
@@ -28,8 +28,8 @@ use super::page_error::PageError as PageErrorInfo;
 use crate::error::PageError;
 
 pub use types::{
-    ConsoleHandler, DialogHandler, DownloadHandler, FileChooserHandler,
-    FrameAttachedHandler, FrameDetachedHandler, FrameNavigatedHandler, PageErrorHandler,
+    ConsoleHandler, DialogHandler, DownloadHandler, FileChooserHandler, FrameAttachedHandler,
+    FrameDetachedHandler, FrameNavigatedHandler, PageErrorHandler,
 };
 
 use download_handling::DownloadTracker;
@@ -108,13 +108,13 @@ impl PageEventManager {
             wait_for_console_tx: Arc::new(Mutex::new(None)),
             wait_for_pageerror_tx: Arc::new(Mutex::new(None)),
         };
-        
+
         // Start the event listener
         manager.start_event_listener();
-        
+
         manager
     }
-    
+
     /// Start the background event listener for console, pageerror, dialog, frame, and download events.
     fn start_event_listener(&self) {
         event_listener::start_event_listener(
@@ -143,9 +143,7 @@ impl PageEventManager {
         Fut: Future<Output = Result<(), PageError>> + Send + 'static,
     {
         let mut dialog_handler = self.dialog_handler.write().await;
-        *dialog_handler = Some(Box::new(move |dialog| {
-            Box::pin(handler(dialog))
-        }));
+        *dialog_handler = Some(Box::new(move |dialog| Box::pin(handler(dialog))));
     }
 
     /// Remove the dialog handler.
@@ -161,9 +159,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut download_handler = self.download_handler.write().await;
-        *download_handler = Some(Box::new(move |download| {
-            Box::pin(handler(download))
-        }));
+        *download_handler = Some(Box::new(move |download| Box::pin(handler(download))));
     }
 
     /// Set the file chooser handler.
@@ -173,9 +169,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut file_chooser_handler = self.file_chooser_handler.write().await;
-        *file_chooser_handler = Some(Box::new(move |chooser| {
-            Box::pin(handler(chooser))
-        }));
+        *file_chooser_handler = Some(Box::new(move |chooser| Box::pin(handler(chooser))));
     }
 
     /// Set the console handler.
@@ -185,9 +179,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut console_handler = self.console_handler.write().await;
-        *console_handler = Some(Box::new(move |message| {
-            Box::pin(handler(message))
-        }));
+        *console_handler = Some(Box::new(move |message| Box::pin(handler(message))));
     }
 
     /// Remove the console handler.
@@ -203,9 +195,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut pageerror_handler = self.pageerror_handler.write().await;
-        *pageerror_handler = Some(Box::new(move |error| {
-            Box::pin(handler(error))
-        }));
+        *pageerror_handler = Some(Box::new(move |error| Box::pin(handler(error))));
     }
 
     /// Remove the page error handler.
@@ -221,9 +211,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut frameattached_handler = self.frameattached_handler.write().await;
-        *frameattached_handler = Some(Box::new(move |frame| {
-            Box::pin(handler(frame))
-        }));
+        *frameattached_handler = Some(Box::new(move |frame| Box::pin(handler(frame))));
     }
 
     /// Remove the frame attached handler.
@@ -239,9 +227,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut framenavigated_handler = self.framenavigated_handler.write().await;
-        *framenavigated_handler = Some(Box::new(move |frame| {
-            Box::pin(handler(frame))
-        }));
+        *framenavigated_handler = Some(Box::new(move |frame| Box::pin(handler(frame))));
     }
 
     /// Remove the frame navigated handler.
@@ -257,9 +243,7 @@ impl PageEventManager {
         Fut: Future<Output = ()> + Send + 'static,
     {
         let mut framedetached_handler = self.framedetached_handler.write().await;
-        *framedetached_handler = Some(Box::new(move |frame| {
-            Box::pin(handler(frame))
-        }));
+        *framedetached_handler = Some(Box::new(move |frame| Box::pin(handler(frame))));
     }
 
     /// Remove the frame detached handler.
@@ -295,7 +279,7 @@ impl PageEventManager {
     /// Set whether to intercept file chooser dialogs.
     pub async fn set_intercept_file_chooser(&self, enabled: bool) -> Result<(), PageError> {
         *self.file_chooser_intercepted.write().await = enabled;
-        
+
         self.connection
             .send_command::<_, serde_json::Value>(
                 "Page.setInterceptFileChooserDialog",
@@ -303,7 +287,7 @@ impl PageEventManager {
                 Some(&self.session_id),
             )
             .await?;
-        
+
         Ok(())
     }
 
@@ -311,13 +295,15 @@ impl PageEventManager {
     pub async fn set_download_behavior(&self, allow: bool) -> Result<(), PageError> {
         // Ensure download directory exists
         if allow {
-            tokio::fs::create_dir_all(&self.download_dir).await.map_err(|e| {
-                PageError::EvaluationFailed(format!("Failed to create download directory: {e}"))
-            })?;
+            tokio::fs::create_dir_all(&self.download_dir)
+                .await
+                .map_err(|e| {
+                    PageError::EvaluationFailed(format!("Failed to create download directory: {e}"))
+                })?;
         }
 
         let behavior = if allow { "allow" } else { "deny" };
-        
+
         self.connection
             .send_command::<_, serde_json::Value>(
                 "Browser.setDownloadBehavior",
@@ -423,7 +409,7 @@ impl PageEventManager {
             let mut waiter = self.wait_for_dialog_tx.lock().await;
             *waiter = Some(tx);
         }
-        
+
         tokio::time::timeout(timeout, rx)
             .await
             .map_err(|_| PageError::EvaluationFailed("Timeout waiting for dialog".to_string()))?
@@ -447,10 +433,12 @@ impl PageEventManager {
             let mut waiter = self.wait_for_console_tx.lock().await;
             *waiter = Some(tx);
         }
-        
+
         tokio::time::timeout(timeout, rx)
             .await
-            .map_err(|_| PageError::EvaluationFailed("Timeout waiting for console message".to_string()))?
+            .map_err(|_| {
+                PageError::EvaluationFailed("Timeout waiting for console message".to_string())
+            })?
             .map_err(|_| PageError::EvaluationFailed("Console wait cancelled".to_string()))
     }
 
@@ -461,7 +449,7 @@ impl PageEventManager {
             let mut waiter = self.wait_for_pageerror_tx.lock().await;
             *waiter = Some(tx);
         }
-        
+
         tokio::time::timeout(timeout, rx)
             .await
             .map_err(|_| PageError::EvaluationFailed("Timeout waiting for page error".to_string()))?

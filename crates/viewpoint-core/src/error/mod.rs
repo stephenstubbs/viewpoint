@@ -58,6 +58,18 @@ pub enum BrowserError {
     #[error("failed to connect to browser: {0}")]
     ConnectionFailed(String),
 
+    /// Connection timed out.
+    #[error("connection timeout after {0:?}")]
+    ConnectionTimeout(Duration),
+
+    /// Invalid endpoint URL.
+    #[error("invalid endpoint URL: {0}")]
+    InvalidEndpointUrl(String),
+
+    /// Failed to discover WebSocket endpoint from HTTP endpoint.
+    #[error("endpoint discovery failed: {0}")]
+    EndpointDiscoveryFailed(String),
+
     /// Browser is already closed.
     #[error("browser is closed")]
     Closed,
@@ -204,7 +216,9 @@ pub enum LocatorError {
     PageClosed,
 
     /// Touch not enabled.
-    #[error("touch not enabled: call page.enable_touch() or set hasTouch: true in browser context options before using touch actions")]
+    #[error(
+        "touch not enabled: call page.enable_touch() or set hasTouch: true in browser context options before using touch actions"
+    )]
     TouchNotEnabled,
 }
 

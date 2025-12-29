@@ -35,7 +35,10 @@ impl Locator<'_> {
     /// # }
     /// ```
     #[instrument(level = "debug", skip(self, files), fields(selector = ?self.selector, file_count = files.len()))]
-    pub async fn set_input_files<P: AsRef<std::path::Path>>(&self, files: &[P]) -> Result<(), LocatorError> {
+    pub async fn set_input_files<P: AsRef<std::path::Path>>(
+        &self,
+        files: &[P],
+    ) -> Result<(), LocatorError> {
         self.wait_for_actionable().await?;
 
         let file_paths: Vec<String> = files
@@ -62,15 +65,24 @@ impl Locator<'_> {
         );
 
         let result = self.evaluate_js(&js).await?;
-        
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
-            let error = result.get("error").and_then(|v| v.as_str()).unwrap_or("Unknown error");
+            let error = result
+                .get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown error");
             return Err(LocatorError::EvaluationError(error.to_string()));
         }
 
-        let is_multiple = result.get("isMultiple").and_then(serde_json::Value::as_bool).unwrap_or(false);
-        
+        let is_multiple = result
+            .get("isMultiple")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+
         if !is_multiple && file_paths.len() > 1 {
             return Err(LocatorError::EvaluationError(
                 "Cannot set multiple files on a single file input".to_string(),
@@ -99,11 +111,16 @@ impl Locator<'_> {
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .page
             .connection()
-            .send_command("Runtime.evaluate", Some(params), Some(self.page.session_id()))
+            .send_command(
+                "Runtime.evaluate",
+                Some(params),
+                Some(self.page.session_id()),
+            )
             .await?;
 
-        let object_id = result.result.object_id
-            .ok_or_else(|| LocatorError::EvaluationError("Failed to get element object ID".to_string()))?;
+        let object_id = result.result.object_id.ok_or_else(|| {
+            LocatorError::EvaluationError("Failed to get element object ID".to_string())
+        })?;
 
         // Set the files using DOM.setFileInputFiles
         self.page
@@ -153,7 +170,7 @@ impl Locator<'_> {
         &self,
         files: &[crate::page::FilePayload],
     ) -> Result<(), LocatorError> {
-        use base64::{engine::general_purpose::STANDARD, Engine};
+        use base64::{Engine, engine::general_purpose::STANDARD};
 
         self.wait_for_actionable().await?;
 
@@ -177,7 +194,10 @@ impl Locator<'_> {
 
         let result = self.evaluate_js(&js).await?;
 
-        let found = result.get("found").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let found = result
+            .get("found")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if !found {
             let error = result
                 .get("error")
@@ -209,8 +229,8 @@ impl Locator<'_> {
             })
             .collect();
 
-        let file_data_json =
-            serde_json::to_string(&file_data).map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
+        let file_data_json = serde_json::to_string(&file_data)
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
 
         // Use JavaScript to create File objects and set them on the input
         let set_files_js = format!(
@@ -265,7 +285,11 @@ impl Locator<'_> {
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .page
             .connection()
-            .send_command("Runtime.evaluate", Some(params), Some(self.page.session_id()))
+            .send_command(
+                "Runtime.evaluate",
+                Some(params),
+                Some(self.page.session_id()),
+            )
             .await?;
 
         if let Some(exception) = result.exception_details {
@@ -276,7 +300,10 @@ impl Locator<'_> {
         }
 
         if let Some(value) = result.result.value {
-            let success = value.get("success").and_then(serde_json::Value::as_bool).unwrap_or(false);
+            let success = value
+                .get("success")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false);
             if !success {
                 let error = value
                     .get("error")

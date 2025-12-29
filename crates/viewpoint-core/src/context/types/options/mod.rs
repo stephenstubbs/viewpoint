@@ -7,7 +7,10 @@ use std::time::Duration;
 use crate::devices::DeviceDescriptor;
 
 use super::storage::StorageState;
-use super::{ColorScheme, ForcedColors, Geolocation, HttpCredentials, Permission, ReducedMotion, ViewportSize};
+use super::{
+    ColorScheme, ForcedColors, Geolocation, HttpCredentials, Permission, ReducedMotion,
+    ViewportSize,
+};
 
 /// Options for creating a browser context.
 #[derive(Debug, Clone, Default)]

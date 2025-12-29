@@ -50,8 +50,14 @@ fn test_glob_match_url_patterns() {
 #[test]
 fn test_glob_match_question_mark() {
     // ? should match literal ? in URLs
-    assert!(glob_match("**/search?*", "https://example.com/search?q=test"));
-    assert!(!glob_match("**/search?*", "https://example.com/searcha=test"));
+    assert!(glob_match(
+        "**/search?*",
+        "https://example.com/search?q=test"
+    ));
+    assert!(!glob_match(
+        "**/search?*",
+        "https://example.com/searcha=test"
+    ));
 }
 
 #[test]
@@ -78,7 +84,10 @@ fn test_glob_match_single_star_boundary() {
 fn test_glob_match_special_chars() {
     // Test regex special characters are escaped
     assert!(glob_match("**/*.min.js", "https://example.com/app.min.js"));
-    assert!(glob_match("**/file[1].txt", "https://example.com/file[1].txt"));
+    assert!(glob_match(
+        "**/file[1].txt",
+        "https://example.com/file[1].txt"
+    ));
     assert!(glob_match("**/path+name", "https://example.com/path+name"));
 }
 
@@ -167,7 +176,10 @@ fn test_url_matcher_str() {
 #[test]
 fn test_url_matcher_string() {
     let pattern = String::from("**/*.xml");
-    assert!(UrlMatcher::matches(&pattern, "https://example.com/feed.xml"));
+    assert!(UrlMatcher::matches(
+        &pattern,
+        "https://example.com/feed.xml"
+    ));
 }
 
 #[test]
@@ -193,7 +205,10 @@ fn test_url_matcher_closure() {
 
 #[test]
 fn test_abort_error_display() {
-    assert_eq!(AbortError::ConnectionRefused.to_string(), "ConnectionRefused");
+    assert_eq!(
+        AbortError::ConnectionRefused.to_string(),
+        "ConnectionRefused"
+    );
     assert_eq!(AbortError::TimedOut.to_string(), "TimedOut");
 }
 

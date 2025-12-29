@@ -13,10 +13,8 @@ use viewpoint_js::js;
 
 use tracing::instrument;
 
-use super::types::{
-    Cookie, IndexedDbDatabase, LocalStorageEntry, StorageOrigin, StorageState,
-};
 use super::BrowserContext;
+use super::types::{Cookie, IndexedDbDatabase, LocalStorageEntry, StorageOrigin, StorageState};
 use crate::error::ContextError;
 
 // Re-export restore functions for external use
@@ -70,11 +68,7 @@ impl BrowserContext {
     /// # }
     /// ```
     pub fn storage_state_builder(&self) -> StorageStateBuilder<'_> {
-        StorageStateBuilder::new(
-            self.connection(),
-            self.context_id(),
-            &self.pages,
-        )
+        StorageStateBuilder::new(self.connection(), self.context_id(), &self.pages)
     }
 }
 
@@ -161,7 +155,7 @@ impl<'a> StorageStateBuilder<'a> {
 
         // Get all page sessions for evaluation
         let pages = self.pages.read().await;
-        
+
         for page in pages.iter() {
             if page.session_id.is_empty() {
                 continue;
@@ -184,9 +178,9 @@ impl<'a> StorageStateBuilder<'a> {
             };
 
             // Merge into origins map
-            let storage_origin = origins.entry(origin.clone()).or_insert_with(|| {
-                StorageOrigin::new(origin)
-            });
+            let storage_origin = origins
+                .entry(origin.clone())
+                .or_insert_with(|| StorageOrigin::new(origin));
             storage_origin.local_storage.extend(local_storage);
             storage_origin.indexed_db.extend(indexed_db);
         }
@@ -199,8 +193,8 @@ impl<'a> StorageStateBuilder<'a> {
 
     /// Collect cookies from the browser context.
     async fn collect_cookies(&self) -> Result<Vec<Cookie>, ContextError> {
-        use viewpoint_cdp::protocol::storage::{GetCookiesParams, GetCookiesResult};
         use super::types::SameSite;
+        use viewpoint_cdp::protocol::storage::{GetCookiesParams, GetCookiesResult};
 
         let result: GetCookiesResult = self
             .connection
@@ -245,7 +239,7 @@ impl<'a> StorageStateBuilder<'a> {
             .send_command(
                 "Runtime.evaluate",
                 Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: js!{ window.location.origin }.to_string(),
+                    expression: js! { window.location.origin }.to_string(),
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),
@@ -314,9 +308,10 @@ impl<'a> StorageStateBuilder<'a> {
         session_id: &str,
     ) -> Result<Vec<IndexedDbDatabase>, ContextError> {
         let max_entries = self.options.indexed_db_max_entries;
-        
+
         // JavaScript to collect IndexedDB data
-        let js = format!(r"
+        let js = format!(
+            r"
             (async function() {{
                 const maxEntries = {max_entries};
                 const databases = [];
@@ -395,7 +390,8 @@ impl<'a> StorageStateBuilder<'a> {
                 
                 return databases;
             }})()
-        ");
+        "
+        );
 
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .connection
@@ -415,7 +411,8 @@ impl<'a> StorageStateBuilder<'a> {
             .await?;
 
         if let Some(value) = result.result.value {
-            let databases: Vec<IndexedDbDatabase> = serde_json::from_value(value).unwrap_or_default();
+            let databases: Vec<IndexedDbDatabase> =
+                serde_json::from_value(value).unwrap_or_default();
             debug!("Collected {} IndexedDB databases", databases.len());
             Ok(databases)
         } else {

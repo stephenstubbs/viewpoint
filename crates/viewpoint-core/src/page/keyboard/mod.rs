@@ -11,10 +11,10 @@ use std::time::Duration;
 
 use tokio::sync::Mutex;
 use tracing::{debug, instrument};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::input::{
     DispatchKeyEventParams, InsertTextParams, KeyEventType, modifiers,
 };
-use viewpoint_cdp::CdpConnection;
 
 use crate::error::LocatorError;
 
@@ -29,10 +29,18 @@ fn is_uppercase_letter(key: &str) -> bool {
 fn is_modifier_key(key: &str) -> bool {
     matches!(
         key,
-        "Alt" | "AltLeft" | "AltRight"
-            | "Control" | "ControlLeft" | "ControlRight"
-            | "Meta" | "MetaLeft" | "MetaRight"
-            | "Shift" | "ShiftLeft" | "ShiftRight"
+        "Alt"
+            | "AltLeft"
+            | "AltRight"
+            | "Control"
+            | "ControlLeft"
+            | "ControlRight"
+            | "Meta"
+            | "MetaLeft"
+            | "MetaRight"
+            | "Shift"
+            | "ShiftLeft"
+            | "ShiftRight"
     )
 }
 
@@ -238,9 +246,8 @@ impl Keyboard {
     /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn down(&self, key: &str) -> Result<(), LocatorError> {
-        let def = get_key_definition(key).ok_or_else(|| {
-            LocatorError::EvaluationError(format!("Unknown key: {key}"))
-        })?;
+        let def = get_key_definition(key)
+            .ok_or_else(|| LocatorError::EvaluationError(format!("Unknown key: {key}")))?;
 
         let is_repeat = {
             let mut state = self.state.lock().await;
@@ -314,9 +321,8 @@ impl Keyboard {
     /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn up(&self, key: &str) -> Result<(), LocatorError> {
-        let def = get_key_definition(key).ok_or_else(|| {
-            LocatorError::EvaluationError(format!("Unknown key: {key}"))
-        })?;
+        let def = get_key_definition(key)
+            .ok_or_else(|| LocatorError::EvaluationError(format!("Unknown key: {key}")))?;
 
         {
             let mut state = self.state.lock().await;

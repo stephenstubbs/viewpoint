@@ -122,7 +122,6 @@ pub enum PermissionSetting {
     Prompt,
 }
 
-
 /// Permission descriptor.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

@@ -35,20 +35,24 @@ async fn test_close_event_emission() {
     let emitter: EventEmitter<CloseEventHandler> = EventEmitter::new();
 
     let counter_clone = counter.clone();
-    emitter.add(Box::new(move || {
-        let counter = counter_clone.clone();
-        Box::pin(async move {
-            counter.fetch_add(1, Ordering::SeqCst);
-        })
-    })).await;
+    emitter
+        .add(Box::new(move || {
+            let counter = counter_clone.clone();
+            Box::pin(async move {
+                counter.fetch_add(1, Ordering::SeqCst);
+            })
+        }))
+        .await;
 
     let counter_clone = counter.clone();
-    emitter.add(Box::new(move || {
-        let counter = counter_clone.clone();
-        Box::pin(async move {
-            counter.fetch_add(1, Ordering::SeqCst);
-        })
-    })).await;
+    emitter
+        .add(Box::new(move || {
+            let counter = counter_clone.clone();
+            Box::pin(async move {
+                counter.fetch_add(1, Ordering::SeqCst);
+            })
+        }))
+        .await;
 
     emitter.emit().await;
 
@@ -61,12 +65,14 @@ async fn test_context_event_manager() {
     let counter = Arc::new(AtomicUsize::new(0));
 
     let counter_clone = counter.clone();
-    let id = manager.on_close(move || {
-        let counter = counter_clone.clone();
-        async move {
-            counter.fetch_add(1, Ordering::SeqCst);
-        }
-    }).await;
+    let id = manager
+        .on_close(move || {
+            let counter = counter_clone.clone();
+            async move {
+                counter.fetch_add(1, Ordering::SeqCst);
+            }
+        })
+        .await;
 
     manager.emit_close().await;
     assert_eq!(counter.load(Ordering::SeqCst), 1);

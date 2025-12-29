@@ -12,7 +12,11 @@ use std::time::Duration;
 use viewpoint_core::{Browser, Cookie, DocumentLoadState, Permission, SameSite};
 
 /// Helper function to launch browser and get a page.
-async fn setup() -> (Browser, viewpoint_core::BrowserContext, viewpoint_core::Page) {
+async fn setup() -> (
+    Browser,
+    viewpoint_core::BrowserContext,
+    viewpoint_core::Page,
+) {
     common::launch_with_page().await
 }
 
@@ -20,7 +24,7 @@ async fn setup() -> (Browser, viewpoint_core::BrowserContext, viewpoint_core::Pa
 #[tokio::test]
 async fn test_context_add_cookies() {
     common::init_tracing();
-    
+
     let (browser, context, page) = setup().await;
 
     // Navigate to a page first (cookies need a domain)
@@ -31,17 +35,20 @@ async fn test_context_add_cookies() {
         .expect("Failed to navigate");
 
     // Add cookies
-    context.add_cookies(vec![
-        Cookie::new("session", "abc123")
-            .domain("example.com")
-            .path("/")
-            .secure(true)
-            .http_only(true),
-        Cookie::new("user_pref", "dark_mode")
-            .domain("example.com")
-            .path("/")
-            .same_site(SameSite::Lax),
-    ]).await.expect("Failed to add cookies");
+    context
+        .add_cookies(vec![
+            Cookie::new("session", "abc123")
+                .domain("example.com")
+                .path("/")
+                .secure(true)
+                .http_only(true),
+            Cookie::new("user_pref", "dark_mode")
+                .domain("example.com")
+                .path("/")
+                .same_site(SameSite::Lax),
+        ])
+        .await
+        .expect("Failed to add cookies");
 
     // Get all cookies
     let cookies = context.cookies().await.expect("Failed to get cookies");
@@ -54,7 +61,7 @@ async fn test_context_add_cookies() {
 #[tokio::test]
 async fn test_context_clear_cookies() {
     common::init_tracing();
-    
+
     let (browser, context, page) = setup().await;
 
     // Navigate to a page first
@@ -65,12 +72,16 @@ async fn test_context_clear_cookies() {
         .expect("Failed to navigate");
 
     // Add cookies
-    context.add_cookies(vec![
-        Cookie::new("test", "value").domain("example.com"),
-    ]).await.expect("Failed to add cookies");
+    context
+        .add_cookies(vec![Cookie::new("test", "value").domain("example.com")])
+        .await
+        .expect("Failed to add cookies");
 
     // Clear all cookies
-    context.clear_cookies().await.expect("Failed to clear cookies");
+    context
+        .clear_cookies()
+        .await
+        .expect("Failed to clear cookies");
 
     // Verify cookies are cleared
     let cookies = context.cookies().await.expect("Failed to get cookies");
@@ -83,18 +94,24 @@ async fn test_context_clear_cookies() {
 #[tokio::test]
 async fn test_context_grant_permissions() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
 
     // Grant permissions
-    context.grant_permissions(vec![
-        Permission::Geolocation,
-        Permission::Notifications,
-    ]).await.expect("Failed to grant permissions");
+    context
+        .grant_permissions(vec![Permission::Geolocation, Permission::Notifications])
+        .await
+        .expect("Failed to grant permissions");
 
     // Clear permissions
-    context.clear_permissions().await.expect("Failed to clear permissions");
+    context
+        .clear_permissions()
+        .await
+        .expect("Failed to clear permissions");
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -103,19 +120,26 @@ async fn test_context_grant_permissions() {
 #[tokio::test]
 async fn test_context_set_geolocation() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let _page = context.new_page().await.expect("Failed to create page");
 
     // Set geolocation (San Francisco)
-    context.set_geolocation(37.7749, -122.4194)
+    context
+        .set_geolocation(37.7749, -122.4194)
         .accuracy(10.0)
         .await
         .expect("Failed to set geolocation");
 
     // Clear geolocation
-    context.clear_geolocation().await.expect("Failed to clear geolocation");
+    context
+        .clear_geolocation()
+        .await
+        .expect("Failed to clear geolocation");
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -124,16 +148,25 @@ async fn test_context_set_geolocation() {
 #[tokio::test]
 async fn test_context_offline_mode() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let _page = context.new_page().await.expect("Failed to create page");
 
     // Go offline
-    context.set_offline(true).await.expect("Failed to go offline");
+    context
+        .set_offline(true)
+        .await
+        .expect("Failed to go offline");
 
     // Go back online
-    context.set_offline(false).await.expect("Failed to go online");
+    context
+        .set_offline(false)
+        .await
+        .expect("Failed to go online");
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -142,9 +175,12 @@ async fn test_context_offline_mode() {
 #[tokio::test]
 async fn test_context_extra_http_headers() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let _page = context.new_page().await.expect("Failed to create page");
 
     // Set extra headers
@@ -152,7 +188,10 @@ async fn test_context_extra_http_headers() {
     headers.insert("X-Custom-Header".to_string(), "test-value".to_string());
     headers.insert("Authorization".to_string(), "Bearer token123".to_string());
 
-    context.set_extra_http_headers(headers).await.expect("Failed to set extra headers");
+    context
+        .set_extra_http_headers(headers)
+        .await
+        .expect("Failed to set extra headers");
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -161,9 +200,12 @@ async fn test_context_extra_http_headers() {
 #[tokio::test]
 async fn test_context_timeout_configuration() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let mut context = browser.new_context().await.expect("Failed to create context");
+    let mut context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
 
     // Get default timeouts
     let default = context.default_timeout();
@@ -174,7 +216,10 @@ async fn test_context_timeout_configuration() {
     context.set_default_navigation_timeout(Duration::from_secs(120));
 
     assert_eq!(context.default_timeout(), Duration::from_secs(60));
-    assert_eq!(context.default_navigation_timeout(), Duration::from_secs(120));
+    assert_eq!(
+        context.default_navigation_timeout(),
+        Duration::from_secs(120)
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -183,11 +228,12 @@ async fn test_context_timeout_configuration() {
 #[tokio::test]
 async fn test_context_with_options() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
 
     // Create context with options
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .geolocation(40.7128, -74.0060) // New York
         .permissions(vec![Permission::Geolocation])
         .has_touch(true)
@@ -208,7 +254,7 @@ async fn test_context_with_options() {
 #[tokio::test]
 async fn test_storage_state() {
     common::init_tracing();
-    
+
     let (browser, context, page) = setup().await;
 
     // Navigate to add some state
@@ -219,7 +265,10 @@ async fn test_storage_state() {
         .expect("Failed to navigate");
 
     // Get storage state
-    let state = context.storage_state().await.expect("Failed to get storage state");
+    let state = context
+        .storage_state()
+        .await
+        .expect("Failed to get storage state");
 
     // Should have a structure (cookies and origins)
     let _ = state.cookies;
@@ -232,9 +281,12 @@ async fn test_storage_state() {
 #[tokio::test]
 async fn test_custom_test_id_attribute() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
 
     // Set custom test ID attribute
     context.set_test_id_attribute("data-test").await;
@@ -250,9 +302,12 @@ async fn test_custom_test_id_attribute() {
 #[tokio::test]
 async fn test_default_test_id_attribute() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
 
     // Check default test ID attribute
     let attr = context.test_id_attribute().await;
@@ -265,13 +320,17 @@ async fn test_default_test_id_attribute() {
 #[tokio::test]
 async fn test_context_geolocation() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let _page = context.new_page().await.expect("Failed to create page");
 
     // Set geolocation
-    context.set_geolocation(51.5074, -0.1278) // London
+    context
+        .set_geolocation(51.5074, -0.1278) // London
         .await
         .expect("Failed to set geolocation");
 
@@ -282,13 +341,19 @@ async fn test_context_geolocation() {
 #[tokio::test]
 async fn test_context_geolocation_clear() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let _page = context.new_page().await.expect("Failed to create page");
 
     // Set then clear
-    context.set_geolocation(51.5074, -0.1278).await.expect("Failed to set");
+    context
+        .set_geolocation(51.5074, -0.1278)
+        .await
+        .expect("Failed to set");
     context.clear_geolocation().await.expect("Failed to clear");
 
     browser.close().await.expect("Failed to close browser");
@@ -298,11 +363,12 @@ async fn test_context_geolocation_clear() {
 #[tokio::test]
 async fn test_timezone_emulation() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
 
     // Create context with timezone
-    let _context = browser.new_context_builder()
+    let _context = browser
+        .new_context_builder()
         .timezone_id("Europe/London")
         .build()
         .await
@@ -315,11 +381,12 @@ async fn test_timezone_emulation() {
 #[tokio::test]
 async fn test_locale_emulation() {
     common::init_tracing();
-    
+
     let browser = common::launch_browser().await;
 
     // Create context with locale
-    let _context = browser.new_context_builder()
+    let _context = browser
+        .new_context_builder()
         .locale("fr-FR")
         .build()
         .await

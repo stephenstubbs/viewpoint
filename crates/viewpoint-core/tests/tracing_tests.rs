@@ -37,7 +37,10 @@ async fn test_tracing_start_stop() {
         .expect("Failed to start tracing");
 
     // Perform some action
-    page.goto("about:blank").goto().await.expect("Failed to navigate");
+    page.goto("about:blank")
+        .goto()
+        .await
+        .expect("Failed to navigate");
 
     // Stop tracing - using a separate tracing() call to verify state persistence
     context
@@ -67,7 +70,10 @@ async fn test_tracing_start_stop_discard() {
         .expect("Failed to start tracing");
 
     // Perform some action
-    page.goto("about:blank").goto().await.expect("Failed to navigate");
+    page.goto("about:blank")
+        .goto()
+        .await
+        .expect("Failed to navigate");
 
     // Discard tracing - verify state persists across tracing() calls
     context
@@ -102,7 +108,10 @@ async fn test_tracing_chunks() {
         .expect("Failed to start tracing");
 
     // Perform some action
-    page.goto("about:blank").goto().await.expect("Failed to navigate");
+    page.goto("about:blank")
+        .goto()
+        .await
+        .expect("Failed to navigate");
 
     // Start a new chunk
     context
@@ -179,7 +188,10 @@ async fn test_tracing_start_without_pages_fails() {
     common::init_tracing();
 
     let browser = common::launch_browser().await;
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
 
     // Attempt to start tracing without creating a page
     let result = context.tracing().start(TracingOptions::new()).await;
@@ -275,7 +287,10 @@ async fn test_tracing_with_screenshots() {
         .expect("Failed to start tracing with screenshots");
 
     // Perform navigation
-    page.goto("about:blank").goto().await.expect("Failed to navigate");
+    page.goto("about:blank")
+        .goto()
+        .await
+        .expect("Failed to navigate");
 
     // Stop and save
     context
@@ -306,7 +321,10 @@ async fn test_tracing_creates_valid_zip() {
         .await
         .expect("Failed to start tracing");
 
-    page.goto("about:blank").goto().await.expect("Failed to navigate");
+    page.goto("about:blank")
+        .goto()
+        .await
+        .expect("Failed to navigate");
 
     context
         .tracing()
@@ -320,7 +338,7 @@ async fn test_tracing_creates_valid_zip() {
     assert!(archive.is_ok(), "Trace should be a valid zip file");
 
     let mut archive = archive.unwrap();
-    
+
     // Check for expected contents
     let file_names: Vec<String> = (0..archive.len())
         .map(|i| archive.by_index(i).unwrap().name().to_string())

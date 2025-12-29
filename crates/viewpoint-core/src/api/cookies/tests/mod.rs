@@ -13,8 +13,7 @@ fn test_cookie_to_url() {
 
 #[test]
 fn test_cookie_to_url_with_url() {
-    let cookie = Cookie::new("test", "value")
-        .url("https://custom.com/path");
+    let cookie = Cookie::new("test", "value").url("https://custom.com/path");
 
     let url = cookie_to_url(&cookie);
     assert_eq!(url, "https://custom.com/path");

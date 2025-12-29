@@ -7,7 +7,7 @@ use chrono::DateTime;
 use crate::error::ContextError;
 use crate::network::har::{Har, HarEntry, HarRequest, HarResponse};
 
-use super::types::{ResourceEntry, TracingState, TraceFile};
+use super::types::{ResourceEntry, TraceFile, TracingState};
 
 /// Write a trace to a zip file.
 ///
@@ -16,10 +16,7 @@ use super::types::{ResourceEntry, TracingState, TraceFile};
 /// - network.har: Network activity in HAR format
 /// - resources/: Screenshots and snapshots
 /// - sources/: Source files
-pub fn write_trace_zip(
-    path: &std::path::Path,
-    state: &TracingState,
-) -> Result<(), ContextError> {
+pub fn write_trace_zip(path: &std::path::Path, state: &TracingState) -> Result<(), ContextError> {
     use std::fs::File;
 
     // Create the output file

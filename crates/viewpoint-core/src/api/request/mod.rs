@@ -101,11 +101,7 @@ impl MultipartField {
     }
 
     /// Create a new file field.
-    pub fn file(
-        name: impl Into<String>,
-        filename: impl Into<String>,
-        content: Vec<u8>,
-    ) -> Self {
+    pub fn file(name: impl Into<String>, filename: impl Into<String>, content: Vec<u8>) -> Self {
         Self {
             name: name.into(),
             value: None,
@@ -449,16 +445,13 @@ impl APIRequestBuilder {
         }
 
         // Send the request
-        let response = request_builder
-            .send()
-            .await
-            .map_err(|e| {
-                if e.is_timeout() {
-                    APIError::Timeout(self.timeout.unwrap_or(Duration::from_secs(30)))
-                } else {
-                    APIError::Http(e)
-                }
-            })?;
+        let response = request_builder.send().await.map_err(|e| {
+            if e.is_timeout() {
+                APIError::Timeout(self.timeout.unwrap_or(Duration::from_secs(30)))
+            } else {
+                APIError::Http(e)
+            }
+        })?;
 
         Ok(APIResponse::new(response))
     }

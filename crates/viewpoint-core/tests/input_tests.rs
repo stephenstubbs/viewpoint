@@ -18,14 +18,17 @@ use common::init_tracing;
 #[tokio::test]
 async fn test_keyboard_press() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to a page with a form
@@ -40,9 +43,18 @@ async fn test_keyboard_press() {
     input.focus().await.expect("Failed to focus");
 
     // Type using keyboard
-    page.keyboard().press("a").await.expect("Failed to press key");
-    page.keyboard().press("b").await.expect("Failed to press key");
-    page.keyboard().press("c").await.expect("Failed to press key");
+    page.keyboard()
+        .press("a")
+        .await
+        .expect("Failed to press key");
+    page.keyboard()
+        .press("b")
+        .await
+        .expect("Failed to press key");
+    page.keyboard()
+        .press("c")
+        .await
+        .expect("Failed to press key");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -52,14 +64,17 @@ async fn test_keyboard_press() {
 #[tokio::test]
 async fn test_keyboard_type_text() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://httpbin.org/forms/post")
@@ -72,7 +87,10 @@ async fn test_keyboard_type_text() {
     input.focus().await.expect("Failed to focus");
 
     // Type text using keyboard
-    page.keyboard().type_text("Hello World").await.expect("Failed to type text");
+    page.keyboard()
+        .type_text("Hello World")
+        .await
+        .expect("Failed to type text");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -82,14 +100,17 @@ async fn test_keyboard_type_text() {
 #[tokio::test]
 async fn test_keyboard_insert_text() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://httpbin.org/forms/post")
@@ -102,7 +123,10 @@ async fn test_keyboard_insert_text() {
     input.focus().await.expect("Failed to focus");
 
     // Insert text directly (no key events)
-    page.keyboard().insert_text("Inserted Text").await.expect("Failed to insert text");
+    page.keyboard()
+        .insert_text("Inserted Text")
+        .await
+        .expect("Failed to insert text");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -112,14 +136,17 @@ async fn test_keyboard_insert_text() {
 #[tokio::test]
 async fn test_keyboard_modifiers() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://httpbin.org/forms/post")
@@ -132,9 +159,15 @@ async fn test_keyboard_modifiers() {
     input.focus().await.expect("Failed to focus");
 
     // Hold Shift and type
-    page.keyboard().down("Shift").await.expect("Failed to press Shift");
+    page.keyboard()
+        .down("Shift")
+        .await
+        .expect("Failed to press Shift");
     page.keyboard().press("a").await.expect("Failed to press A");
-    page.keyboard().up("Shift").await.expect("Failed to release Shift");
+    page.keyboard()
+        .up("Shift")
+        .await
+        .expect("Failed to release Shift");
     page.keyboard().press("b").await.expect("Failed to press b");
 
     // Clean up
@@ -145,14 +178,17 @@ async fn test_keyboard_modifiers() {
 #[tokio::test]
 async fn test_keyboard_combinations() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://httpbin.org/forms/post")
@@ -166,7 +202,10 @@ async fn test_keyboard_combinations() {
     input.fill("Test Text").await.expect("Failed to fill");
 
     // Select all with Ctrl+A
-    page.keyboard().press("Control+a").await.expect("Failed to press Ctrl+A");
+    page.keyboard()
+        .press("Control+a")
+        .await
+        .expect("Failed to press Ctrl+A");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -180,14 +219,17 @@ async fn test_keyboard_combinations() {
 #[tokio::test]
 async fn test_mouse_move() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -197,8 +239,17 @@ async fn test_mouse_move() {
         .expect("Failed to navigate");
 
     // Move mouse to coordinates
-    page.mouse().move_(100.0, 200.0).send().await.expect("Failed to move mouse");
-    page.mouse().move_(200.0, 300.0).steps(5).send().await.expect("Failed to move mouse with steps");
+    page.mouse()
+        .move_(100.0, 200.0)
+        .send()
+        .await
+        .expect("Failed to move mouse");
+    page.mouse()
+        .move_(200.0, 300.0)
+        .steps(5)
+        .send()
+        .await
+        .expect("Failed to move mouse with steps");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -208,14 +259,17 @@ async fn test_mouse_move() {
 #[tokio::test]
 async fn test_mouse_click() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -225,10 +279,19 @@ async fn test_mouse_click() {
         .expect("Failed to navigate");
 
     // Click at coordinates
-    page.mouse().click(100.0, 200.0).send().await.expect("Failed to click");
+    page.mouse()
+        .click(100.0, 200.0)
+        .send()
+        .await
+        .expect("Failed to click");
 
     // Right-click
-    page.mouse().click(150.0, 200.0).button(MouseButton::Right).send().await.expect("Failed to right-click");
+    page.mouse()
+        .click(150.0, 200.0)
+        .button(MouseButton::Right)
+        .send()
+        .await
+        .expect("Failed to right-click");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -238,14 +301,17 @@ async fn test_mouse_click() {
 #[tokio::test]
 async fn test_mouse_dblclick() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -255,7 +321,10 @@ async fn test_mouse_dblclick() {
         .expect("Failed to navigate");
 
     // Double-click at coordinates
-    page.mouse().dblclick(100.0, 200.0).await.expect("Failed to dblclick");
+    page.mouse()
+        .dblclick(100.0, 200.0)
+        .await
+        .expect("Failed to dblclick");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -265,14 +334,17 @@ async fn test_mouse_dblclick() {
 #[tokio::test]
 async fn test_mouse_wheel() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -282,10 +354,17 @@ async fn test_mouse_wheel() {
         .expect("Failed to navigate");
 
     // Move mouse to page
-    page.mouse().move_(100.0, 100.0).send().await.expect("Failed to move mouse");
-    
+    page.mouse()
+        .move_(100.0, 100.0)
+        .send()
+        .await
+        .expect("Failed to move mouse");
+
     // Scroll down
-    page.mouse().wheel(0.0, 100.0).await.expect("Failed to scroll");
+    page.mouse()
+        .wheel(0.0, 100.0)
+        .await
+        .expect("Failed to scroll");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -295,14 +374,17 @@ async fn test_mouse_wheel() {
 #[tokio::test]
 async fn test_mouse_down_up() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -312,9 +394,22 @@ async fn test_mouse_down_up() {
         .expect("Failed to navigate");
 
     // Perform a drag-like operation manually
-    page.mouse().move_(100.0, 100.0).send().await.expect("Failed to move");
-    page.mouse().down().send().await.expect("Failed to mouse down");
-    page.mouse().move_(200.0, 200.0).steps(5).send().await.expect("Failed to move while held");
+    page.mouse()
+        .move_(100.0, 100.0)
+        .send()
+        .await
+        .expect("Failed to move");
+    page.mouse()
+        .down()
+        .send()
+        .await
+        .expect("Failed to mouse down");
+    page.mouse()
+        .move_(200.0, 200.0)
+        .steps(5)
+        .send()
+        .await
+        .expect("Failed to move while held");
     page.mouse().up().send().await.expect("Failed to mouse up");
 
     // Clean up
@@ -329,14 +424,17 @@ async fn test_mouse_down_up() {
 #[tokio::test]
 async fn test_touchscreen_tap() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     page.goto("https://example.com")
@@ -363,14 +461,17 @@ async fn test_touchscreen_tap() {
 #[tokio::test]
 async fn test_page_drag_and_drop() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Create a test page with draggable elements
@@ -380,7 +481,7 @@ async fn test_page_drag_and_drop() {
             <div id="target" style="width:100px;height:100px;background:blue;position:absolute;left:200px;top:0;">Target</div>
         </body></html>
     "#;
-    
+
     page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
@@ -401,14 +502,17 @@ async fn test_page_drag_and_drop() {
 #[tokio::test]
 async fn test_locator_drag_to() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     let html = r#"data:text/html,
@@ -417,7 +521,7 @@ async fn test_locator_drag_to() {
             <div id="target" style="width:100px;height:100px;background:blue;position:absolute;left:200px;top:0;">Target</div>
         </body></html>
     "#;
-    
+
     page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
@@ -427,7 +531,10 @@ async fn test_locator_drag_to() {
     // Use locator.drag_to()
     let source = page.locator("#source");
     let target = page.locator("#target");
-    source.drag_to(&target).await.expect("Failed to drag to target");
+    source
+        .drag_to(&target)
+        .await
+        .expect("Failed to drag to target");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -437,14 +544,17 @@ async fn test_locator_drag_to() {
 #[tokio::test]
 async fn test_locator_tap() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     let html = r#"data:text/html,
@@ -452,7 +562,7 @@ async fn test_locator_tap() {
             <button id="btn" onclick="window.tapped=true">Tap Me</button>
         </body></html>
     "#;
-    
+
     page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()

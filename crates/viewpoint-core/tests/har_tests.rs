@@ -4,9 +4,7 @@
 
 use std::collections::HashMap;
 
-use viewpoint_core::network::{
-    Har, HarEntry, HarPage, HarRequest, HarResponse, HarTimings,
-};
+use viewpoint_core::network::{Har, HarEntry, HarPage, HarRequest, HarResponse, HarTimings};
 
 // =========================================================================
 // Har Tests
@@ -161,14 +159,18 @@ fn test_har_request_query_string() {
     request.parse_query_string();
 
     assert_eq!(request.query_string.len(), 2);
-    assert!(request
-        .query_string
-        .iter()
-        .any(|p| p.name == "q" && p.value == "test"));
-    assert!(request
-        .query_string
-        .iter()
-        .any(|p| p.name == "page" && p.value == "1"));
+    assert!(
+        request
+            .query_string
+            .iter()
+            .any(|p| p.name == "q" && p.value == "test")
+    );
+    assert!(
+        request
+            .query_string
+            .iter()
+            .any(|p| p.name == "page" && p.value == "1")
+    );
 }
 
 // =========================================================================

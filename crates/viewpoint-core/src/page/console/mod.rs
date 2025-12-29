@@ -8,8 +8,10 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use viewpoint_cdp::protocol::runtime::{ConsoleApiCalledEvent, ConsoleApiType, RemoteObject, StackTrace};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::runtime::{
+    ConsoleApiCalledEvent, ConsoleApiType, RemoteObject, StackTrace,
+};
 
 /// Type of console message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

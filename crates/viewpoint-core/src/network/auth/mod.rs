@@ -6,11 +6,10 @@
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
-use viewpoint_cdp::protocol::fetch::{
-    AuthChallenge, AuthChallengeResponse, AuthRequiredEvent,
-    ContinueWithAuthParams,
-};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::fetch::{
+    AuthChallenge, AuthChallengeResponse, AuthRequiredEvent, ContinueWithAuthParams,
+};
 
 use crate::error::NetworkError;
 
@@ -108,9 +107,9 @@ impl AuthHandler {
         let mut creds = self.credentials.write().await;
         *creds = Some(credentials);
     }
-    
+
     /// Set HTTP credentials synchronously (for use during construction).
-    /// 
+    ///
     /// This uses `blocking_write` which should only be called from non-async contexts.
     pub fn set_credentials_sync(&self, credentials: HttpCredentials) {
         // Use try_write to avoid blocking - this is called during construction
@@ -153,8 +152,10 @@ impl AuthHandler {
             // Check retry count
             {
                 let mut counts = self.retry_counts.write().await;
-                let count = counts.entry(event.auth_challenge.origin.clone()).or_insert(0);
-                
+                let count = counts
+                    .entry(event.auth_challenge.origin.clone())
+                    .or_insert(0);
+
                 if *count >= self.max_retries {
                     tracing::warn!(
                         origin = %event.auth_challenge.origin,
@@ -163,7 +164,7 @@ impl AuthHandler {
                     );
                     return self.cancel_auth(&event.request_id).await.map(|()| false);
                 }
-                
+
                 *count += 1;
             }
 
@@ -210,8 +211,7 @@ impl AuthHandler {
                 Some(ContinueWithAuthParams {
                     request_id: request_id.to_string(),
                     auth_challenge_response: AuthChallengeResponse::provide_credentials(
-                        username,
-                        password,
+                        username, password,
                     ),
                 }),
                 Some(&self.session_id),

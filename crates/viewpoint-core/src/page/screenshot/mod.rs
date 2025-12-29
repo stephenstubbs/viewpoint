@@ -6,8 +6,8 @@ use std::path::Path;
 
 use tracing::{debug, info, instrument};
 use viewpoint_cdp::protocol::page::{
-    CaptureScreenshotParams, CaptureScreenshotResult,
-    ScreenshotFormat as CdpScreenshotFormat, Viewport,
+    CaptureScreenshotParams, CaptureScreenshotResult, ScreenshotFormat as CdpScreenshotFormat,
+    Viewport,
 };
 
 /// Image format for screenshots.
@@ -62,7 +62,12 @@ pub struct ClipRegion {
 impl ClipRegion {
     /// Create a new clip region.
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 }
 
@@ -197,7 +202,11 @@ impl<'a> ScreenshotBuilder<'a> {
         let clip = if self.full_page {
             // For full page, we need to get the full page dimensions first
             let dimensions = self.get_full_page_dimensions().await?;
-            debug!(width = dimensions.0, height = dimensions.1, "Full page dimensions");
+            debug!(
+                width = dimensions.0,
+                height = dimensions.1,
+                "Full page dimensions"
+            );
             Some(Viewport {
                 x: 0.0,
                 y: 0.0,
@@ -228,7 +237,11 @@ impl<'a> ScreenshotBuilder<'a> {
         let result: CaptureScreenshotResult = self
             .page
             .connection()
-            .send_command("Page.captureScreenshot", Some(params), Some(self.page.session_id()))
+            .send_command(
+                "Page.captureScreenshot",
+                Some(params),
+                Some(self.page.session_id()),
+            )
             .await?;
 
         // Re-enable animations if they were disabled
@@ -280,7 +293,8 @@ impl<'a> ScreenshotBuilder<'a> {
                                 document.documentElement.clientHeight
                             )
                         })
-                    ".to_string(),
+                    "
+                    .to_string(),
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),
@@ -296,7 +310,9 @@ impl<'a> ScreenshotBuilder<'a> {
             .result
             .value
             .and_then(|v| v.as_str().map(String::from))
-            .ok_or_else(|| PageError::EvaluationFailed("Failed to get page dimensions".to_string()))?;
+            .ok_or_else(|| {
+                PageError::EvaluationFailed("Failed to get page dimensions".to_string())
+            })?;
 
         let dimensions: serde_json::Value = serde_json::from_str(&json_str)
             .map_err(|e| PageError::EvaluationFailed(format!("Failed to parse dimensions: {e}")))?;

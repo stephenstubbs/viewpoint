@@ -26,8 +26,8 @@ mod mouse_drag;
 mod navigation;
 pub mod page_error;
 mod pdf;
-mod routing_impl;
 pub mod popup;
+mod routing_impl;
 mod screenshot;
 mod screenshot_element;
 mod scripts;
@@ -35,15 +35,14 @@ mod touchscreen;
 pub mod video;
 mod video_io;
 
-
 use std::sync::Arc;
 use std::time::Duration;
 
+use tracing::{debug, info, instrument, trace, warn};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
 use viewpoint_cdp::protocol::target_domain::CloseTargetParams;
-use viewpoint_cdp::CdpConnection;
 use viewpoint_js::js;
-use tracing::{debug, info, instrument, trace, warn};
 
 use crate::error::{NavigationError, PageError};
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
@@ -61,19 +60,22 @@ pub use file_chooser::{FileChooser, FilePayload};
 pub use frame::Frame;
 pub use frame_locator::{FrameElementLocator, FrameLocator, FrameRoleLocatorBuilder};
 pub use keyboard::Keyboard;
-pub use locator::{AriaCheckedState, AriaRole, AriaSnapshot, BoundingBox, BoxModel, ElementHandle, FilterBuilder, Locator, LocatorOptions, RoleLocatorBuilder, Selector, TapBuilder, TextOptions};
+pub use locator::{
+    AriaCheckedState, AriaRole, AriaSnapshot, BoundingBox, BoxModel, ElementHandle, FilterBuilder,
+    Locator, LocatorOptions, RoleLocatorBuilder, Selector, TapBuilder, TextOptions,
+};
 pub use locator_handler::{LocatorHandlerHandle, LocatorHandlerManager, LocatorHandlerOptions};
 pub use mouse::Mouse;
 pub use mouse_drag::DragAndDropBuilder;
-pub use viewpoint_cdp::protocol::input::MouseButton;
 pub use navigation::{GotoBuilder, NavigationResponse};
 pub use page_error::{PageError as PageErrorInfo, WebError};
 pub use pdf::{Margins, PaperFormat, PdfBuilder};
 pub use screenshot::{Animations, ClipRegion, ScreenshotBuilder, ScreenshotFormat};
 pub use touchscreen::Touchscreen;
 pub use video::{Video, VideoOptions};
-pub use viewpoint_cdp::protocol::emulation::ViewportSize;
 pub use viewpoint_cdp::protocol::DialogType;
+pub use viewpoint_cdp::protocol::emulation::ViewportSize;
+pub use viewpoint_cdp::protocol::input::MouseButton;
 
 /// Default navigation timeout.
 const DEFAULT_NAVIGATION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -192,11 +194,8 @@ impl Page {
 
         // Create a load state waiter
         let event_rx = self.connection.subscribe_events();
-        let mut waiter = LoadStateWaiter::new(
-            event_rx,
-            self.session_id.clone(),
-            self.frame_id.clone(),
-        );
+        let mut waiter =
+            LoadStateWaiter::new(event_rx, self.session_id.clone(), self.frame_id.clone());
         trace!("Created load state waiter");
 
         // Send the navigation command
@@ -225,7 +224,7 @@ impl Page {
         if let Some(ref error_text) = result.error_text {
             let is_http_error = error_text == "net::ERR_HTTP_RESPONSE_CODE_FAILURE"
                 || error_text == "net::ERR_INVALID_AUTH_CREDENTIALS";
-            
+
             if !is_http_error {
                 warn!(error = %error_text, "Navigation failed with error");
                 return Err(NavigationError::NetworkError(error_text.clone()));
@@ -402,7 +401,7 @@ impl Page {
             .send_command(
                 "Runtime.evaluate",
                 Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: js!{ window.location.href }.to_string(),
+                    expression: js! { window.location.href }.to_string(),
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),
@@ -454,7 +453,6 @@ impl Page {
             .and_then(|v| v.as_str().map(std::string::ToString::to_string))
             .ok_or_else(|| PageError::EvaluationFailed("Failed to get title".to_string()))
     }
-
 }
 
 // Additional Page methods are defined in:
@@ -466,4 +464,3 @@ impl Page {
 // - locator_factory.rs: locator, get_by_*, set_test_id_attribute
 // - DragAndDropBuilder is defined in mouse.rs
 // - RoleLocatorBuilder is defined in locator/mod.rs
-

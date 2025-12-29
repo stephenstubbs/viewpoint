@@ -395,5 +395,3 @@ impl<'a> From<FrameRoleLocatorBuilder<'a>> for FrameElementLocator<'a> {
         builder.build()
     }
 }
-
-

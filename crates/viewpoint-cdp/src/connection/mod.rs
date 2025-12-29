@@ -1,17 +1,23 @@
 //! CDP WebSocket connection management.
 
+mod discovery;
+
+pub use discovery::{BrowserVersion, CdpConnectionOptions, discover_websocket_url};
+
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
-use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
+use tokio::sync::{Mutex, broadcast, mpsc, oneshot};
 use tokio::time::timeout;
+use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::error::CdpError;
@@ -48,10 +54,54 @@ impl CdpConnection {
     /// Returns an error if the WebSocket connection fails.
     #[instrument(level = "info", skip(ws_url), fields(ws_url = %ws_url))]
     pub async fn connect(ws_url: &str) -> Result<Self, CdpError> {
+        Self::connect_with_options(ws_url, &CdpConnectionOptions::default()).await
+    }
+
+    /// Connect to a CDP WebSocket endpoint with custom options.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the WebSocket connection fails.
+    #[instrument(level = "info", skip(ws_url, options), fields(ws_url = %ws_url))]
+    pub async fn connect_with_options(
+        ws_url: &str,
+        options: &CdpConnectionOptions,
+    ) -> Result<Self, CdpError> {
         info!("Connecting to CDP WebSocket endpoint");
-        let (ws_stream, response) = tokio_tungstenite::connect_async(ws_url).await?;
+
+        // Build the WebSocket request with custom headers
+        let mut request =
+            ws_url
+                .into_client_request()
+                .map_err(|e: tokio_tungstenite::tungstenite::Error| {
+                    CdpError::InvalidUrl(format!("{ws_url}: {e}"))
+                })?;
+
+        // Add custom headers
+        for (name, value) in &options.headers {
+            let header_name = name
+                .parse::<tokio_tungstenite::tungstenite::http::HeaderName>()
+                .map_err(|e| CdpError::ConnectionFailed(format!("invalid header name: {e}")))?;
+            let header_value = value
+                .parse::<tokio_tungstenite::tungstenite::http::HeaderValue>()
+                .map_err(|e| CdpError::ConnectionFailed(format!("invalid header value: {e}")))?;
+            request.headers_mut().insert(header_name, header_value);
+        }
+
+        // Connect with optional timeout
+        type WsStream = tokio_tungstenite::WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
+        let connect_future = tokio_tungstenite::connect_async(request);
+        let (ws_stream, response): (WsStream, _) = if let Some(timeout_duration) = options.timeout {
+            timeout(timeout_duration, connect_future)
+                .await
+                .map_err(|_| CdpError::ConnectionTimeout(timeout_duration))?
+                .map_err(CdpError::from)?
+        } else {
+            connect_future.await?
+        };
+
         info!(status = %response.status(), "WebSocket connection established");
-        
+
         let (write, read) = ws_stream.split();
 
         // Channels for internal communication
@@ -81,6 +131,60 @@ impl CdpConnection {
         })
     }
 
+    /// Connect to a browser via HTTP endpoint URL.
+    ///
+    /// This method discovers the WebSocket URL from an HTTP endpoint like
+    /// `http://localhost:9222` by fetching `/json/version`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_cdp::{CdpConnection, connection::CdpConnectionOptions};
+    /// use std::time::Duration;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_cdp::CdpError> {
+    /// // Simple connection
+    /// let conn = CdpConnection::connect_via_http("http://localhost:9222").await?;
+    ///
+    /// // With custom options
+    /// let options = CdpConnectionOptions::new()
+    ///     .timeout(Duration::from_secs(10))
+    ///     .header("Authorization", "Bearer token");
+    /// let conn = CdpConnection::connect_via_http_with_options(
+    ///     "http://localhost:9222",
+    ///     options,
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The HTTP endpoint is unreachable
+    /// - The endpoint doesn't expose CDP
+    /// - The WebSocket connection fails
+    pub async fn connect_via_http(endpoint_url: &str) -> Result<Self, CdpError> {
+        Self::connect_via_http_with_options(endpoint_url, CdpConnectionOptions::default()).await
+    }
+
+    /// Connect to a browser via HTTP endpoint URL with custom options.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if discovery or connection fails.
+    #[instrument(level = "info", skip(options), fields(endpoint_url = %endpoint_url))]
+    pub async fn connect_via_http_with_options(
+        endpoint_url: &str,
+        options: CdpConnectionOptions,
+    ) -> Result<Self, CdpError> {
+        // Discover the WebSocket URL
+        let ws_url = discover_websocket_url(endpoint_url, &options).await?;
+
+        // Connect to the WebSocket
+        Self::connect_with_options(&ws_url, &options).await
+    }
+
     /// Background task that writes CDP requests to the WebSocket.
     async fn write_loop<S>(mut rx: mpsc::Receiver<CdpRequest>, mut sink: S)
     where
@@ -90,7 +194,7 @@ impl CdpConnection {
         while let Some(request) = rx.recv().await {
             let method = request.method.clone();
             let id = request.id;
-            
+
             let json = match serde_json::to_string(&request) {
                 Ok(j) => j,
                 Err(e) => {
@@ -105,7 +209,7 @@ impl CdpConnection {
                 warn!("WebSocket sink closed, ending write loop");
                 break;
             }
-            
+
             debug!(id = id, method = %method, "CDP request sent");
         }
         debug!("CDP write loop ended");
@@ -151,7 +255,7 @@ impl CdpConnection {
                     let id = resp.id;
                     let has_error = resp.error.is_some();
                     debug!(id = id, has_error = has_error, "Received CDP response");
-                    
+
                     let mut pending = pending.lock().await;
                     if let Some(sender) = pending.remove(&id) {
                         let _ = sender.send(resp);
@@ -212,11 +316,13 @@ impl CdpConnection {
         R: DeserializeOwned,
     {
         let id = self.message_id.fetch_add(1, Ordering::Relaxed);
-        debug!(id = id, timeout_ms = timeout_duration.as_millis(), "Preparing CDP command");
+        debug!(
+            id = id,
+            timeout_ms = timeout_duration.as_millis(),
+            "Preparing CDP command"
+        );
 
-        let params_value = params
-            .map(|p| serde_json::to_value(p))
-            .transpose()?;
+        let params_value = params.map(|p| serde_json::to_value(p)).transpose()?;
 
         let request = CdpRequest {
             id,
@@ -232,7 +338,11 @@ impl CdpConnection {
         {
             let mut pending = self.pending.lock().await;
             pending.insert(id, resp_tx);
-            trace!(id = id, pending_count = pending.len(), "Registered pending response");
+            trace!(
+                id = id,
+                pending_count = pending.len(),
+                "Registered pending response"
+            );
         }
 
         // Send the request
@@ -240,7 +350,7 @@ impl CdpConnection {
             .send(request)
             .await
             .map_err(|_| CdpError::ConnectionLost)?;
-        
+
         trace!(id = id, "Request queued for sending");
 
         // Wait for the response with timeout

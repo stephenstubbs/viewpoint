@@ -1,7 +1,7 @@
 //! Selector types for element location strategies.
 
 // Re-export AriaRole from aria_role module
-pub use super::aria_role::{implicit_role_selector, AriaRole};
+pub use super::aria_role::{AriaRole, implicit_role_selector};
 
 /// Options for text-based locators.
 #[derive(Debug, Clone, Default)]
@@ -18,7 +18,10 @@ pub enum Selector {
     /// Text content selector.
     Text { text: String, exact: bool },
     /// ARIA role selector with optional accessible name.
-    Role { role: AriaRole, name: Option<String> },
+    Role {
+        role: AriaRole,
+        name: Option<String>,
+    },
     /// Test ID selector (data-testid attribute).
     TestId(String),
     /// Test ID with custom attribute.

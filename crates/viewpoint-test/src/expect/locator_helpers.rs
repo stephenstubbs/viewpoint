@@ -57,10 +57,9 @@ pub async fn evaluate_js(
         ));
     }
 
-    result
-        .result
-        .value
-        .ok_or_else(|| AssertionError::new("No result from JavaScript", "a value", "null/undefined"))
+    result.result.value.ok_or_else(|| {
+        AssertionError::new("No result from JavaScript", "a value", "null/undefined")
+    })
 }
 
 /// Get input value from an element.

@@ -42,7 +42,10 @@ impl BrowserContext {
     /// Returns an error if:
     /// - HAR recording is already active
     /// - The context is closed
-    pub async fn record_har(&self, path: impl Into<PathBuf>) -> Result<HarRecordingBuilder, NetworkError> {
+    pub async fn record_har(
+        &self,
+        path: impl Into<PathBuf>,
+    ) -> Result<HarRecordingBuilder, NetworkError> {
         if self.is_closed() {
             return Err(NetworkError::Aborted);
         }
@@ -114,7 +117,7 @@ impl BrowserContext {
 
         let recorder = HarRecorder::new(options)?;
         *recorder_lock = Some(recorder);
-        
+
         debug!("Started HAR recording");
         Ok(())
     }

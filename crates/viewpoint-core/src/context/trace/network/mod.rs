@@ -6,10 +6,10 @@ use std::sync::Arc;
 use chrono::Utc;
 use tokio::sync::RwLock;
 
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::network::{
     LoadingFailedEvent, LoadingFinishedEvent, RequestWillBeSentEvent, ResponseReceivedEvent,
 };
-use viewpoint_cdp::CdpConnection;
 
 use crate::context::PageInfo;
 

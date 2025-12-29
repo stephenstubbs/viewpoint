@@ -5,8 +5,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
-use viewpoint_cdp::protocol::fetch::{AuthRequiredEvent, RequestPausedEvent};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::fetch::{AuthRequiredEvent, RequestPausedEvent};
 
 use super::auth::{AuthHandler, HttpCredentials};
 use super::handler_fetch::{disable_fetch, enable_fetch};
@@ -76,11 +76,8 @@ impl RouteHandlerRegistry {
         session_id: String,
         credentials: HttpCredentials,
     ) -> Self {
-        let auth_handler = AuthHandler::with_credentials(
-            connection.clone(),
-            session_id.clone(),
-            credentials,
-        );
+        let auth_handler =
+            AuthHandler::with_credentials(connection.clone(), session_id.clone(), credentials);
         Self {
             handlers: RwLock::new(Vec::new()),
             connection,
@@ -93,7 +90,7 @@ impl RouteHandlerRegistry {
     }
 
     /// Create a new route handler registry with context-level routes.
-    /// 
+    ///
     /// If `http_credentials` is provided, they will be set on the auth handler
     /// for handling HTTP authentication challenges.
     pub fn with_context_routes(
@@ -103,7 +100,7 @@ impl RouteHandlerRegistry {
         http_credentials: Option<HttpCredentials>,
     ) -> Self {
         let auth_handler = AuthHandler::new(connection.clone(), session_id.clone());
-        
+
         // If credentials are provided, set them on the auth handler
         if let Some(ref creds) = http_credentials {
             // We need to set credentials synchronously during construction.
@@ -115,7 +112,7 @@ impl RouteHandlerRegistry {
             );
             auth_handler.set_credentials_sync(creds.clone());
         }
-        
+
         Self {
             handlers: RwLock::new(Vec::new()),
             connection,
@@ -127,9 +124,9 @@ impl RouteHandlerRegistry {
             context_routes: Some(context_routes),
         }
     }
-    
+
     /// Enable Fetch domain if context has routes or auth is enabled.
-    /// 
+    ///
     /// This should be called after the registry is created to check if there are
     /// context-level routes that need interception or if HTTP credentials are configured.
     pub async fn enable_fetch_for_context_routes(&self) -> Result<(), NetworkError> {
@@ -139,7 +136,7 @@ impl RouteHandlerRegistry {
             self.ensure_fetch_enabled().await?;
             return Ok(());
         }
-        
+
         // Also enable if there are context routes
         if let Some(ref context_routes) = self.context_routes {
             if context_routes.has_routes().await {
@@ -150,7 +147,10 @@ impl RouteHandlerRegistry {
     }
 
     /// Set the context-level route registry.
-    pub fn set_context_routes(&mut self, context_routes: Arc<crate::context::routing::ContextRouteRegistry>) {
+    pub fn set_context_routes(
+        &mut self,
+        context_routes: Arc<crate::context::routing::ContextRouteRegistry>,
+    ) {
         self.context_routes = Some(context_routes);
     }
 
@@ -169,7 +169,10 @@ impl RouteHandlerRegistry {
         let registry = Arc::clone(self);
 
         // Subscribe to context route changes if we have context routes
-        let mut route_change_rx = self.context_routes.as_ref().map(|ctx| ctx.subscribe_route_changes());
+        let mut route_change_rx = self
+            .context_routes
+            .as_ref()
+            .map(|ctx| ctx.subscribe_route_changes());
         let registry_for_routes = Arc::clone(self);
 
         tokio::spawn(async move {
@@ -180,7 +183,7 @@ impl RouteHandlerRegistry {
                         let Ok(event) = event_result else {
                             break;
                         };
-                        
+
                         // Filter for this session
                         if event.session_id.as_deref() != Some(&session_id) {
                             continue;
@@ -227,7 +230,7 @@ impl RouteHandlerRegistry {
                             _ => {}
                         }
                     }
-                    
+
                     // Handle context route change notifications
                     Some(Ok(_notification)) = async {
                         match route_change_rx.as_mut() {
@@ -249,7 +252,7 @@ impl RouteHandlerRegistry {
     /// Set HTTP credentials for authentication.
     pub async fn set_http_credentials(&self, credentials: HttpCredentials) {
         self.auth_handler.set_credentials(credentials).await;
-        
+
         // Enable auth handling if not already enabled
         let mut auth_enabled = self.auth_enabled.write().await;
         if !*auth_enabled {
@@ -271,7 +274,10 @@ impl RouteHandlerRegistry {
     }
 
     /// Handle an authentication challenge.
-    pub async fn handle_auth_required(&self, event: &AuthRequiredEvent) -> Result<(), NetworkError> {
+    pub async fn handle_auth_required(
+        &self,
+        event: &AuthRequiredEvent,
+    ) -> Result<(), NetworkError> {
         self.auth_handler.handle_auth_challenge(event).await?;
         Ok(())
     }
@@ -306,7 +312,11 @@ impl RouteHandlerRegistry {
     }
 
     /// Register a route handler with a predicate function.
-    pub async fn route_predicate<P, H, Fut>(&self, predicate: P, handler: H) -> Result<(), NetworkError>
+    pub async fn route_predicate<P, H, Fut>(
+        &self,
+        predicate: P,
+        handler: H,
+    ) -> Result<(), NetworkError>
     where
         P: Fn(&str) -> bool + Send + Sync + 'static,
         H: Fn(Route) -> Fut + Send + Sync + 'static,
@@ -343,7 +353,7 @@ impl RouteHandlerRegistry {
     /// Unregister handlers matching the given pattern.
     pub async fn unroute(&self, pattern: &str) {
         let mut handlers = self.handlers.write().await;
-        
+
         // Remove handlers that match this pattern
         // For simplicity, we match based on glob pattern equality
         handlers.retain(|h| {
@@ -368,7 +378,7 @@ impl RouteHandlerRegistry {
     }
 
     /// Handle a paused request by dispatching to matching handlers.
-    /// 
+    ///
     /// Handlers are tried in reverse order (LIFO). If a handler calls `fallback()`,
     /// the next matching handler is tried. If no handler handles the request,
     /// it is continued to the network.
@@ -385,12 +395,13 @@ impl RouteHandlerRegistry {
 
         // Try each matching handler in order
         for handler in &matching_handlers {
-            let route = create_route_from_event(event, self.connection.clone(), self.session_id.clone());
+            let route =
+                create_route_from_event(event, self.connection.clone(), self.session_id.clone());
             let route_check = route.clone();
-            
+
             // Call the handler (handler takes ownership of route)
             (handler.handler)(route).await?;
-            
+
             // Check if the route was actually handled (made a CDP call)
             if route_check.is_handled().await {
                 return Ok(());
@@ -408,13 +419,17 @@ impl RouteHandlerRegistry {
         // Check context routes as fallback
         if let Some(ref context_routes) = self.context_routes {
             let context_handlers = context_routes.find_all_handlers(url).await;
-            
+
             for handler in context_handlers {
-                let route = create_route_from_event(event, self.connection.clone(), self.session_id.clone());
+                let route = create_route_from_event(
+                    event,
+                    self.connection.clone(),
+                    self.session_id.clone(),
+                );
                 let route_check = route.clone();
-                
+
                 handler(route).await?;
-                
+
                 if route_check.is_handled().await {
                     return Ok(());
                 }
@@ -431,7 +446,7 @@ impl RouteHandlerRegistry {
     }
 
     /// Enable the Fetch domain if not already enabled.
-    /// 
+    ///
     /// This is a public version for use by `ContextRouteRegistry` when
     /// synchronously enabling Fetch on all pages after a context route is added.
     pub async fn ensure_fetch_enabled_public(&self) -> Result<(), NetworkError> {

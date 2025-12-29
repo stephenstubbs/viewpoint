@@ -477,5 +477,3 @@ pub struct SetInterceptFileChooserDialogParams {
     /// Whether to intercept file chooser dialogs.
     pub enabled: bool,
 }
-
-

@@ -12,9 +12,7 @@ use chrono::{DateTime, Utc};
 use tokio::sync::RwLock;
 use tracing::{debug, trace};
 
-use super::har::{
-    Har, HarEntry, HarPage, HarRequest, HarResponse, HarTimings,
-};
+use super::har::{Har, HarEntry, HarPage, HarRequest, HarResponse, HarTimings};
 use crate::error::NetworkError;
 
 /// Options for HAR recording.
@@ -134,13 +132,14 @@ pub struct HarRecorder {
 impl HarRecorder {
     /// Create a new HAR recorder.
     pub fn new(options: HarRecordingOptions) -> Result<Self, NetworkError> {
-        let url_matcher = if let Some(ref pattern) = options.url_filter {
-            Some(glob::Pattern::new(pattern).map_err(|e| {
-                NetworkError::InvalidResponse(format!("Invalid URL pattern: {e}"))
-            })?)
-        } else {
-            None
-        };
+        let url_matcher =
+            if let Some(ref pattern) = options.url_filter {
+                Some(glob::Pattern::new(pattern).map_err(|e| {
+                    NetworkError::InvalidResponse(format!("Invalid URL pattern: {e}"))
+                })?)
+            } else {
+                None
+            };
 
         Ok(Self {
             options,
@@ -168,7 +167,10 @@ impl HarRecorder {
         if self.options.content_types.is_empty() {
             return true;
         }
-        self.options.content_types.iter().any(|t| mime_type.contains(t))
+        self.options
+            .content_types
+            .iter()
+            .any(|t| mime_type.contains(t))
     }
 
     /// Start recording a new page.
@@ -180,10 +182,10 @@ impl HarRecorder {
             &Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
         );
         har.add_page(page);
-        
+
         let mut current = self.current_page_id.write().await;
         *current = Some(page_id.to_string());
-        
+
         debug!(page_id = %page_id, title = %title, "Started recording page");
     }
 
@@ -280,13 +282,17 @@ impl HarRecorder {
         server_ip: Option<&str>,
     ) {
         let mut pending_requests = self.pending_requests.write().await;
-        
-        let pending = if let Some(p) = pending_requests.remove(request_id) { p } else {
+
+        let pending = if let Some(p) = pending_requests.remove(request_id) {
+            p
+        } else {
             trace!(request_id = %request_id, "No pending request for response");
             return;
         };
 
-        let started_date_time = pending.started_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        let started_date_time = pending
+            .started_at
+            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
         let mut entry = HarEntry::new(&started_date_time);
         entry.pageref = pending.page_ref;
         entry.set_request(pending.request);
@@ -298,7 +304,7 @@ impl HarRecorder {
         if self.should_include_content(mime_type) {
             let body_text = body.map(|b| {
                 let mut data = b;
-                
+
                 // Truncate if needed
                 if self.options.max_body_size > 0 && data.len() > self.options.max_body_size {
                     data = &data[..self.options.max_body_size];
@@ -353,13 +359,15 @@ impl HarRecorder {
     /// Record a failed request.
     pub async fn record_failure(&self, request_id: &str, error_text: &str) {
         let mut pending_requests = self.pending_requests.write().await;
-        
+
         let pending = match pending_requests.remove(request_id) {
             Some(p) => p,
             None => return,
         };
 
-        let started_date_time = pending.started_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        let started_date_time = pending
+            .started_at
+            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
         let mut entry = HarEntry::new(&started_date_time);
         entry.pageref = pending.page_ref;
         entry.set_request(pending.request);
@@ -383,9 +391,9 @@ impl HarRecorder {
         let json = serde_json::to_string_pretty(&*har)
             .map_err(|e| NetworkError::InvalidResponse(format!("Failed to serialize HAR: {e}")))?;
 
-        tokio::fs::write(path, json).await.map_err(|e| {
-            NetworkError::IoError(format!("Failed to write HAR file: {e}"))
-        })?;
+        tokio::fs::write(path, json)
+            .await
+            .map_err(|e| NetworkError::IoError(format!("Failed to write HAR file: {e}")))?;
 
         debug!(path = %path.display(), "Saved HAR file");
         Ok(path.clone())

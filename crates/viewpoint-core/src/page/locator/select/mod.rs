@@ -4,8 +4,8 @@
 
 use tracing::{debug, instrument};
 
-use super::selector::js_string_literal;
 use super::Locator;
+use super::selector::js_string_literal;
 use crate::error::LocatorError;
 
 impl Locator<'_> {

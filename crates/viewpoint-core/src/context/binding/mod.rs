@@ -13,7 +13,9 @@ use tracing::debug;
 
 /// Type alias for the binding callback function.
 pub type ContextBindingCallback = Arc<
-    dyn Fn(Vec<serde_json::Value>) -> Pin<Box<dyn Future<Output = Result<serde_json::Value, String>> + Send>>
+    dyn Fn(
+            Vec<serde_json::Value>,
+        ) -> Pin<Box<dyn Future<Output = Result<serde_json::Value, String>> + Send>>
         + Send
         + Sync,
 >;
@@ -53,9 +55,7 @@ impl ContextBindingRegistry {
     {
         debug!("Registering context-level binding: {}", name);
 
-        let boxed_callback: ContextBindingCallback = Arc::new(move |args| {
-            Box::pin(callback(args))
-        });
+        let boxed_callback: ContextBindingCallback = Arc::new(move |args| Box::pin(callback(args)));
 
         let binding = ContextBinding {
             name: name.to_string(),

@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use tokio::sync::RwLock;
 
@@ -29,14 +29,12 @@ impl HandlerId {
 }
 
 /// Type alias for the page event handler function.
-pub type PageEventHandler = Box<
-    dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
->;
+pub type PageEventHandler =
+    Box<dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for the close event handler function.
-pub type CloseEventHandler = Box<
-    dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
->;
+pub type CloseEventHandler =
+    Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Event emitter for managing typed event handlers.
 ///
@@ -146,9 +144,7 @@ impl ContextEventManager {
         F: Fn(Page) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        let boxed_handler: PageEventHandler = Box::new(move |page| {
-            Box::pin(handler(page))
-        });
+        let boxed_handler: PageEventHandler = Box::new(move |page| Box::pin(handler(page)));
         self.page_handlers.add(boxed_handler).await
     }
 
@@ -173,9 +169,7 @@ impl ContextEventManager {
         F: Fn() -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        let boxed_handler: CloseEventHandler = Box::new(move || {
-            Box::pin(handler())
-        });
+        let boxed_handler: CloseEventHandler = Box::new(move || Box::pin(handler()));
         self.close_handlers.add(boxed_handler).await
     }
 
@@ -244,15 +238,18 @@ where
 
         // Register a temporary handler to capture the new page
         let tx_clone = tx.clone();
-        let handler_id = self.event_manager.on_page(move |page| {
-            let tx = tx_clone.clone();
-            async move {
-                let mut guard = tx.lock().await;
-                if let Some(sender) = guard.take() {
-                    let _ = sender.send(page);
+        let handler_id = self
+            .event_manager
+            .on_page(move |page| {
+                let tx = tx_clone.clone();
+                async move {
+                    let mut guard = tx.lock().await;
+                    if let Some(sender) = guard.take() {
+                        let _ = sender.send(page);
+                    }
                 }
-            }
-        }).await;
+            })
+            .await;
 
         // Execute the action
         let action = self.action.take().expect("action already consumed");
@@ -262,10 +259,7 @@ where
         let result = match action_result {
             Ok(()) => {
                 // Wait for the page with timeout
-                match tokio::time::timeout(
-                    std::time::Duration::from_secs(30),
-                    rx,
-                ).await {
+                match tokio::time::timeout(std::time::Duration::from_secs(30), rx).await {
                     Ok(Ok(page)) => Ok(page),
                     Ok(Err(_)) => Err(crate::error::ContextError::Internal(
                         "Page channel closed unexpectedly".to_string(),

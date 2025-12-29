@@ -6,14 +6,14 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use tokio::sync::{oneshot, watch, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, oneshot, watch};
 use tracing::{debug, warn};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::page::{FrameAttachedEvent, FrameDetachedEvent, FrameNavigatedEvent};
 use viewpoint_cdp::protocol::runtime::{ConsoleApiCalledEvent, ExceptionThrownEvent};
 use viewpoint_cdp::protocol::{
     DownloadProgressEvent, DownloadWillBeginEvent, JavascriptDialogOpeningEvent,
 };
-use viewpoint_cdp::CdpConnection;
 
 use super::super::console::ConsoleMessage;
 use super::super::dialog::Dialog;
@@ -365,8 +365,7 @@ async fn handle_download_will_begin(
     wait_for_download_tx: &Arc<Mutex<Option<oneshot::Sender<Download>>>>,
 ) {
     if let Some(params) = params {
-        if let Ok(download_event) =
-            serde_json::from_value::<DownloadWillBeginEvent>(params.clone())
+        if let Ok(download_event) = serde_json::from_value::<DownloadWillBeginEvent>(params.clone())
         {
             debug!(
                 guid = %download_event.guid,
@@ -390,10 +389,7 @@ async fn handle_download_will_begin(
             // Store the tracker
             {
                 let mut downloads_guard = downloads.lock().await;
-                downloads_guard.insert(
-                    download_event.guid,
-                    DownloadTracker { state_tx, path_tx },
-                );
+                downloads_guard.insert(download_event.guid, DownloadTracker { state_tx, path_tx });
             }
 
             // Check if there's a waiter

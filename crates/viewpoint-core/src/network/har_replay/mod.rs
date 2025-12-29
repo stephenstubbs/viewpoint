@@ -168,7 +168,12 @@ impl HarReplayHandler {
     }
 
     /// Find a matching HAR entry for the given request.
-    pub fn find_entry(&self, url: &str, method: &str, post_data: Option<&str>) -> Option<&HarEntry> {
+    pub fn find_entry(
+        &self,
+        url: &str,
+        method: &str,
+        post_data: Option<&str>,
+    ) -> Option<&HarEntry> {
         // First, check if URL matches the filter
         if let Some(ref filter) = self.options.url_filter {
             if !filter.matches(url) {
@@ -190,7 +195,13 @@ impl HarReplayHandler {
     }
 
     /// Check if a HAR entry matches the request.
-    fn entry_matches(&self, entry: &HarEntry, url: &str, method: &str, post_data: Option<&str>) -> bool {
+    fn entry_matches(
+        &self,
+        entry: &HarEntry,
+        url: &str,
+        method: &str,
+        post_data: Option<&str>,
+    ) -> bool {
         // Match URL
         if !self.url_matches(&entry.request.url, url) {
             return false;
@@ -310,9 +321,10 @@ impl HarReplayHandler {
             return Ok(());
         }
 
-        let path = self.har_path.as_ref().ok_or_else(|| {
-            NetworkError::HarError("No HAR path set for updates".to_string())
-        })?;
+        let path = self
+            .har_path
+            .as_ref()
+            .ok_or_else(|| NetworkError::HarError("No HAR path set for updates".to_string()))?;
 
         let new_entries = self.new_entries.read().await;
         if new_entries.is_empty() {
@@ -356,8 +368,13 @@ pub struct HarResponseData {
 /// Create a route handler that replays from HAR.
 pub fn create_har_route_handler(
     handler: Arc<HarReplayHandler>,
-) -> impl Fn(Route) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), NetworkError>> + Send>> + Send + Sync + Clone + 'static
-{
+) -> impl Fn(
+    Route,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), NetworkError>> + Send>>
++ Send
++ Sync
++ Clone
++ 'static {
     move |route: Route| {
         let handler = handler.clone();
         Box::pin(async move {

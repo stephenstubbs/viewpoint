@@ -61,22 +61,22 @@ impl Locator<'_> {
             (function() {
                 const elements = @{selector_expr};
                 if (elements.length === 0) return { found: false };
-                
+
                 const el = elements[0];
                 const originalOutline = el.style.outline;
                 const originalOutlineOffset = el.style.outlineOffset;
                 const originalTransition = el.style.transition;
-                
+
                 // Apply highlight with animation
                 el.style.transition = "outline 0.2s ease-in-out";
                 el.style.outline = "3px solid #ff00ff";
                 el.style.outlineOffset = "2px";
-                
+
                 // Store original styles for restoration
                 el.__viewpoint_original_outline = originalOutline;
                 el.__viewpoint_original_outline_offset = originalOutlineOffset;
                 el.__viewpoint_original_transition = originalTransition;
-                
+
                 return { found: true };
             })()
         };
@@ -98,12 +98,12 @@ impl Locator<'_> {
             (function() {
                 const elements = @{selector_expr};
                 if (elements.length === 0) return;
-                
+
                 const el = elements[0];
                 el.style.outline = el.__viewpoint_original_outline || "";
                 el.style.outlineOffset = el.__viewpoint_original_outline_offset || "";
                 el.style.transition = el.__viewpoint_original_transition || "";
-                
+
                 delete el.__viewpoint_original_outline;
                 delete el.__viewpoint_original_outline_offset;
                 delete el.__viewpoint_original_transition;

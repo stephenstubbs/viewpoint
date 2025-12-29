@@ -4,8 +4,8 @@
 
 use std::sync::Arc;
 
-use viewpoint_cdp::protocol::fetch::{ContinueRequestParams, RequestPausedEvent};
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::fetch::{ContinueRequestParams, RequestPausedEvent};
 
 use super::request::Request;
 use super::route::Route;

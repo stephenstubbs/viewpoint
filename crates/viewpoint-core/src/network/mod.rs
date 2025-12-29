@@ -5,13 +5,13 @@
 
 pub mod auth;
 pub mod events;
+pub(crate) mod handler;
+mod handler_fetch;
+mod handler_request;
 pub mod har;
 pub mod har_recorder;
 pub mod har_replay;
 mod har_types;
-pub(crate) mod handler;
-mod handler_fetch;
-mod handler_request;
 mod request;
 mod response;
 mod route;

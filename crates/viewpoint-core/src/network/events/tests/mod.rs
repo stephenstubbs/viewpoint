@@ -10,8 +10,8 @@ fn test_network_event_types() {
 
 fn create_test_request() -> Request {
     // Create a minimal test request
-    use std::collections::HashMap;
     use super::super::types::ResourceType;
+    use std::collections::HashMap;
 
     Request {
         url: "https://example.com".to_string(),

@@ -9,19 +9,18 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, trace as trace_log};
 
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::emulation::{
-    MediaFeature, SetDeviceMetricsOverrideParams, SetEmulatedMediaParams,
-    SetLocaleOverrideParams, SetTimezoneOverrideParams, SetTouchEmulationEnabledParams,
-    SetUserAgentOverrideParams,
+    MediaFeature, SetDeviceMetricsOverrideParams, SetEmulatedMediaParams, SetLocaleOverrideParams,
+    SetTimezoneOverrideParams, SetTouchEmulationEnabledParams, SetUserAgentOverrideParams,
 };
 use viewpoint_cdp::protocol::target_domain::{
     AttachToTargetParams, AttachToTargetResult, CreateTargetParams, CreateTargetResult,
 };
-use viewpoint_cdp::CdpConnection;
 
+use super::PageInfo;
 use super::routing;
 use super::types::{ColorScheme, ContextOptions, ForcedColors, ReducedMotion, ViewportSize};
-use super::PageInfo;
 use crate::error::ContextError;
 use crate::page::Page;
 
@@ -269,8 +268,10 @@ pub(crate) fn convert_http_credentials(
     options: &ContextOptions,
 ) -> Option<crate::network::auth::HttpCredentials> {
     options.http_credentials.as_ref().map(|creds| {
-        let mut auth_creds =
-            crate::network::auth::HttpCredentials::new(creds.username.clone(), creds.password.clone());
+        let mut auth_creds = crate::network::auth::HttpCredentials::new(
+            creds.username.clone(),
+            creds.password.clone(),
+        );
         if let Some(ref origin) = creds.origin {
             auth_creds = crate::network::auth::HttpCredentials::for_origin(
                 creds.username.clone(),
@@ -304,7 +305,7 @@ pub(crate) async fn create_page_instance(
         .with_test_id_attribute(test_id_attr)
         .with_context_routes(route_registry, http_credentials.clone())
         .await;
-        
+
         // Start video recording immediately
         if let Err(e) = page.start_video_recording().await {
             debug!("Failed to start video recording: {}", e);

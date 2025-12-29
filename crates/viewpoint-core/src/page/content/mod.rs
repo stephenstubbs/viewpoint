@@ -89,7 +89,11 @@ impl<'a> ScriptTagBuilder<'a> {
                 }})
                 ",
                 url.replace('\'', "\\'"),
-                if self.script_type == ScriptType::Module { "module" } else { "text/javascript" }
+                if self.script_type == ScriptType::Module {
+                    "module"
+                } else {
+                    "text/javascript"
+                }
             )
         } else if let Some(content) = self.content {
             format!(
@@ -102,7 +106,11 @@ impl<'a> ScriptTagBuilder<'a> {
                 }})()
                 ",
                 serde_json::to_string(&content).unwrap_or_default(),
-                if self.script_type == ScriptType::Module { "script.type = 'module';" } else { "" }
+                if self.script_type == ScriptType::Module {
+                    "script.type = 'module';"
+                } else {
+                    ""
+                }
             )
         } else {
             return Err(PageError::EvaluationFailed(

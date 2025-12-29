@@ -109,15 +109,8 @@ fn create_validation_source(source: &str) -> String {
     let mut chars = source.chars().peekable();
 
     while let Some(c) = chars.next() {
-        // Handle value interpolation: #{...}
-        if c == '#' && chars.peek() == Some(&'{') {
-            chars.next(); // consume '{'
-            skip_interpolation_expr(&mut chars);
-            // Replace with a placeholder that's valid JS (null is always valid)
-            result.push_str("null");
-        }
-        // Handle raw interpolation: @{...}
-        else if c == '@' && chars.peek() == Some(&'{') {
+        // Handle value interpolation: #{...} and raw interpolation: @{...}
+        if (c == '#' || c == '@') && chars.peek() == Some(&'{') {
             chars.next(); // consume '{'
             skip_interpolation_expr(&mut chars);
             // Replace with a placeholder that's valid JS (null is always valid)

@@ -5,10 +5,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::broadcast;
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::network::{
     LoadingFailedEvent, LoadingFinishedEvent, RequestWillBeSentEvent, ResponseReceivedEvent,
 };
-use viewpoint_cdp::CdpConnection;
 
 use super::request::Request;
 use super::response::Response;
@@ -123,9 +123,8 @@ impl NetworkEventListener {
                                     parse_request_will_be_sent(&req_event, previous_request);
                                 pending_requests
                                     .insert(req_event.request_id.clone(), request.clone());
-                                let _ = event_tx.send(NetworkEvent::Request(RequestEvent {
-                                    request,
-                                }));
+                                let _ =
+                                    event_tx.send(NetworkEvent::Request(RequestEvent { request }));
                             }
                         }
                     }
@@ -145,9 +144,8 @@ impl NetworkEventListener {
                                         session_id.clone(),
                                         resp_event.request_id.clone(),
                                     );
-                                    let _ = event_tx.send(NetworkEvent::Response(ResponseEvent {
-                                        response,
-                                    }));
+                                    let _ = event_tx
+                                        .send(NetworkEvent::Response(ResponseEvent { response }));
                                 }
                             }
                         }
@@ -393,7 +391,10 @@ impl<'a, M: UrlMatcher + Clone + 'static> WaitForResponseBuilder<'a, M> {
                                             headers: HashMap::new(),
                                             post_data: None,
                                             resource_type: ResourceType::Other,
-                                            frame_id: resp_event.frame_id.clone().unwrap_or_default(),
+                                            frame_id: resp_event
+                                                .frame_id
+                                                .clone()
+                                                .unwrap_or_default(),
                                             is_navigation: false,
                                             connection: None,
                                             session_id: None,

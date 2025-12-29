@@ -1,11 +1,11 @@
 //! Implementation of the `#[viewpoint::test]` attribute macro.
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::{
+    Error, FnArg, Ident, ItemFn, LitBool, LitInt, LitStr, Pat, Result, Token, Type,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    Error, FnArg, Ident, ItemFn, LitBool, LitInt, LitStr, Pat, Result, Token, Type,
 };
 
 /// Parsed arguments from the `#[test(...)]` attribute.
@@ -46,7 +46,10 @@ impl Parse for TestArgs {
                     args.context = Some(kv.value_string()?);
                 }
                 other => {
-                    return Err(Error::new(kv.key.span(), format!("unknown attribute: {other}")));
+                    return Err(Error::new(
+                        kv.key.span(),
+                        format!("unknown attribute: {other}"),
+                    ));
                 }
             }
         }
@@ -191,7 +194,9 @@ fn parse_fixtures(input: &ItemFn) -> Result<Fixtures> {
                 _ => {
                     return Err(Error::new_spanned(
                         &pat_type.ty,
-                        format!("unsupported fixture type: {type_name}. Expected Page, BrowserContext, or Browser"),
+                        format!(
+                            "unsupported fixture type: {type_name}. Expected Page, BrowserContext, or Browser"
+                        ),
                     ));
                 }
             }
@@ -262,15 +267,13 @@ fn generate_harness_setup(args: &TestArgs) -> Result<TokenStream> {
                 ::viewpoint_test::TestHarness::from_context(#context_fn().await).await?
             })
         }
-        None => {
-            Ok(quote! {
-                ::viewpoint_test::TestHarness::builder()
-                    .headless(#headless)
-                    .timeout(::std::time::Duration::from_millis(#timeout_ms))
-                    .build()
-                    .await?
-            })
-        }
+        None => Ok(quote! {
+            ::viewpoint_test::TestHarness::builder()
+                .headless(#headless)
+                .timeout(::std::time::Duration::from_millis(#timeout_ms))
+                .build()
+                .await?
+        }),
         _ => unreachable!("scope validated earlier"),
     }
 }

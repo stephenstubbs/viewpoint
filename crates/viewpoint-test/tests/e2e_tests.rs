@@ -9,7 +9,7 @@ use std::sync::Once;
 use std::time::Duration;
 
 use viewpoint_core::DocumentLoadState;
-use viewpoint_test::{expect, expect_page, TestHarness};
+use viewpoint_test::{TestHarness, expect, expect_page};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -27,7 +27,7 @@ fn init_tracing() {
 }
 
 /// E2E test: Complete form interaction workflow
-/// 
+///
 /// This test exercises:
 /// - Navigation
 /// - Element location with various selectors
@@ -61,17 +61,23 @@ async fn e2e_form_interaction() {
         .to_be_visible()
         .await
         .expect("name input should be visible");
-    
+
     name_input.fill("John Doe").await.expect("should fill name");
 
     // Fill phone using type_text for character-by-character input
     let phone_input = page.locator("input[name='custtel']");
     phone_input.click().await.expect("should click phone");
-    phone_input.type_text("555-1234").await.expect("should type phone");
+    phone_input
+        .type_text("555-1234")
+        .await
+        .expect("should type phone");
 
     // Fill email
     let email_input = page.locator("input[name='custemail']");
-    email_input.fill("john@example.com").await.expect("should fill email");
+    email_input
+        .fill("john@example.com")
+        .await
+        .expect("should fill email");
 
     // Select pizza size (radio buttons) - click medium
     let medium_size = page.locator("input[value='medium']");
@@ -106,11 +112,14 @@ async fn e2e_form_interaction() {
 
     // Fill comments in textarea
     let comments = page.locator("textarea[name='comments']");
-    comments.fill("Please ring the doorbell twice.").await.expect("should fill comments");
+    comments
+        .fill("Please ring the doorbell twice.")
+        .await
+        .expect("should fill comments");
 }
 
 /// E2E test: Navigation and content verification
-/// 
+///
 /// This test exercises:
 /// - Multiple page navigations
 /// - URL assertions
@@ -148,7 +157,7 @@ async fn e2e_navigation_and_content() {
         .to_be_visible()
         .await
         .expect("heading should be visible");
-    
+
     expect(&heading)
         .to_have_text("Example Domain")
         .await
@@ -180,7 +189,7 @@ async fn e2e_navigation_and_content() {
 }
 
 /// E2E test: Element selection and chaining
-/// 
+///
 /// This test exercises:
 /// - CSS selectors
 /// - Text selectors
@@ -229,7 +238,7 @@ async fn e2e_element_selection() {
 }
 
 /// E2E test: Mouse interactions
-/// 
+///
 /// This test exercises:
 /// - Click
 /// - Double-click
@@ -252,7 +261,10 @@ async fn e2e_mouse_interactions() {
     heading.hover().await.expect("should hover over heading");
 
     // Double-click to select text
-    heading.dblclick().await.expect("should double-click heading");
+    heading
+        .dblclick()
+        .await
+        .expect("should double-click heading");
 
     // Click the link
     let link = page.locator("a");
@@ -260,13 +272,13 @@ async fn e2e_mouse_interactions() {
         .to_be_visible()
         .await
         .expect("link should be visible");
-    
+
     // Just verify we can click (don't follow navigation)
     // link.click().await.expect("should click link");
 }
 
 /// E2E test: Keyboard interactions
-/// 
+///
 /// This test exercises:
 /// - Focus
 /// - Key presses
@@ -304,7 +316,7 @@ async fn e2e_keyboard_interactions() {
 }
 
 /// E2E test: Assertion negation
-/// 
+///
 /// This test exercises:
 /// - `.not()` modifier on assertions
 #[tokio::test]
@@ -357,7 +369,7 @@ async fn e2e_assertion_negation() {
 }
 
 /// E2E test: Custom timeouts
-/// 
+///
 /// This test exercises:
 /// - Custom assertion timeouts
 /// - Fast failure on timeout
@@ -387,12 +399,15 @@ async fn e2e_custom_timeouts() {
         .timeout(Duration::from_millis(100))
         .to_have_text("Wrong Text")
         .await;
-    
-    assert!(result.is_err(), "should fail with wrong text and short timeout");
+
+    assert!(
+        result.is_err(),
+        "should fail with wrong text and short timeout"
+    );
 }
 
 /// E2E test: Multiple pages
-/// 
+///
 /// This test exercises:
 /// - Creating multiple pages
 /// - Independent page state
@@ -401,10 +416,11 @@ async fn e2e_multiple_pages() {
     init_tracing();
 
     let harness = TestHarness::new().await.expect("should create harness");
-    
+
     // First page
     let page1 = harness.page();
-    page1.goto("https://example.com")
+    page1
+        .goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await
@@ -412,7 +428,8 @@ async fn e2e_multiple_pages() {
 
     // Create second page
     let page2 = harness.new_page().await.expect("should create second page");
-    page2.goto("https://httpbin.org/html")
+    page2
+        .goto("https://httpbin.org/html")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await

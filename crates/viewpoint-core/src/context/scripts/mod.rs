@@ -100,10 +100,13 @@ impl BrowserContext {
     ///
     /// Returns an error if the file cannot be read or the context is closed.
     #[instrument(level = "debug", skip(self), fields(path = %path.as_ref().display()))]
-    pub async fn add_init_script_path(&self, path: impl AsRef<std::path::Path>) -> Result<(), ContextError> {
-        let content = tokio::fs::read_to_string(path.as_ref()).await.map_err(|e| {
-            ContextError::Internal(format!("Failed to read init script file: {e}"))
-        })?;
+    pub async fn add_init_script_path(
+        &self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), ContextError> {
+        let content = tokio::fs::read_to_string(path.as_ref())
+            .await
+            .map_err(|e| ContextError::Internal(format!("Failed to read init script file: {e}")))?;
 
         self.add_init_script(&content).await
     }
@@ -118,9 +121,12 @@ impl BrowserContext {
     /// Apply all context-level init scripts to a page session.
     ///
     /// This is called internally when a new page is created.
-    pub(crate) async fn apply_init_scripts_to_session(&self, session_id: &str) -> Result<(), ContextError> {
+    pub(crate) async fn apply_init_scripts_to_session(
+        &self,
+        session_id: &str,
+    ) -> Result<(), ContextError> {
         let scripts = self.init_scripts.read().await;
-        
+
         for script in scripts.iter() {
             use viewpoint_cdp::protocol::page::AddScriptToEvaluateOnNewDocumentParams;
 

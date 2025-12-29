@@ -5,7 +5,7 @@
 use std::sync::Once;
 use std::time::Duration;
 use viewpoint_core::DocumentLoadState;
-use viewpoint_test::{expect, TestHarness};
+use viewpoint_test::{TestHarness, expect};
 
 static TRACING_INIT: Once = Once::new();
 
@@ -60,7 +60,7 @@ async fn test_timeout_propagates_to_assertions() {
         .await;
 
     assert!(result.is_err(), "should timeout with wrong text");
-    
+
     // Error message should be descriptive (contains timeout, expected, text, or similar)
     let error = result.unwrap_err();
     assert!(
@@ -104,9 +104,12 @@ async fn test_timeout_error_message_content() {
 
     assert!(result.is_err());
     let error = result.unwrap_err();
-    
+
     // Error should contain useful diagnostic information
-    assert!(!error.message.is_empty(), "error message should not be empty");
+    assert!(
+        !error.message.is_empty(),
+        "error message should not be empty"
+    );
 }
 
 // ============================================================================
@@ -121,7 +124,8 @@ async fn test_error_recovery_navigation_failure() {
     let page = harness.page();
 
     // Try to navigate to invalid domain
-    let result = page.goto("https://this-domain-definitely-does-not-exist-12345.com")
+    let result = page
+        .goto("https://this-domain-definitely-does-not-exist-12345.com")
         .timeout(Duration::from_secs(5))
         .goto()
         .await;
@@ -130,10 +134,14 @@ async fn test_error_recovery_navigation_failure() {
     assert!(result.is_err(), "navigation to invalid domain should fail");
 
     // But page should still be usable
-    assert!(!page.is_closed(), "page should not be closed after failed navigation");
+    assert!(
+        !page.is_closed(),
+        "page should not be closed after failed navigation"
+    );
 
     // Should be able to navigate to valid URL after failure
-    let recovery = page.goto("https://example.com")
+    let recovery = page
+        .goto("https://example.com")
         .wait_until(DocumentLoadState::DomContentLoaded)
         .goto()
         .await;
@@ -156,7 +164,7 @@ async fn test_error_recovery_element_not_found() {
 
     // Try to interact with non-existent element
     let nonexistent = page.locator("#element-that-does-not-exist-xyz123");
-    
+
     // Should be hidden (element not found)
     expect(&nonexistent)
         .to_be_hidden()

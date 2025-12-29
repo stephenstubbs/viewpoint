@@ -112,11 +112,12 @@ impl<'a> Clock<'a> {
     pub async fn install(&mut self) -> Result<(), PageError> {
         // First inject the clock library
         self.inject_clock_library().await?;
-        
+
         // Then install it
-        self.evaluate(js!{ window.__viewpointClock.install() }).await?;
+        self.evaluate(js! { window.__viewpointClock.install() })
+            .await?;
         self.installed = true;
-        
+
         debug!("Clock installed");
         Ok(())
     }
@@ -139,10 +140,10 @@ impl<'a> Clock<'a> {
     /// Returns an error if the clock cannot be uninstalled.
     #[instrument(level = "debug", skip(self))]
     pub async fn uninstall(&mut self) -> Result<(), PageError> {
-        self.evaluate(js!{ window.__viewpointClock && window.__viewpointClock.uninstall() })
+        self.evaluate(js! { window.__viewpointClock && window.__viewpointClock.uninstall() })
             .await?;
         self.installed = false;
-        
+
         debug!("Clock uninstalled");
         Ok(())
     }
@@ -181,10 +182,12 @@ impl<'a> Clock<'a> {
         let time_value = time.into();
         match &time_value {
             TimeValue::Timestamp(ts) => {
-                self.evaluate(&js!{ window.__viewpointClock.setFixedTime(#{ts}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.setFixedTime(#{ts}) })
+                    .await?;
             }
             TimeValue::IsoString(s) => {
-                self.evaluate(&js!{ window.__viewpointClock.setFixedTime(#{s}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.setFixedTime(#{s}) })
+                    .await?;
             }
         }
         debug!(time = ?time_value, "Fixed time set");
@@ -219,10 +222,12 @@ impl<'a> Clock<'a> {
         let time_value = time.into();
         match &time_value {
             TimeValue::Timestamp(ts) => {
-                self.evaluate(&js!{ window.__viewpointClock.setSystemTime(#{ts}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.setSystemTime(#{ts}) })
+                    .await?;
             }
             TimeValue::IsoString(s) => {
-                self.evaluate(&js!{ window.__viewpointClock.setSystemTime(#{s}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.setSystemTime(#{s}) })
+                    .await?;
             }
         }
         debug!(time = ?time_value, "System time set");
@@ -262,8 +267,14 @@ impl<'a> Clock<'a> {
     #[instrument(level = "debug", skip(self))]
     pub async fn run_for(&self, duration: Duration) -> Result<u32, PageError> {
         let ms = duration.as_millis();
-        let result: f64 = self.evaluate_value(&js!{ window.__viewpointClock.runFor(#{ms}) }).await?;
-        debug!(duration_ms = ms, timers_fired = result as u32, "Time advanced");
+        let result: f64 = self
+            .evaluate_value(&js! { window.__viewpointClock.runFor(#{ms}) })
+            .await?;
+        debug!(
+            duration_ms = ms,
+            timers_fired = result as u32,
+            "Time advanced"
+        );
         Ok(result as u32)
     }
 
@@ -295,7 +306,8 @@ impl<'a> Clock<'a> {
     #[instrument(level = "debug", skip(self))]
     pub async fn fast_forward(&self, duration: Duration) -> Result<(), PageError> {
         let ms = duration.as_millis();
-        self.evaluate(&js!{ window.__viewpointClock.fastForward(#{ms}) }).await?;
+        self.evaluate(&js! { window.__viewpointClock.fastForward(#{ms}) })
+            .await?;
         debug!(duration_ms = ms, "Time fast-forwarded");
         Ok(())
     }
@@ -328,10 +340,12 @@ impl<'a> Clock<'a> {
         let time_value = time.into();
         match &time_value {
             TimeValue::Timestamp(ts) => {
-                self.evaluate(&js!{ window.__viewpointClock.pauseAt(#{ts}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.pauseAt(#{ts}) })
+                    .await?;
             }
             TimeValue::IsoString(s) => {
-                self.evaluate(&js!{ window.__viewpointClock.pauseAt(#{s}) }).await?;
+                self.evaluate(&js! { window.__viewpointClock.pauseAt(#{s}) })
+                    .await?;
             }
         }
         debug!(time = ?time_value, "Clock paused");
@@ -359,7 +373,8 @@ impl<'a> Clock<'a> {
     /// Returns an error if resuming fails.
     #[instrument(level = "debug", skip(self))]
     pub async fn resume(&self) -> Result<(), PageError> {
-        self.evaluate(js!{ window.__viewpointClock.resume() }).await?;
+        self.evaluate(js! { window.__viewpointClock.resume() })
+            .await?;
         debug!("Clock resumed");
         Ok(())
     }
@@ -389,7 +404,9 @@ impl<'a> Clock<'a> {
     /// Returns an error if running timers fails.
     #[instrument(level = "debug", skip(self))]
     pub async fn run_all_timers(&self) -> Result<u32, PageError> {
-        let result: f64 = self.evaluate_value(js!{ window.__viewpointClock.runAllTimers() }).await?;
+        let result: f64 = self
+            .evaluate_value(js! { window.__viewpointClock.runAllTimers() })
+            .await?;
         debug!(timers_fired = result as u32, "All timers executed");
         Ok(result as u32)
     }
@@ -419,7 +436,9 @@ impl<'a> Clock<'a> {
     /// Returns an error if running timers fails.
     #[instrument(level = "debug", skip(self))]
     pub async fn run_to_last(&self) -> Result<u32, PageError> {
-        let result: f64 = self.evaluate_value(js!{ window.__viewpointClock.runToLast() }).await?;
+        let result: f64 = self
+            .evaluate_value(js! { window.__viewpointClock.runToLast() })
+            .await?;
         debug!(timers_fired = result as u32, "Ran to last timer");
         Ok(result as u32)
     }
@@ -445,7 +464,9 @@ impl<'a> Clock<'a> {
     /// Returns an error if getting the count fails.
     #[instrument(level = "debug", skip(self))]
     pub async fn pending_timer_count(&self) -> Result<u32, PageError> {
-        let result: f64 = self.evaluate_value(js!{ window.__viewpointClock.pendingTimerCount() }).await?;
+        let result: f64 = self
+            .evaluate_value(js! { window.__viewpointClock.pendingTimerCount() })
+            .await?;
         Ok(result as u32)
     }
 
@@ -468,7 +489,12 @@ impl<'a> Clock<'a> {
     ///
     /// Returns an error if the check fails.
     pub async fn is_installed(&self) -> Result<bool, PageError> {
-        let result: bool = self.evaluate_value(js!{ window.__viewpointClock && window.__viewpointClock.isInstalled() }).await.unwrap_or(false);
+        let result: bool = self
+            .evaluate_value(
+                js! { window.__viewpointClock && window.__viewpointClock.isInstalled() },
+            )
+            .await
+            .unwrap_or(false);
         Ok(result)
     }
 
@@ -536,9 +562,8 @@ impl<'a> Clock<'a> {
             )
             .await?;
 
-        serde_json::from_value(result.result.value).map_err(|e| {
-            PageError::EvaluationFailed(format!("Failed to deserialize result: {e}"))
-        })
+        serde_json::from_value(result.result.value)
+            .map_err(|e| PageError::EvaluationFailed(format!("Failed to deserialize result: {e}")))
     }
 }
 

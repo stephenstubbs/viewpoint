@@ -6,9 +6,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 use tracing::{debug, instrument};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::emulation::SetTouchEmulationEnabledParams;
 use viewpoint_cdp::protocol::input::{DispatchTouchEventParams, TouchPoint};
-use viewpoint_cdp::CdpConnection;
 
 use crate::error::LocatorError;
 
@@ -89,7 +89,10 @@ impl Touchscreen {
     /// Enable touch emulation with a specific maximum number of touch points.
     #[instrument(level = "debug", skip(self), fields(max_touch_points = max_touch_points))]
     pub async fn enable_with_max_points(&self, max_touch_points: i32) -> Result<(), LocatorError> {
-        debug!("Enabling touch emulation with max_touch_points={}", max_touch_points);
+        debug!(
+            "Enabling touch emulation with max_touch_points={}",
+            max_touch_points
+        );
 
         self.connection
             .send_command::<_, serde_json::Value>(

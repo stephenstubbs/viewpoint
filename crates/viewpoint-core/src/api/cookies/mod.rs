@@ -15,19 +15,16 @@ pub fn sync_to_jar(cookies: &[Cookie], jar: &Arc<Jar>) {
     for cookie in cookies {
         // Build a cookie URL for reqwest
         let url = cookie_to_url(cookie);
-        
+
         if let Ok(parsed_url) = url::Url::parse(&url) {
             // Build Set-Cookie header string
             let cookie_str = cookie_to_string(cookie);
-            
+
             // Create header value and add to jar
             if let Ok(header_value) = HeaderValue::from_str(&cookie_str) {
                 // Use a Vec to create a slice iterator that yields references
                 let headers = [header_value];
-                jar.set_cookies(
-                    &mut headers.iter(),
-                    &parsed_url,
-                );
+                jar.set_cookies(&mut headers.iter(), &parsed_url);
                 debug!("Synced cookie {} to API jar for {}", cookie.name, url);
             }
         }
@@ -70,16 +67,22 @@ fn cookie_to_string(cookie: &Cookie) -> String {
         parts.push("HttpOnly".to_string());
     }
     if let Some(same_site) = &cookie.same_site {
-        parts.push(format!("SameSite={}", match same_site {
-            crate::context::SameSite::Strict => "Strict",
-            crate::context::SameSite::Lax => "Lax",
-            crate::context::SameSite::None => "None",
-        }));
+        parts.push(format!(
+            "SameSite={}",
+            match same_site {
+                crate::context::SameSite::Strict => "Strict",
+                crate::context::SameSite::Lax => "Lax",
+                crate::context::SameSite::None => "None",
+            }
+        ));
     }
     if let Some(expires) = cookie.expires {
         // Convert Unix timestamp to HTTP date
         if let Some(dt) = chrono::DateTime::from_timestamp(expires as i64, 0) {
-            parts.push(format!("Expires={}", dt.format("%a, %d %b %Y %H:%M:%S GMT")));
+            parts.push(format!(
+                "Expires={}",
+                dt.format("%a, %d %b %Y %H:%M:%S GMT")
+            ));
         }
     }
 

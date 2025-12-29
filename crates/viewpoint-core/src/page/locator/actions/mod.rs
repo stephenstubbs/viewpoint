@@ -1,10 +1,12 @@
 //! Locator actions for element interaction.
 
-use viewpoint_cdp::protocol::input::{DispatchKeyEventParams, DispatchMouseEventParams, MouseButton};
 use tracing::{debug, instrument};
+use viewpoint_cdp::protocol::input::{
+    DispatchKeyEventParams, DispatchMouseEventParams, MouseButton,
+};
 
-use super::builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
 use super::Locator;
+use super::builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
 use crate::error::LocatorError;
 
 impl<'a> Locator<'a> {
@@ -60,16 +62,22 @@ impl<'a> Locator<'a> {
     pub async fn dblclick(&self) -> Result<(), LocatorError> {
         let info = self.wait_for_actionable().await?;
 
-        let x = info.x.expect("visible element has x") + info.width.expect("visible element has width") / 2.0;
-        let y = info.y.expect("visible element has y") + info.height.expect("visible element has height") / 2.0;
+        let x = info.x.expect("visible element has x")
+            + info.width.expect("visible element has width") / 2.0;
+        let y = info.y.expect("visible element has y")
+            + info.height.expect("visible element has height") / 2.0;
 
         debug!(x, y, "Double-clicking element");
 
         // First click
         self.dispatch_mouse_event(DispatchMouseEventParams::mouse_move(x, y))
             .await?;
-        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_down(x, y, MouseButton::Left))
-            .await?;
+        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_down(
+            x,
+            y,
+            MouseButton::Left,
+        ))
+        .await?;
         self.dispatch_mouse_event(DispatchMouseEventParams::mouse_up(x, y, MouseButton::Left))
             .await?;
 
@@ -384,7 +392,10 @@ impl<'a> Locator<'a> {
         // Get source element info
         let source_info = self.wait_for_actionable().await?;
         let (source_x, source_y) = if let Some((ox, oy)) = source_position {
-            (source_info.x.expect("x") + ox, source_info.y.expect("y") + oy)
+            (
+                source_info.x.expect("x") + ox,
+                source_info.y.expect("y") + oy,
+            )
         } else {
             (
                 source_info.x.expect("x") + source_info.width.expect("width") / 2.0,
@@ -395,7 +406,10 @@ impl<'a> Locator<'a> {
         // Get target element info
         let target_info = target.wait_for_actionable().await?;
         let (target_x, target_y) = if let Some((ox, oy)) = target_position {
-            (target_info.x.expect("x") + ox, target_info.y.expect("y") + oy)
+            (
+                target_info.x.expect("x") + ox,
+                target_info.y.expect("y") + oy,
+            )
         } else {
             (
                 target_info.x.expect("x") + target_info.width.expect("width") / 2.0,
@@ -411,7 +425,12 @@ impl<'a> Locator<'a> {
         // Perform drag operation
         self.page.mouse().move_(source_x, source_y).send().await?;
         self.page.mouse().down().send().await?;
-        self.page.mouse().move_(target_x, target_y).steps(steps).send().await?;
+        self.page
+            .mouse()
+            .move_(target_x, target_y)
+            .steps(steps)
+            .send()
+            .await?;
         self.page.mouse().up().send().await?;
 
         Ok(())

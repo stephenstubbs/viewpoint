@@ -1,11 +1,7 @@
 //! JavaScript parsing using `swc_ecma_parser`.
 
-use swc_common::{
-    errors::Handler,
-    sync::Lrc,
-    FileName, SourceMap, Spanned,
-};
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
+use swc_common::{FileName, SourceMap, Spanned, errors::Handler, sync::Lrc};
+use swc_ecma_parser::{Parser, StringInput, Syntax, lexer::Lexer};
 
 use std::io::Write;
 use std::sync::{Arc, Mutex};
@@ -60,7 +56,7 @@ impl Write for NullWriter {
 pub fn validate_js(source: &str) -> ParseResult {
     use swc_ecma_ast::EsVersion;
     use swc_ecma_parser::EsSyntax;
-    
+
     let cm: Lrc<SourceMap> = Lrc::default();
     let errors: Arc<Mutex<Vec<JsParseError>>> = Arc::new(Mutex::new(Vec::new()));
     let errors_clone = Arc::clone(&errors);
@@ -69,10 +65,7 @@ pub fn validate_js(source: &str) -> ParseResult {
     let fm = cm.new_source_file(FileName::Custom("js!".into()).into(), source.to_string());
 
     // Use a writer that discards output - we capture errors directly
-    let _handler = Handler::with_emitter_writer(
-        Box::new(NullWriter),
-        Some(cm.clone()),
-    );
+    let _handler = Handler::with_emitter_writer(Box::new(NullWriter), Some(cm.clone()));
 
     let lexer = Lexer::new(
         Syntax::Es(EsSyntax::default()),

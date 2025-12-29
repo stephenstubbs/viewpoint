@@ -6,11 +6,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::fetch::{
     ContinueRequestParams, ErrorReason, FailRequestParams, FulfillRequestParams,
     GetResponseBodyParams, GetResponseBodyResult, HeaderEntry,
 };
-use viewpoint_cdp::CdpConnection;
 
 use super::request::Request;
 use super::route_builders::{ContinueBuilder, FulfillBuilder};
@@ -32,9 +32,7 @@ pub enum RouteAction {
 
 /// A route handler function.
 pub type RouteHandler = Box<
-    dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>>
-        + Send
-        + Sync,
+    dyn Fn(Route) -> Pin<Box<dyn Future<Output = Result<(), NetworkError>> + Send>> + Send + Sync,
 >;
 
 /// An intercepted network request that can be fulfilled, continued, or aborted.
@@ -225,7 +223,11 @@ impl Route {
         };
 
         self.connection
-            .send_command::<_, serde_json::Value>("Fetch.failRequest", Some(params), Some(&self.session_id))
+            .send_command::<_, serde_json::Value>(
+                "Fetch.failRequest",
+                Some(params),
+                Some(&self.session_id),
+            )
             .await
             .map_err(NetworkError::from)?;
 
@@ -252,7 +254,11 @@ impl Route {
         };
 
         self.connection
-            .send_command::<_, serde_json::Value>("Fetch.continueRequest", Some(params), Some(&self.session_id))
+            .send_command::<_, serde_json::Value>(
+                "Fetch.continueRequest",
+                Some(params),
+                Some(&self.session_id),
+            )
             .await
             .map_err(NetworkError::from)?;
 
@@ -283,7 +289,10 @@ impl Route {
     }
 
     /// Fetch the response with a timeout.
-    pub async fn fetch_with_timeout(&self, timeout: Duration) -> Result<FetchedResponse<'_>, NetworkError> {
+    pub async fn fetch_with_timeout(
+        &self,
+        timeout: Duration,
+    ) -> Result<FetchedResponse<'_>, NetworkError> {
         self.fetch().timeout(timeout).send().await
     }
 
@@ -292,7 +301,10 @@ impl Route {
     // =========================================================================
 
     /// Send a fulfill request.
-    pub(super) async fn send_fulfill(&self, params: FulfillRequestParams) -> Result<(), NetworkError> {
+    pub(super) async fn send_fulfill(
+        &self,
+        params: FulfillRequestParams,
+    ) -> Result<(), NetworkError> {
         // Mark as handled
         {
             let mut handled = self.handled.lock().await;
@@ -303,7 +315,11 @@ impl Route {
         }
 
         self.connection
-            .send_command::<_, serde_json::Value>("Fetch.fulfillRequest", Some(params), Some(&self.session_id))
+            .send_command::<_, serde_json::Value>(
+                "Fetch.fulfillRequest",
+                Some(params),
+                Some(&self.session_id),
+            )
             .await
             .map_err(NetworkError::from)?;
 
@@ -311,7 +327,10 @@ impl Route {
     }
 
     /// Send a continue request.
-    pub(super) async fn send_continue(&self, params: ContinueRequestParams) -> Result<(), NetworkError> {
+    pub(super) async fn send_continue(
+        &self,
+        params: ContinueRequestParams,
+    ) -> Result<(), NetworkError> {
         // Mark as handled
         {
             let mut handled = self.handled.lock().await;
@@ -322,7 +341,11 @@ impl Route {
         }
 
         self.connection
-            .send_command::<_, serde_json::Value>("Fetch.continueRequest", Some(params), Some(&self.session_id))
+            .send_command::<_, serde_json::Value>(
+                "Fetch.continueRequest",
+                Some(params),
+                Some(&self.session_id),
+            )
             .await
             .map_err(NetworkError::from)?;
 
@@ -330,7 +353,10 @@ impl Route {
     }
 
     /// Get the response body for a request.
-    pub(super) async fn get_response_body(&self, request_id: &str) -> Result<Option<Vec<u8>>, NetworkError> {
+    pub(super) async fn get_response_body(
+        &self,
+        request_id: &str,
+    ) -> Result<Option<Vec<u8>>, NetworkError> {
         use base64::Engine;
 
         let result: GetResponseBodyResult = self

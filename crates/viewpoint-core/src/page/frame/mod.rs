@@ -11,9 +11,9 @@ use std::time::Duration;
 
 use parking_lot::RwLock;
 use tracing::{debug, info, instrument};
+use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
 use viewpoint_cdp::protocol::runtime::EvaluateParams;
-use viewpoint_cdp::CdpConnection;
 
 use crate::error::{NavigationError, PageError};
 use crate::wait::{DocumentLoadState, LoadStateWaiter};
@@ -305,7 +305,10 @@ impl Frame {
     ///
     /// Returns an error if the wait times out or the frame is detached.
     #[instrument(level = "debug", skip(self), fields(frame_id = %self.id, state = ?state))]
-    pub async fn wait_for_load_state(&self, state: DocumentLoadState) -> Result<(), NavigationError> {
+    pub async fn wait_for_load_state(
+        &self,
+        state: DocumentLoadState,
+    ) -> Result<(), NavigationError> {
         self.wait_for_load_state_with_timeout(state, DEFAULT_NAVIGATION_TIMEOUT)
             .await
     }
@@ -331,7 +334,9 @@ impl Frame {
         // Assume commit already happened for existing frames
         waiter.set_commit_received().await;
 
-        waiter.wait_for_load_state_with_timeout(state, timeout).await?;
+        waiter
+            .wait_for_load_state_with_timeout(state, timeout)
+            .await?;
 
         debug!("Frame reached load state {:?}", state);
         Ok(())
@@ -485,5 +490,3 @@ fn find_parent_frame(
 
     None
 }
-
-

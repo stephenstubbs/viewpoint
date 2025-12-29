@@ -40,7 +40,11 @@ pub struct AssertionError {
 
 impl AssertionError {
     /// Create a new assertion error.
-    pub fn new(message: impl Into<String>, expected: impl Into<String>, actual: impl Into<String>) -> Self {
+    pub fn new(
+        message: impl Into<String>,
+        expected: impl Into<String>,
+        actual: impl Into<String>,
+    ) -> Self {
         Self {
             message: message.into(),
             expected: expected.into(),

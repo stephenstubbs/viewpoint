@@ -6,8 +6,8 @@ use tracing::{debug, instrument};
 
 use viewpoint_cdp::protocol::browser::{GrantPermissionsParams, ResetPermissionsParams};
 
-use super::types::Permission;
 use super::BrowserContext;
+use super::types::Permission;
 use crate::error::ContextError;
 
 impl BrowserContext {
@@ -31,7 +31,10 @@ impl BrowserContext {
     ///
     /// Returns an error if granting permissions fails.
     #[instrument(level = "debug", skip(self, permissions))]
-    pub async fn grant_permissions(&self, permissions: Vec<Permission>) -> Result<(), ContextError> {
+    pub async fn grant_permissions(
+        &self,
+        permissions: Vec<Permission>,
+    ) -> Result<(), ContextError> {
         if self.is_closed() {
             return Err(ContextError::Closed);
         }

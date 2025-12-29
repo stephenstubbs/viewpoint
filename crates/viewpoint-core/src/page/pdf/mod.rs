@@ -13,8 +13,7 @@ use super::Page;
 use super::screenshot::base64_decode;
 
 /// Paper format for PDF generation.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum PaperFormat {
     /// Letter size (8.5 x 11 inches).
     #[default]
@@ -80,7 +79,6 @@ impl PaperFormat {
         }
     }
 }
-
 
 /// Margins for PDF generation in inches.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -284,7 +282,8 @@ impl<'a> PdfBuilder<'a> {
 
         info!("Generating PDF");
 
-        let display_header_footer = self.header_template.is_some() || self.footer_template.is_some();
+        let display_header_footer =
+            self.header_template.is_some() || self.footer_template.is_some();
 
         let params = PrintToPdfParams {
             landscape: Some(self.landscape),
@@ -310,7 +309,11 @@ impl<'a> PdfBuilder<'a> {
         let result: PrintToPdfResult = self
             .page
             .connection()
-            .send_command("Page.printToPDF", Some(params), Some(self.page.session_id()))
+            .send_command(
+                "Page.printToPDF",
+                Some(params),
+                Some(self.page.session_id()),
+            )
             .await?;
 
         // Decode base64 data
@@ -320,9 +323,9 @@ impl<'a> PdfBuilder<'a> {
         // Save to file if path specified
         if let Some(ref path) = self.path {
             debug!(path = path, "Saving PDF to file");
-            tokio::fs::write(path, &data).await.map_err(|e| {
-                PageError::EvaluationFailed(format!("Failed to save PDF: {e}"))
-            })?;
+            tokio::fs::write(path, &data)
+                .await
+                .map_err(|e| PageError::EvaluationFailed(format!("Failed to save PDF: {e}")))?;
             info!(path = path, "PDF saved");
         }
 

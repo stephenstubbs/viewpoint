@@ -37,11 +37,9 @@ impl<'a> StateAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let is_visible = self
-                .locator
-                .is_visible()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check visibility", "visible", e.to_string()))?;
+            let is_visible = self.locator.is_visible().await.map_err(|e| {
+                AssertionError::new("Failed to check visibility", "visible", e.to_string())
+            })?;
 
             let expected = !self.is_negated;
             if is_visible == expected {
@@ -73,11 +71,9 @@ impl<'a> StateAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let is_visible = self
-                .locator
-                .is_visible()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check visibility", "hidden", e.to_string()))?;
+            let is_visible = self.locator.is_visible().await.map_err(|e| {
+                AssertionError::new("Failed to check visibility", "hidden", e.to_string())
+            })?;
 
             let expected_hidden = !self.is_negated;
             let is_hidden = !is_visible;
@@ -125,7 +121,11 @@ impl<'a> StateAssertions<'a> {
                     } else {
                         "Element should be enabled"
                     },
-                    if expected_enabled { "enabled" } else { "disabled" },
+                    if expected_enabled {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    },
                     if is_enabled { "enabled" } else { "disabled" },
                 ));
             }
@@ -158,7 +158,11 @@ impl<'a> StateAssertions<'a> {
                     } else {
                         "Element should be disabled"
                     },
-                    if expected_disabled { "disabled" } else { "enabled" },
+                    if expected_disabled {
+                        "disabled"
+                    } else {
+                        "enabled"
+                    },
                     if is_disabled { "disabled" } else { "enabled" },
                 ));
             }
@@ -176,11 +180,9 @@ impl<'a> StateAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let is_checked = self
-                .locator
-                .is_checked()
-                .await
-                .map_err(|e| AssertionError::new("Failed to check checked state", "checked", e.to_string()))?;
+            let is_checked = self.locator.is_checked().await.map_err(|e| {
+                AssertionError::new("Failed to check checked state", "checked", e.to_string())
+            })?;
 
             let expected_checked = !self.is_negated;
 
@@ -195,7 +197,11 @@ impl<'a> StateAssertions<'a> {
                     } else {
                         "Element should be checked"
                     },
-                    if expected_checked { "checked" } else { "unchecked" },
+                    if expected_checked {
+                        "checked"
+                    } else {
+                        "unchecked"
+                    },
                     if is_checked { "checked" } else { "unchecked" },
                 ));
             }

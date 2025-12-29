@@ -64,10 +64,16 @@ async fn test_download_event_on_link_click() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_received = Arc::new(Mutex::new(false));
     let download_received_clone = download_received.clone();
@@ -77,15 +83,22 @@ async fn test_download_event_on_link_click() {
         async move {
             *received.lock().await = true;
         }
-    }).await;
+    })
+    .await;
 
     // Click the download link
-    page.locator("#download").click().await.expect("Failed to click download link");
-    
+    page.locator("#download")
+        .click()
+        .await
+        .expect("Failed to click download link");
+
     // Wait for download event
     tokio::time::sleep(Duration::from_millis(500)).await;
 
-    assert!(*download_received.lock().await, "Download event should have been captured");
+    assert!(
+        *download_received.lock().await,
+        "Download event should have been captured"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -105,10 +118,16 @@ async fn test_download_suggested_filename() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let suggested_filename = Arc::new(Mutex::new(String::new()));
     let filename_clone = suggested_filename.clone();
@@ -118,13 +137,20 @@ async fn test_download_suggested_filename() {
         async move {
             *filename.lock().await = download.suggested_filename().to_string();
         }
-    }).await;
+    })
+    .await;
 
-    page.locator("#download").click().await.expect("Failed to click download link");
+    page.locator("#download")
+        .click()
+        .await
+        .expect("Failed to click download link");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     let filename = suggested_filename.lock().await.clone();
-    assert_eq!(filename, "test-file.txt", "Suggested filename should match download attribute");
+    assert_eq!(
+        filename, "test-file.txt",
+        "Suggested filename should match download attribute"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -140,10 +166,16 @@ async fn test_download_url() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_url = Arc::new(Mutex::new(String::new()));
     let url_clone = download_url.clone();
@@ -153,13 +185,20 @@ async fn test_download_url() {
         async move {
             *url.lock().await = download.url().to_string();
         }
-    }).await;
+    })
+    .await;
 
-    page.locator("#download").click().await.expect("Failed to click download link");
+    page.locator("#download")
+        .click()
+        .await
+        .expect("Failed to click download link");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     let url = download_url.lock().await.clone();
-    assert!(url.contains("data:text/plain"), "Download URL should contain data URI");
+    assert!(
+        url.contains("data:text/plain"),
+        "Download URL should contain data URI"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -175,10 +214,16 @@ async fn test_download_guid() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_guid = Arc::new(Mutex::new(String::new()));
     let guid_clone = download_guid.clone();
@@ -188,9 +233,13 @@ async fn test_download_guid() {
         async move {
             *guid.lock().await = download.guid().to_string();
         }
-    }).await;
+    })
+    .await;
 
-    page.locator("#download").click().await.expect("Failed to click download link");
+    page.locator("#download")
+        .click()
+        .await
+        .expect("Failed to click download link");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     let guid = download_guid.lock().await.clone();
@@ -214,16 +263,23 @@ async fn test_expect_download() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_link = page.locator("#download");
-    
-    let download = page.expect_download(|| async {
-        download_link.click().await
-    }).await.expect("Should capture download");
+
+    let download = page
+        .expect_download(|| async { download_link.click().await })
+        .await
+        .expect("Should capture download");
 
     assert_eq!(download.suggested_filename(), "test-file.txt");
 
@@ -241,16 +297,23 @@ async fn test_expect_download_csv() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_link = page.locator("#download-csv");
-    
-    let download = page.expect_download(|| async {
-        download_link.click().await
-    }).await.expect("Should capture download");
+
+    let download = page
+        .expect_download(|| async { download_link.click().await })
+        .await
+        .expect("Should capture download");
 
     assert_eq!(download.suggested_filename(), "data.csv");
     assert!(download.url().contains("text/csv"));
@@ -273,23 +336,34 @@ async fn test_download_cancel() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_link = page.locator("#download");
-    
-    let mut download = page.expect_download(|| async {
-        download_link.click().await
-    }).await.expect("Should capture download");
+
+    let mut download = page
+        .expect_download(|| async { download_link.click().await })
+        .await
+        .expect("Should capture download");
 
     // Cancel the download
     download.cancel().await.expect("Should cancel download");
 
     // Verify failure reason
     let failure = download.failure();
-    assert_eq!(failure, Some("canceled"), "Failure reason should be 'canceled'");
+    assert_eq!(
+        failure,
+        Some("canceled"),
+        "Failure reason should be 'canceled'"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -309,10 +383,16 @@ async fn test_download_no_failure_on_success() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_LINK_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_LINK_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let download_failure = Arc::new(Mutex::new(None::<String>));
     let failure_clone = download_failure.clone();
@@ -322,16 +402,23 @@ async fn test_download_no_failure_on_success() {
         async move {
             *failure.lock().await = download.failure().map(String::from);
         }
-    }).await;
+    })
+    .await;
 
-    page.locator("#download").click().await.expect("Failed to click download link");
+    page.locator("#download")
+        .click()
+        .await
+        .expect("Failed to click download link");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     // For a successful download started from data URI, failure should be None
     // Note: The download may or may not complete depending on implementation
     // This test verifies the initial state has no failure
     let failure = download_failure.lock().await.clone();
-    assert!(failure.is_none(), "In-progress download should have no failure");
+    assert!(
+        failure.is_none(),
+        "In-progress download should have no failure"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -351,10 +438,16 @@ async fn test_download_blob_click() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(DOWNLOAD_BLOB_HTML).set().await.expect("Failed to set content");
+    page.set_content(DOWNLOAD_BLOB_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     let suggested_filename = Arc::new(Mutex::new(String::new()));
     let filename_clone = suggested_filename.clone();
@@ -364,9 +457,13 @@ async fn test_download_blob_click() {
         async move {
             *filename.lock().await = download.suggested_filename().to_string();
         }
-    }).await;
+    })
+    .await;
 
-    page.locator("#download-blob").click().await.expect("Failed to click download blob button");
+    page.locator("#download-blob")
+        .click()
+        .await
+        .expect("Failed to click download blob button");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     let filename = suggested_filename.lock().await.clone();

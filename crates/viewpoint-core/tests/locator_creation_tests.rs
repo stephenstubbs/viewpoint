@@ -9,7 +9,11 @@ mod common;
 use viewpoint_core::{AriaRole, Browser, DocumentLoadState, Selector};
 
 /// Helper function to launch browser and get a page.
-async fn setup() -> (Browser, viewpoint_core::BrowserContext, viewpoint_core::Page) {
+async fn setup() -> (
+    Browser,
+    viewpoint_core::BrowserContext,
+    viewpoint_core::Page,
+) {
     common::launch_with_page().await
 }
 

@@ -95,8 +95,7 @@ impl From<viewpoint_cdp::protocol::network::ResourceType> for ResourceType {
 }
 
 /// Error code for aborting requests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum AbortError {
     /// Generic failure.
     #[default]
@@ -128,7 +127,6 @@ pub enum AbortError {
     /// Blocked by response.
     BlockedByResponse,
 }
-
 
 impl fmt::Display for AbortError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

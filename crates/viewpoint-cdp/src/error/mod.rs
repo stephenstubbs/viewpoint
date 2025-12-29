@@ -50,12 +50,30 @@ pub enum CdpError {
     NoDebuggingUrl,
 
     /// Chromium executable not found.
-    #[error("Chromium not found. Set CHROMIUM_PATH environment variable or ensure Chromium is installed.")]
+    #[error(
+        "Chromium not found. Set CHROMIUM_PATH environment variable or ensure Chromium is installed."
+    )]
     ChromiumNotFound,
 
     /// Browser launch timeout.
     #[error("browser launch timeout after {0:?}")]
     LaunchTimeout(std::time::Duration),
+
+    /// Connection timeout.
+    #[error("connection timeout after {0:?}")]
+    ConnectionTimeout(std::time::Duration),
+
+    /// Endpoint discovery failed.
+    #[error("failed to discover WebSocket endpoint from {url}: {reason}")]
+    EndpointDiscoveryFailed { url: String, reason: String },
+
+    /// Invalid endpoint URL.
+    #[error("invalid endpoint URL: {0}")]
+    InvalidEndpointUrl(String),
+
+    /// HTTP request failed.
+    #[error("HTTP request failed: {0}")]
+    HttpRequestFailed(String),
 }
 
 impl From<tokio_tungstenite::tungstenite::Error> for CdpError {

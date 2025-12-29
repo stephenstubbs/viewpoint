@@ -19,7 +19,10 @@ fn test_connection_lost_error_display() {
 #[test]
 fn test_send_failed_error_display() {
     let err = CdpError::SendFailed("channel closed".to_string());
-    assert_eq!(err.to_string(), "failed to send CDP message: channel closed");
+    assert_eq!(
+        err.to_string(),
+        "failed to send CDP message: channel closed"
+    );
 }
 
 #[test]
@@ -86,10 +89,7 @@ fn test_spawn_failed_error_display() {
 #[test]
 fn test_no_debugging_url_error_display() {
     let err = CdpError::NoDebuggingUrl;
-    assert_eq!(
-        err.to_string(),
-        "failed to get debugging URL from browser"
-    );
+    assert_eq!(err.to_string(), "failed to get debugging URL from browser");
 }
 
 #[test]

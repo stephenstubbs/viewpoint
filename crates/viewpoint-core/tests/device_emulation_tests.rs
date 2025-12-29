@@ -92,11 +92,17 @@ async fn test_viewport_size() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(VIEWPORT_HTML).set().await.expect("Failed to set content");
-    
+    page.set_content(VIEWPORT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
+
     // Set viewport size
     page.set_viewport_size(1280, 720)
         .await
@@ -105,14 +111,16 @@ async fn test_viewport_size() {
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify viewport size
-    let width: i32 = page.evaluate(js!{ window.innerWidth })
+    let width: i32 = page
+        .evaluate(js! { window.innerWidth })
         .await
         .expect("Failed to get width");
-    
-    let height: i32 = page.evaluate(js!{ window.innerHeight })
+
+    let height: i32 = page
+        .evaluate(js! { window.innerHeight })
         .await
         .expect("Failed to get height");
-    
+
     assert_eq!(width, 1280, "Viewport width should be 1280");
     assert_eq!(height, 720, "Viewport height should be 720");
 
@@ -130,11 +138,17 @@ async fn test_viewport_size_mobile() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(VIEWPORT_HTML).set().await.expect("Failed to set content");
-    
+    page.set_content(VIEWPORT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
+
     // Set mobile viewport size
     page.set_viewport_size(375, 812)
         .await
@@ -143,10 +157,11 @@ async fn test_viewport_size_mobile() {
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify viewport size
-    let width: i32 = page.evaluate(js!{ window.innerWidth })
+    let width: i32 = page
+        .evaluate(js! { window.innerWidth })
         .await
         .expect("Failed to get width");
-    
+
     assert_eq!(width, 375, "Viewport width should be 375");
 
     browser.close().await.expect("Failed to close browser");
@@ -185,10 +200,13 @@ async fn test_device_list_all() {
     init_tracing();
 
     let all = devices::all_devices();
-    
+
     // Should have many devices
-    assert!(all.len() > 20, "Should have more than 20 device descriptors");
-    
+    assert!(
+        all.len() > 20,
+        "Should have more than 20 device descriptors"
+    );
+
     // Should include various device types
     let names: Vec<_> = all.iter().map(|d| d.name).collect();
     assert!(names.iter().any(|n| n.contains("iPhone")));
@@ -206,7 +224,7 @@ async fn test_device_find_by_name() {
     let device = devices::find_device("iPhone 13");
     assert!(device.is_some());
     assert_eq!(device.unwrap().name, "iPhone 13");
-    
+
     // Case insensitive
     let device_lower = devices::find_device("iphone 13");
     assert!(device_lower.is_some());
@@ -228,22 +246,30 @@ async fn test_context_with_device() {
         .expect("Failed to launch browser");
 
     // Create context with iPhone device
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .device(devices::IPHONE_13.clone())
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(USER_AGENT_HTML).set().await.expect("Failed to set content");
+    page.set_content(USER_AGENT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify user agent contains iPhone
-    let user_agent: String = page.evaluate(js!{ navigator.userAgent })
+    let user_agent: String = page
+        .evaluate(js! { navigator.userAgent })
         .await
         .expect("Failed to get user agent");
-    
-    assert!(user_agent.contains("iPhone"), "User agent should contain iPhone");
+
+    assert!(
+        user_agent.contains("iPhone"),
+        "User agent should contain iPhone"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -260,21 +286,26 @@ async fn test_context_custom_user_agent() {
         .expect("Failed to launch browser");
 
     // Create context with custom user agent
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .user_agent("Custom User Agent/1.0")
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(USER_AGENT_HTML).set().await.expect("Failed to set content");
+    page.set_content(USER_AGENT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify custom user agent
-    let user_agent: String = page.evaluate(js!{ navigator.userAgent })
+    let user_agent: String = page
+        .evaluate(js! { navigator.userAgent })
         .await
         .expect("Failed to get user agent");
-    
+
     assert_eq!(user_agent, "Custom User Agent/1.0");
 
     browser.close().await.expect("Failed to close browser");
@@ -298,22 +329,27 @@ async fn test_locale() {
         .expect("Failed to launch browser");
 
     // Create context with French locale
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .locale("fr-FR")
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(LOCALE_HTML).set().await.expect("Failed to set content");
+    page.set_content(LOCALE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify we can access locale-related APIs
     // Note: navigator.language may return system locale in headless mode
-    let locale: String = page.evaluate(js!{ navigator.language })
+    let locale: String = page
+        .evaluate(js! { navigator.language })
         .await
         .expect("Failed to get locale");
-    
+
     // Just verify it returns a valid locale string (not empty)
     assert!(!locale.is_empty(), "Locale should not be empty");
 
@@ -332,21 +368,26 @@ async fn test_timezone() {
         .expect("Failed to launch browser");
 
     // Create context with Paris timezone
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .timezone_id("Europe/Paris")
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(LOCALE_HTML).set().await.expect("Failed to set content");
+    page.set_content(LOCALE_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify timezone
-    let timezone: String = page.evaluate(js!{ Intl.DateTimeFormat().resolvedOptions().timeZone })
+    let timezone: String = page
+        .evaluate(js! { Intl.DateTimeFormat().resolvedOptions().timeZone })
         .await
         .expect("Failed to get timezone");
-    
+
     assert_eq!(timezone, "Europe/Paris", "Timezone should be Europe/Paris");
 
     browser.close().await.expect("Failed to close browser");
@@ -368,21 +409,26 @@ async fn test_device_scale_factor() {
         .expect("Failed to launch browser");
 
     // Create context with high DPI scale factor
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .device_scale_factor(2.0)
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(VIEWPORT_HTML).set().await.expect("Failed to set content");
+    page.set_content(VIEWPORT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify device pixel ratio
-    let dpr: f64 = page.evaluate(js!{ window.devicePixelRatio })
+    let dpr: f64 = page
+        .evaluate(js! { window.devicePixelRatio })
         .await
         .expect("Failed to get DPR");
-    
+
     assert_eq!(dpr, 2.0, "Device pixel ratio should be 2.0");
 
     browser.close().await.expect("Failed to close browser");
@@ -404,21 +450,26 @@ async fn test_touch_emulation() {
         .expect("Failed to launch browser");
 
     // Create context with touch enabled
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .has_touch(true)
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(TOUCH_HTML).set().await.expect("Failed to set content");
+    page.set_content(TOUCH_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify touch support
-    let touch_support: String = page.evaluate(js!{ document.getElementById("touch-support").textContent })
+    let touch_support: String = page
+        .evaluate(js! { document.getElementById("touch-support").textContent })
         .await
         .expect("Failed to get touch support");
-    
+
     assert_eq!(touch_support, "yes", "Touch should be supported");
 
     browser.close().await.expect("Failed to close browser");
@@ -436,21 +487,26 @@ async fn test_no_touch_emulation() {
         .expect("Failed to launch browser");
 
     // Create context without touch
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .has_touch(false)
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(TOUCH_HTML).set().await.expect("Failed to set content");
+    page.set_content(TOUCH_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify no touch support
-    let touch_support: String = page.evaluate(js!{ document.getElementById("touch-support").textContent })
+    let touch_support: String = page
+        .evaluate(js! { document.getElementById("touch-support").textContent })
         .await
         .expect("Failed to get touch support");
-    
+
     assert_eq!(touch_support, "no", "Touch should not be supported");
 
     browser.close().await.expect("Failed to close browser");
@@ -472,24 +528,31 @@ async fn test_mobile_mode() {
         .expect("Failed to launch browser");
 
     // Create context in mobile mode using device
-    let context = browser.new_context_builder()
+    let context = browser
+        .new_context_builder()
         .device(devices::IPHONE_13.clone())
         .build()
         .await
         .expect("Failed to create context");
 
     let page = context.new_page().await.expect("Failed to create page");
-    page.set_content(USER_AGENT_HTML).set().await.expect("Failed to set content");
+    page.set_content(USER_AGENT_HTML)
+        .set()
+        .await
+        .expect("Failed to set content");
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Verify mobile user agent
-    let user_agent: String = page.evaluate(js!{ navigator.userAgent })
+    let user_agent: String = page
+        .evaluate(js! { navigator.userAgent })
         .await
         .expect("Failed to get user agent");
-    
+
     // Mobile user agents typically contain "Mobile"
-    assert!(user_agent.contains("Mobile") || user_agent.contains("iPhone"), 
-            "User agent should indicate mobile device");
+    assert!(
+        user_agent.contains("Mobile") || user_agent.contains("iPhone"),
+        "User agent should indicate mobile device"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -509,16 +572,22 @@ async fn test_page_bring_to_front() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
-    
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+
     // Create multiple pages
     let page1 = context.new_page().await.expect("Failed to create page 1");
     let _page2 = context.new_page().await.expect("Failed to create page 2");
 
     // Bring page1 to front
-    page1.bring_to_front().await.expect("Failed to bring to front");
-    
+    page1
+        .bring_to_front()
+        .await
+        .expect("Failed to bring to front");
+
     // Should not error - verifies the API works
-    
+
     browser.close().await.expect("Failed to close browser");
 }

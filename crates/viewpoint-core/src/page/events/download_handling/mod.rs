@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::{oneshot, watch, Mutex, RwLock};
+use tokio::sync::{Mutex, RwLock, oneshot, watch};
 use tracing::debug;
 use viewpoint_cdp::CdpConnection;
 
@@ -100,8 +100,10 @@ pub(super) async fn handle_file_chooser_event(
 ) {
     debug!(frame_id = %frame_id, mode = ?mode, "File chooser opened");
 
-    let is_multiple =
-        matches!(mode, viewpoint_cdp::protocol::page::FileChooserMode::SelectMultiple);
+    let is_multiple = matches!(
+        mode,
+        viewpoint_cdp::protocol::page::FileChooserMode::SelectMultiple
+    );
 
     let chooser = FileChooser::new(
         connection.clone(),

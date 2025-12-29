@@ -6,9 +6,9 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
-use viewpoint_cdp::CdpConnection;
 use tokio::time::timeout;
 use tracing::{debug, info, instrument, trace, warn};
+use viewpoint_cdp::CdpConnection;
 
 use super::Browser;
 use crate::error::BrowserError;
@@ -112,7 +112,7 @@ impl BrowserBuilder {
     #[instrument(level = "info", skip(self), fields(headless = self.headless, timeout_ms = self.timeout.as_millis()))]
     pub async fn launch(self) -> Result<Browser, BrowserError> {
         info!("Launching browser");
-        
+
         let executable = self.find_executable()?;
         info!(executable = %executable.display(), "Found Chromium executable");
 
@@ -171,7 +171,7 @@ impl BrowserBuilder {
             warn!(error = %e, "Failed to spawn Chromium process");
             BrowserError::LaunchFailed(e.to_string())
         })?;
-        
+
         let pid = child.id();
         info!(pid = pid, "Chromium process spawned");
 
@@ -180,7 +180,10 @@ impl BrowserBuilder {
         let ws_url = timeout(self.timeout, Self::read_ws_url(&mut child))
             .await
             .map_err(|_| {
-                warn!(timeout_ms = self.timeout.as_millis(), "Browser launch timed out");
+                warn!(
+                    timeout_ms = self.timeout.as_millis(),
+                    "Browser launch timed out"
+                );
                 BrowserError::LaunchTimeout(self.timeout)
             })??;
 
@@ -189,7 +192,7 @@ impl BrowserBuilder {
         // Connect to the browser
         debug!("Connecting to browser via CDP");
         let connection = CdpConnection::connect(&ws_url).await?;
-        
+
         info!(pid = pid, "Browser launched and connected successfully");
         Ok(Browser::from_connection_and_process(connection, child))
     }
@@ -258,7 +261,7 @@ impl BrowserBuilder {
 
             for line in reader.lines() {
                 let Ok(line) = line else { continue };
-                
+
                 trace!(line = %line, "Read line from Chromium stderr");
 
                 // Look for "DevTools listening on ws://..."

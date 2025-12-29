@@ -16,56 +16,33 @@ use crate::error::PageError;
 
 /// Type alias for dialog handler function.
 pub type DialogHandler = Box<
-    dyn Fn(Dialog) -> Pin<Box<dyn Future<Output = Result<(), PageError>> + Send>>
-        + Send
-        + Sync,
+    dyn Fn(Dialog) -> Pin<Box<dyn Future<Output = Result<(), PageError>> + Send>> + Send + Sync,
 >;
 
 /// Type alias for download handler function.
-pub type DownloadHandler = Box<
-    dyn Fn(Download) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type DownloadHandler =
+    Box<dyn Fn(Download) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for file chooser handler function.
-pub type FileChooserHandler = Box<
-    dyn Fn(FileChooser) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type FileChooserHandler =
+    Box<dyn Fn(FileChooser) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for console message handler function.
-pub type ConsoleHandler = Box<
-    dyn Fn(ConsoleMessage) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type ConsoleHandler =
+    Box<dyn Fn(ConsoleMessage) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for page error handler function.
-pub type PageErrorHandler = Box<
-    dyn Fn(PageErrorInfo) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type PageErrorHandler =
+    Box<dyn Fn(PageErrorInfo) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for frame attached handler function.
-pub type FrameAttachedHandler = Box<
-    dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type FrameAttachedHandler =
+    Box<dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for frame navigated handler function.
-pub type FrameNavigatedHandler = Box<
-    dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type FrameNavigatedHandler =
+    Box<dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
 /// Type alias for frame detached handler function.
-pub type FrameDetachedHandler = Box<
-    dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send
-        + Sync,
->;
+pub type FrameDetachedHandler =
+    Box<dyn Fn(Frame) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;

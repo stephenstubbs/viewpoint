@@ -37,11 +37,13 @@ impl<'a> CountAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .count()
-                .await
-                .map_err(|e| AssertionError::new("Failed to count elements", expected.to_string(), e.to_string()))?;
+            let actual = self.locator.count().await.map_err(|e| {
+                AssertionError::new(
+                    "Failed to count elements",
+                    expected.to_string(),
+                    e.to_string(),
+                )
+            })?;
 
             let matches = actual == expected;
             let expected_match = !self.is_negated;
@@ -75,11 +77,9 @@ impl<'a> CountAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .count()
-                .await
-                .map_err(|e| AssertionError::new("Failed to count elements", format!("> {n}"), e.to_string()))?;
+            let actual = self.locator.count().await.map_err(|e| {
+                AssertionError::new("Failed to count elements", format!("> {n}"), e.to_string())
+            })?;
 
             let matches = actual > n;
             let expected_match = !self.is_negated;
@@ -113,11 +113,9 @@ impl<'a> CountAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .count()
-                .await
-                .map_err(|e| AssertionError::new("Failed to count elements", format!("< {n}"), e.to_string()))?;
+            let actual = self.locator.count().await.map_err(|e| {
+                AssertionError::new("Failed to count elements", format!("< {n}"), e.to_string())
+            })?;
 
             let matches = actual < n;
             let expected_match = !self.is_negated;
@@ -151,11 +149,9 @@ impl<'a> CountAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .count()
-                .await
-                .map_err(|e| AssertionError::new("Failed to count elements", format!(">= {n}"), e.to_string()))?;
+            let actual = self.locator.count().await.map_err(|e| {
+                AssertionError::new("Failed to count elements", format!(">= {n}"), e.to_string())
+            })?;
 
             let matches = actual >= n;
             let expected_match = !self.is_negated;
@@ -189,11 +185,9 @@ impl<'a> CountAssertions<'a> {
         let start = std::time::Instant::now();
 
         loop {
-            let actual = self
-                .locator
-                .count()
-                .await
-                .map_err(|e| AssertionError::new("Failed to count elements", format!("<= {n}"), e.to_string()))?;
+            let actual = self.locator.count().await.map_err(|e| {
+                AssertionError::new("Failed to count elements", format!("<= {n}"), e.to_string())
+            })?;
 
             let matches = actual <= n;
             let expected_match = !self.is_negated;

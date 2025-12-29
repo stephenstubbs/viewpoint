@@ -60,8 +60,12 @@ impl FrameElementLocator<'_> {
             .await?;
 
         // Mouse down
-        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_down(x, y, MouseButton::Left))
-            .await?;
+        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_down(
+            x,
+            y,
+            MouseButton::Left,
+        ))
+        .await?;
 
         // Mouse up
         self.dispatch_mouse_event(DispatchMouseEventParams::mouse_up(x, y, MouseButton::Left))
@@ -226,7 +230,7 @@ impl FrameElementLocator<'_> {
                 if (!frameDoc) {
                     return { found: false, count: 0, error: "Frame not found or not accessible" };
                 }
-                
+
                 // Create a modified expression that uses frameDoc instead of document
                 let elements;
                 try {
@@ -237,14 +241,14 @@ impl FrameElementLocator<'_> {
                 } catch (e) {
                     return { found: false, count: 0, error: e.message };
                 }
-                
+
                 if (elements.length === 0) {
                     return { found: false, count: 0 };
                 }
-                
+
                 const el = elements[0];
                 const rect = el.getBoundingClientRect();
-                
+
                 // Get frame position to calculate absolute coordinates
                 let frameRect = { x: 0, y: 0 };
                 let current = frameDoc.defaultView?.frameElement;
@@ -254,13 +258,13 @@ impl FrameElementLocator<'_> {
                     frameRect.y += currentRect.y;
                     current = current.ownerDocument?.defaultView?.frameElement;
                 }
-                
+
                 const style = frameDoc.defaultView?.getComputedStyle(el) || window.getComputedStyle(el);
-                const visible = rect.width > 0 && rect.height > 0 && 
-                    style.visibility !== "hidden" && 
+                const visible = rect.width > 0 && rect.height > 0 &&
+                    style.visibility !== "hidden" &&
                     style.display !== "none" &&
                     parseFloat(style.opacity) > 0;
-                    
+
                 return {
                     found: true,
                     count: elements.length,
@@ -290,12 +294,12 @@ impl FrameElementLocator<'_> {
             (function() {
                 const frameDoc = @{frame_access};
                 if (!frameDoc) return false;
-                
+
                 const elements = (function() {
                     const document = frameDoc;
                     return Array.from(@{element_selector});
                 })();
-                
+
                 if (elements.length > 0) {
                     elements[0].focus();
                     return true;
@@ -311,7 +315,10 @@ impl FrameElementLocator<'_> {
     /// Evaluate JavaScript and return the result.
     ///
     /// Delegates to `Page::evaluate_js_raw` for the actual evaluation.
-    pub(crate) async fn evaluate_js(&self, expression: &str) -> Result<serde_json::Value, LocatorError> {
+    pub(crate) async fn evaluate_js(
+        &self,
+        expression: &str,
+    ) -> Result<serde_json::Value, LocatorError> {
         let page = self.frame_locator().page();
 
         if page.is_closed() {

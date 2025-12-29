@@ -3,12 +3,12 @@
 //! This module contains methods for accessing input device controllers
 //! (keyboard, mouse, touchscreen, clock) and performing drag-and-drop operations.
 
+use crate::page::Page;
 use crate::page::clock::Clock;
 use crate::page::keyboard::Keyboard;
 use crate::page::mouse::Mouse;
 use crate::page::mouse_drag::DragAndDropBuilder;
 use crate::page::touchscreen::Touchscreen;
-use crate::page::Page;
 
 impl Page {
     /// Get a reference to the keyboard controller.

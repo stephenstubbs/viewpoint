@@ -3,8 +3,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use viewpoint_cdp::protocol::network::GetResponseBodyParams;
 use viewpoint_cdp::CdpConnection;
+use viewpoint_cdp::protocol::network::GetResponseBodyParams;
 
 use super::request::Request;
 use crate::error::NetworkError;

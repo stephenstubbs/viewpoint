@@ -47,16 +47,19 @@ impl BrowserContext {
         // Copy extra HTTP headers from context
         if !self.options.extra_http_headers.is_empty() {
             options = options.extra_http_headers(
-                self.options.extra_http_headers.iter()
-                    .map(|(k, v)| (k.clone(), v.clone()))
+                self.options
+                    .extra_http_headers
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone())),
             );
         }
 
         // Copy HTTP credentials if set
         if let Some(ref creds) = self.options.http_credentials {
-            options = options.http_credentials(
-                crate::api::HttpCredentials::new(&creds.username, &creds.password)
-            );
+            options = options.http_credentials(crate::api::HttpCredentials::new(
+                &creds.username,
+                &creds.password,
+            ));
         }
 
         // Create API context
@@ -67,7 +70,10 @@ impl BrowserContext {
         // Sync cookies from browser to API context
         let browser_cookies = self.cookies().await?;
         crate::api::cookies::sync_to_jar(&browser_cookies, api.cookie_jar());
-        debug!("Synced {} browser cookies to API context", browser_cookies.len());
+        debug!(
+            "Synced {} browser cookies to API context",
+            browser_cookies.len()
+        );
 
         Ok(api)
     }

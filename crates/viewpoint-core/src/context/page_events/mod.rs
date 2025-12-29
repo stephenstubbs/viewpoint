@@ -4,8 +4,8 @@
 
 use std::future::Future;
 
-use super::events::{HandlerId, WaitForPageBuilder};
 use super::BrowserContext;
+use super::events::{HandlerId, WaitForPageBuilder};
 use crate::error::ContextError;
 use crate::page::Page;
 
@@ -119,10 +119,7 @@ impl BrowserContext {
     /// Returns an error if:
     /// - The action fails
     /// - No page is created within the timeout (30 seconds)
-    pub fn wait_for_page<F, Fut>(
-        &self,
-        action: F,
-    ) -> WaitForPageBuilder<'_, F, Fut>
+    pub fn wait_for_page<F, Fut>(&self, action: F) -> WaitForPageBuilder<'_, F, Fut>
     where
         F: FnOnce() -> Fut,
         Fut: Future<Output = Result<(), ContextError>>,

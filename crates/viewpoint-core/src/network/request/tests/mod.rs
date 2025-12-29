@@ -37,9 +37,18 @@ fn test_request_accessors() {
 fn test_header_value_case_insensitive() {
     let request = make_test_request();
 
-    assert_eq!(request.header_value("content-type"), Some("application/json"));
-    assert_eq!(request.header_value("Content-Type"), Some("application/json"));
-    assert_eq!(request.header_value("CONTENT-TYPE"), Some("application/json"));
+    assert_eq!(
+        request.header_value("content-type"),
+        Some("application/json")
+    );
+    assert_eq!(
+        request.header_value("Content-Type"),
+        Some("application/json")
+    );
+    assert_eq!(
+        request.header_value("CONTENT-TYPE"),
+        Some("application/json")
+    );
     assert_eq!(request.header_value("X-Custom"), None);
 }
 

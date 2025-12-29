@@ -78,8 +78,8 @@ impl Locator<'_> {
                 const el = elements[0];
                 const rect = el.getBoundingClientRect();
                 const style = window.getComputedStyle(el);
-                const visible = rect.width > 0 && rect.height > 0 && 
-                    style.visibility !== "hidden" && 
+                const visible = rect.width > 0 && rect.height > 0 &&
+                    style.visibility !== "hidden" &&
                     style.display !== "none" &&
                     parseFloat(style.opacity) > 0;
                 return {

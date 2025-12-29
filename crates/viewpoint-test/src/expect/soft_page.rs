@@ -24,7 +24,7 @@ impl SoftPageAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_url", e.to_string())
-                        .with_expected(&expected_str)
+                        .with_expected(&expected_str),
                 );
             }
         }
@@ -38,7 +38,7 @@ impl SoftPageAssertions<'_> {
             Err(e) => {
                 self.errors.lock().unwrap().push(
                     SoftAssertionError::new("to_have_title", e.to_string())
-                        .with_expected(&expected_str)
+                        .with_expected(&expected_str),
                 );
             }
         }

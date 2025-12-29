@@ -15,14 +15,17 @@ use common::init_tracing;
 #[tokio::test]
 async fn test_navigation_redirect_301() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // httpbin.org/redirect/n redirects n times
@@ -39,7 +42,7 @@ async fn test_navigation_redirect_301() {
         "Expected to end up at /get after redirects, got: {}",
         response.url()
     );
-    
+
     // Status should be 200 (final destination), not the redirect status
     assert_eq!(response.status(), Some(200));
 
@@ -51,14 +54,17 @@ async fn test_navigation_redirect_301() {
 #[tokio::test]
 async fn test_navigation_redirect_302() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // httpbin.org/redirect-to redirects to specified URL with status 302 by default
@@ -75,7 +81,7 @@ async fn test_navigation_redirect_302() {
         "Expected to end up at example.com, got: {}",
         response.url()
     );
-    
+
     assert_eq!(response.status(), Some(200));
 
     // Clean up
@@ -86,14 +92,17 @@ async fn test_navigation_redirect_302() {
 #[tokio::test]
 async fn test_navigation_redirect_chain() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Use absolute-redirect which always uses 302 status
@@ -110,7 +119,7 @@ async fn test_navigation_redirect_chain() {
         "Expected to end up at /get after 3 redirects, got: {}",
         response.url()
     );
-    
+
     assert_eq!(response.status(), Some(200));
 
     // Clean up
@@ -121,14 +130,17 @@ async fn test_navigation_redirect_chain() {
 #[tokio::test]
 async fn test_navigation_error_invalid_url() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Try to navigate to an invalid URL (non-existent domain)
@@ -149,14 +161,17 @@ async fn test_navigation_error_invalid_url() {
 #[tokio::test]
 async fn test_navigation_response_status() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Test 200 response
@@ -177,14 +192,17 @@ async fn test_navigation_response_status() {
 #[tokio::test]
 async fn test_navigation_response_headers() {
     init_tracing();
-    
+
     let browser = Browser::launch()
         .headless(true)
         .launch()
         .await
         .expect("Failed to launch browser");
 
-    let context = browser.new_context().await.expect("Failed to create context");
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
     // Navigate to a page that returns headers
