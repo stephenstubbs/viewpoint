@@ -49,8 +49,9 @@ mod tests;
 - Async: prefer `async fn` over `impl Future`
 
 ### Architecture
-- **Hexagonal Architecture**: Core logic independent of external concerns
-- **Separate crates**: domain logic, protocol adapters (CDP), CLI, public API
+- **Workspace required**: Always use a Cargo workspace with multiple crates, never a single-crate project
+- **Separate crates**: domain logic, protocol adapters, database adapters, CLI, public API, etc
+- **Hexagonal Architecture (Ports & Adapters)**: Core logic independent of external concerns
 
 ### Testing
 
@@ -76,44 +77,3 @@ integration = []
 ### Version Control
 - **VCS**: jj (Jujutsu), not git
 - **Commits**: Conventional commits (feat:, fix:, refactor:, docs:, test:, chore:)
-
-## Domain
-
-### Core Concepts
-- **Browser**: Running browser instance
-- **Context**: Isolated session (like incognito)
-- **Page**: Single tab/window
-- **Element**: DOM element for interaction
-- **CDP**: Chrome DevTools Protocol for browser communication
-
-### Key Operations
-- Lifecycle: launch, connect, close
-- Navigation: goto, reload, back, forward
-- Interaction: click, type, select, hover
-- Evaluation: execute JavaScript
-- Waiting: selectors, navigation, network idle
-- Capture: screenshots, PDFs
-
-## Dependencies
-
-| Crate | Purpose |
-|-------|---------|
-| `tokio` | Async runtime |
-| `thiserror` | Library error types |
-| `serde` / `serde_json` | CDP serialization |
-| `tokio-tungstenite` | WebSocket communication |
-| `tracing` | Structured logging |
-| `tracing-subscriber` | Test output (dev) |
-
-## Workspace Structure
-```
-viewpoint/
-├── Cargo.toml
-├── crates/
-│   ├── viewpoint-cdp/          # CDP protocol
-│   ├── viewpoint-core/         # Core domain
-│   ├── viewpoint-test/         # Test framework
-│   └── viewpoint-test-macros/  # Proc macros
-├── tests/                      # Integration tests
-└── examples/
-```
