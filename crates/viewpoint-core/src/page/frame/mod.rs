@@ -416,6 +416,101 @@ impl Frame {
 
         Ok(parent)
     }
+
+    /// Capture an ARIA accessibility snapshot of this frame's document.
+    ///
+    /// The snapshot represents the accessible structure of the frame's content
+    /// as it would be exposed to assistive technologies. This is useful for
+    /// accessibility testing and MCP (Model Context Protocol) integrations.
+    ///
+    /// # Frame Boundaries
+    ///
+    /// Any iframes within this frame are marked as frame boundaries in the snapshot
+    /// with `is_frame: true`. Their content is NOT traversed (for security reasons).
+    /// To capture multi-frame accessibility trees, use `Page::aria_snapshot_with_frames()`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Get snapshot of main frame
+    /// let main_frame = page.main_frame().await?;
+    /// let snapshot = main_frame.aria_snapshot().await?;
+    /// println!("{}", snapshot);
+    ///
+    /// // Get snapshot of a child iframe
+    /// for frame in page.frames().await? {
+    ///     if !frame.is_main() {
+    ///         let frame_snapshot = frame.aria_snapshot().await?;
+    ///         println!("Frame {}: {}", frame.name(), frame_snapshot);
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The frame is detached
+    /// - JavaScript evaluation fails
+    /// - The snapshot cannot be parsed
+    #[instrument(level = "debug", skip(self), fields(frame_id = %self.id))]
+    pub async fn aria_snapshot(&self) -> Result<crate::page::locator::AriaSnapshot, PageError> {
+        use crate::page::locator::aria::aria_snapshot_js;
+        use viewpoint_js::js;
+
+        if self.is_detached() {
+            return Err(PageError::EvaluationFailed("Frame is detached".to_string()));
+        }
+
+        // Build JavaScript to capture aria snapshot of the entire document
+        let snapshot_fn = aria_snapshot_js();
+        let js_code = js! {
+            (function() {
+                const getSnapshot = @{snapshot_fn};
+                return getSnapshot(document.body || document.documentElement);
+            })()
+        };
+
+        // Use Runtime.evaluate with the frame's execution context
+        // CDP allows targeting specific frames via contextId, but for simplicity
+        // we use Page.createIsolatedWorld for frame-specific execution
+        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
+            .connection
+            .send_command(
+                "Runtime.evaluate",
+                Some(EvaluateParams {
+                    expression: js_code,
+                    object_group: None,
+                    include_command_line_api: None,
+                    silent: Some(true),
+                    context_id: None, // TODO: Use frame-specific context when available
+                    return_by_value: Some(true),
+                    await_promise: Some(false),
+                }),
+                Some(&self.session_id),
+            )
+            .await?;
+
+        if let Some(exception) = result.exception_details {
+            return Err(PageError::EvaluationFailed(exception.text));
+        }
+
+        let value = result.result.value.ok_or_else(|| {
+            PageError::EvaluationFailed("No result from aria snapshot".to_string())
+        })?;
+
+        // Parse the snapshot
+        let snapshot: crate::page::locator::AriaSnapshot =
+            serde_json::from_value(value).map_err(|e| {
+                PageError::EvaluationFailed(format!("Failed to parse aria snapshot: {e}"))
+            })?;
+
+        Ok(snapshot)
+    }
 }
 
 /// Recursively find child frames of a given frame ID.

@@ -1,5 +1,6 @@
 //! Page management and navigation.
 
+mod aria_snapshot;
 pub mod binding;
 pub mod clock;
 mod clock_script;

@@ -53,6 +53,66 @@ mod tests;
 - **Separate crates**: domain logic, protocol adapters, database adapters, CLI, public API, etc
 - **Hexagonal Architecture (Ports & Adapters)**: Core logic independent of external concerns
 
+### JavaScript Code
+- **Always use `viewpoint_js::js!` macro** for inline JavaScript code
+- The macro provides **compile-time syntax validation** catching JS errors before runtime
+- Use `#{expr}` for **value interpolation** (quoted/escaped Rust values)
+- Use `@{expr}` for **raw interpolation** (inject pre-built JS expressions as-is)
+- **Use `viewpoint_js_core` utilities** for string escaping when building dynamic JS
+- Never use raw string literals or `format!` for JavaScript code
+
+```rust
+use viewpoint_js::js;
+
+// Simple expression (returns &'static str)
+let code = js!{ document.title };
+
+// Value interpolation - Rust values are quoted/escaped
+let selector = ".my-class";
+let code = js!{ document.querySelector(#{selector}) };
+
+// Raw interpolation - inject JS expression as-is
+let selector_expr = "document.body";
+let code = js!{ @{selector_expr}.getAttribute("id") };
+
+// Multi-line with both interpolation types
+let js_fn = some_js_function();
+let attr = "data-id";
+let code = js!{
+    (function() {
+        const fn = @{js_fn};
+        return fn(document).getAttribute(#{attr});
+    })()
+};
+```
+
+#### JavaScript String Escaping Utilities
+
+When building JavaScript strings dynamically outside the `js!` macro, use `viewpoint_js_core`:
+
+```rust
+use viewpoint_js_core::{
+    escape_js_string,         // "hello" -> "\"hello\""
+    escape_js_string_single,  // "hello" -> "'hello'"
+    escape_js_contents,       // For double-quoted strings (no outer quotes)
+    escape_js_contents_single,// For single-quoted strings (no outer quotes)  
+    escape_for_css_attr,      // For CSS attribute selectors in JS
+    ToJsValue,                // Trait for value interpolation
+};
+
+// Escape for double-quoted JS string
+let s = escape_js_string("say \"hi\"");  // "\"say \\\"hi\\\"\""
+
+// Escape for CSS attribute selector inside JS
+let id = escape_for_css_attr("my-id");   // "\\\"my-id\\\""
+let selector = format!(r#"document.querySelector('[data-id={}]')"#, id);
+
+// ToJsValue trait for type-safe conversion
+let num = 42.to_js_value();      // "42"
+let flag = true.to_js_value();   // "true"  
+let text = "hello".to_js_value(); // "\"hello\""
+```
+
 ### Testing
 
 | Type | Location | Chromium? | Command |

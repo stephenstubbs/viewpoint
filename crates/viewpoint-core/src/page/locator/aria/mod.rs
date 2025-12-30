@@ -13,6 +13,32 @@ use crate::error::LocatorError;
 ///
 /// The snapshot represents the accessible structure as it would be
 /// exposed to assistive technologies.
+///
+/// # Frame Boundary Support
+///
+/// For MCP (Model Context Protocol) servers and multi-frame accessibility testing,
+/// this struct supports frame boundaries:
+///
+/// - `is_frame`: Indicates this node represents an iframe/frame boundary
+/// - `frame_url`: The src URL of the iframe
+/// - `frame_name`: The name attribute of the iframe
+/// - `iframe_refs`: Collected at root level, lists all iframe ref IDs for enumeration
+///
+/// Frame boundaries are rendered in YAML as `[frame-boundary]` markers.
+///
+/// # Example with Frame Boundaries
+///
+/// ```
+/// use viewpoint_core::AriaSnapshot;
+///
+/// let mut snapshot = AriaSnapshot::with_role("iframe");
+/// snapshot.is_frame = Some(true);
+/// snapshot.frame_url = Some("https://example.com/widget".to_string());
+/// snapshot.frame_name = Some("payment-frame".to_string());
+///
+/// let yaml = snapshot.to_yaml();
+/// assert!(yaml.contains("[frame-boundary]"));
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[derive(Default)]
@@ -56,6 +82,31 @@ pub struct AriaSnapshot {
     /// The value text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value_text: Option<String>,
+    /// Whether this node represents a frame boundary (iframe/frame element).
+    ///
+    /// When true, this node marks an iframe that may contain content from
+    /// a separate frame context. Use `frame_url` and `frame_name` to identify
+    /// the frame for separate content retrieval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_frame: Option<bool>,
+    /// The URL of the iframe (from src attribute).
+    ///
+    /// Only present when `is_frame` is true.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_url: Option<String>,
+    /// The name attribute of the iframe.
+    ///
+    /// Only present when `is_frame` is true. Can be used to identify
+    /// the frame for navigation or content retrieval.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_name: Option<String>,
+    /// Collected iframe reference IDs at the root level.
+    ///
+    /// This field is only populated at the root of a snapshot tree.
+    /// It contains unique identifiers for all iframes found during traversal,
+    /// enabling MCP servers to enumerate frames for separate content retrieval.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub iframe_refs: Vec<String>,
     /// Child elements.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<AriaSnapshot>,
@@ -152,6 +203,21 @@ impl AriaSnapshot {
                 output.push_str(&format!(" [level={level}]"));
             }
 
+            // Add frame boundary marker
+            if self.is_frame == Some(true) {
+                output.push_str(" [frame-boundary]");
+                // Include frame URL if available
+                if let Some(ref url) = self.frame_url {
+                    output.push_str(&format!(" [frame-url=\"{}\"]", url.replace('"', "\\\"")));
+                }
+                // Include frame name if available
+                if let Some(ref name) = self.frame_name {
+                    if !name.is_empty() {
+                        output.push_str(&format!(" [frame-name=\"{}\"]", name.replace('"', "\\\"")));
+                    }
+                }
+            }
+
             output.push('\n');
 
             // Write children
@@ -201,10 +267,21 @@ impl AriaSnapshot {
                     "mixed" => node.checked = Some(AriaCheckedState::Mixed),
                     "selected" => node.selected = Some(true),
                     "expanded" => node.expanded = Some(true),
+                    "frame-boundary" => node.is_frame = Some(true),
                     s if s.starts_with("level=") => {
                         if let Ok(level) = s[6..].parse() {
                             node.level = Some(level);
                         }
+                    }
+                    s if s.starts_with("frame-url=\"") && s.ends_with('"') => {
+                        // Parse frame-url="value"
+                        let url = &s[11..s.len() - 1];
+                        node.frame_url = Some(url.replace("\\\"", "\""));
+                    }
+                    s if s.starts_with("frame-name=\"") && s.ends_with('"') => {
+                        // Parse frame-name="value"
+                        let name = &s[12..s.len() - 1];
+                        node.frame_name = Some(name.replace("\\\"", "\""));
                     }
                     _ => {}
                 }

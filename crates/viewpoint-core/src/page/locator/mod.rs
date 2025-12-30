@@ -283,6 +283,7 @@ impl<'a> Locator<'a> {
     /// Returns an error if the element is not found or snapshot capture fails.
     pub async fn aria_snapshot(&self) -> Result<AriaSnapshot, crate::error::LocatorError> {
         use crate::error::LocatorError;
+        use viewpoint_js::js;
 
         if self.page.is_closed() {
             return Err(LocatorError::PageClosed);
@@ -290,20 +291,17 @@ impl<'a> Locator<'a> {
 
         // Get the element and evaluate ARIA snapshot
         let js_selector = self.selector.to_js_expression();
-        let js = format!(
-            r"
-            (function() {{
-                const element = {};
-                if (!element) {{
-                    return {{ error: 'Element not found' }};
-                }}
-                const getSnapshot = {};
+        let snapshot_fn = aria::aria_snapshot_js();
+        let js_code = js! {
+            (function() {
+                const element = @{js_selector};
+                if (!element) {
+                    return { error: "Element not found" };
+                }
+                const getSnapshot = @{snapshot_fn};
                 return getSnapshot(element);
-            }})()
-            ",
-            js_selector,
-            aria::aria_snapshot_js()
-        );
+            })()
+        };
 
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .page
@@ -311,7 +309,7 @@ impl<'a> Locator<'a> {
             .send_command(
                 "Runtime.evaluate",
                 Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: js,
+                    expression: js_code,
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),
