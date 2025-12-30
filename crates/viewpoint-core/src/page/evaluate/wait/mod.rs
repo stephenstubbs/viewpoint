@@ -68,9 +68,30 @@ impl<'a> WaitForFunctionBuilder<'a> {
 
     /// Wait for the function to return a truthy value.
     ///
-    /// Returns a handle to the truthy result.
+    /// Returns `Ok(Some(JsHandle))` when the result is a truthy object (DOM elements, objects, arrays).
+    /// Returns `Ok(None)` when the result is a truthy primitive (booleans, numbers, strings).
+    /// Primitive values have no object handle in the JavaScript runtime.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # async fn example(page: &viewpoint_core::Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Wait for a condition - primitives return None
+    /// let _handle = page.wait_for_function("() => document.body.innerText.includes('loaded')")
+    ///     .wait()
+    ///     .await?;
+    /// // handle is None because `.includes()` returns a boolean
+    ///
+    /// // Wait for an element - objects return Some(JsHandle)
+    /// let handle = page.wait_for_function("() => document.querySelector('.ready')")
+    ///     .wait()
+    ///     .await?;
+    /// // handle is Some(JsHandle) referencing the element
+    /// # Ok(())
+    /// # }
+    /// ```
     #[instrument(level = "debug", skip(self), fields(expression = %self.expression, timeout_ms = self.timeout.as_millis()))]
-    pub async fn wait(self) -> Result<JsHandle, PageError> {
+    pub async fn wait(self) -> Result<Option<JsHandle>, PageError> {
         if self.page.closed {
             return Err(PageError::Closed);
         }
@@ -91,8 +112,11 @@ impl<'a> WaitForFunctionBuilder<'a> {
             let result = self.try_evaluate().await?;
 
             if result.is_truthy {
-                debug!("Function returned truthy value");
-                return Ok(result.handle.expect("truthy result has handle"));
+                debug!(
+                    "Function returned truthy value (handle: {})",
+                    if result.handle.is_some() { "present" } else { "none (primitive)" }
+                );
+                return Ok(result.handle);
             }
 
             // Wait according to polling mode
