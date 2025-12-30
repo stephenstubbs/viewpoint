@@ -134,7 +134,7 @@ impl Page {
         }
 
         // Stitch frame content into the snapshot
-        stitch_frame_content(&mut root_snapshot, &frame_snapshots);
+        stitch_frame_content(&mut root_snapshot, &frame_snapshots, 0);
 
         Ok(root_snapshot)
     }
@@ -183,7 +183,21 @@ impl Page {
 /// This function traverses the snapshot tree looking for nodes with `is_frame: true`.
 /// When found, it attempts to find the corresponding frame snapshot and adds that
 /// content as children of the iframe node.
-fn stitch_frame_content(snapshot: &mut AriaSnapshot, frame_snapshots: &HashMap<String, AriaSnapshot>) {
+fn stitch_frame_content(
+    snapshot: &mut AriaSnapshot,
+    frame_snapshots: &HashMap<String, AriaSnapshot>,
+    depth: usize,
+) {
+    // Prevent infinite recursion - max depth of 10 nested frames
+    const MAX_DEPTH: usize = 10;
+    if depth > MAX_DEPTH {
+        warn!(
+            depth = depth,
+            "Max frame nesting depth exceeded, stopping recursion"
+        );
+        return;
+    }
+
     // If this is a frame boundary, try to get its content
     if snapshot.is_frame == Some(true) {
         // Try to find the matching frame snapshot
@@ -202,10 +216,13 @@ fn stitch_frame_content(snapshot: &mut AriaSnapshot, frame_snapshots: &HashMap<S
             debug!(
                 frame_url = ?snapshot.frame_url,
                 frame_name = ?snapshot.frame_name,
+                depth = depth,
                 "Stitching frame content into snapshot"
             );
 
             // Add the frame's content as children of this iframe node
+            // Clear is_frame to prevent re-processing this boundary
+            snapshot.is_frame = Some(false);
             snapshot.children = vec![frame_content.clone()];
         } else {
             debug!(
@@ -218,6 +235,6 @@ fn stitch_frame_content(snapshot: &mut AriaSnapshot, frame_snapshots: &HashMap<S
 
     // Recursively process children
     for child in &mut snapshot.children {
-        stitch_frame_content(child, frame_snapshots);
+        stitch_frame_content(child, frame_snapshots, depth + 1);
     }
 }

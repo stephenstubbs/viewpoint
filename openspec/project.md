@@ -129,6 +129,17 @@ integration = []
 #![cfg(feature = "integration")]
 ```
 
+**IMPORTANT: Always run BOTH test commands when implementing changes:**
+```bash
+# Unit tests (fast, no browser)
+cargo test --workspace
+
+# Integration tests (requires Chromium)
+cargo test --workspace --features integration
+```
+
+Integration tests are NOT run by default. Failing to run integration tests will miss real browser interaction bugs.
+
 **Requirements**:
 - New features must include integration tests with real Chromium
 - Test both success and failure paths

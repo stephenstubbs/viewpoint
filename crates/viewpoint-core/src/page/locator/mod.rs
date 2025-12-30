@@ -290,11 +290,14 @@ impl<'a> Locator<'a> {
         }
 
         // Get the element and evaluate ARIA snapshot
+        // Note: to_js_expression() returns code that evaluates to NodeList/array,
+        // so we need to get the first element from it
         let js_selector = self.selector.to_js_expression();
         let snapshot_fn = aria::aria_snapshot_js();
         let js_code = js! {
             (function() {
-                const element = @{js_selector};
+                const elements = @{js_selector};
+                const element = elements && elements[0] ? elements[0] : elements;
                 if (!element) {
                     return { error: "Element not found" };
                 }
