@@ -60,6 +60,7 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              cacert
               cargo-edit
               cargo-workspaces
               pkg-config
@@ -71,6 +72,10 @@
             env = {
               # Required by rust-analyzer
               RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
+              # CA certificates for cargo, curl, and other tools
+              SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+              CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+              CARGO_HTTP_CAINFO = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
             };
           };
         }
