@@ -43,6 +43,8 @@ pub struct BrowserBuilder {
     args: Vec<String>,
     /// Launch timeout.
     timeout: Duration,
+    /// User data directory for persistent browser profile.
+    user_data_dir: Option<PathBuf>,
 }
 
 impl Default for BrowserBuilder {
@@ -59,6 +61,7 @@ impl BrowserBuilder {
             headless: true,
             args: Vec::new(),
             timeout: DEFAULT_LAUNCH_TIMEOUT,
+            user_data_dir: None,
         }
     }
 
@@ -98,6 +101,30 @@ impl BrowserBuilder {
     #[must_use]
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
+        self
+    }
+
+    /// Set the user data directory for persistent browser profile.
+    ///
+    /// When set, browser state (cookies, localStorage, settings) persists
+    /// in the specified directory across browser restarts.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Browser;
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch()
+    ///     .user_data_dir("/path/to/profile")
+    ///     .launch()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn user_data_dir(mut self, path: impl Into<PathBuf>) -> Self {
+        self.user_data_dir = Some(path.into());
         self
     }
 
@@ -155,6 +182,12 @@ impl BrowserBuilder {
         ];
         cmd.args(stability_args);
         trace!(arg_count = stability_args.len(), "Added stability flags");
+
+        // Add user data directory if specified
+        if let Some(ref user_data_dir) = self.user_data_dir {
+            cmd.arg(format!("--user-data-dir={}", user_data_dir.display()));
+            debug!(user_data_dir = %user_data_dir.display(), "Using custom user data directory");
+        }
 
         // Add user arguments
         if !self.args.is_empty() {

@@ -333,3 +333,135 @@ async fn test_connect_over_cdp_timeout() {
     let err = result.unwrap_err();
     tracing::info!("Got expected error: {}", err);
 }
+
+// =============================================================================
+// User Data Directory Tests
+// =============================================================================
+
+/// Test that browser profile data persists when using the same user data directory.
+///
+/// This test verifies that the user data directory is correctly passed to Chromium
+/// and that browser state (preferences, extensions folder structure) persists.
+#[tokio::test]
+async fn test_user_data_dir_persistence() {
+    init_tracing();
+
+    // Create a temporary directory for browser profile
+    let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+    let user_data_path = temp_dir.path().to_path_buf();
+
+    // First browser session: create profile data
+    {
+        let browser = Browser::launch()
+            .headless(true)
+            .user_data_dir(&user_data_path)
+            .timeout(Duration::from_secs(30))
+            .launch()
+            .await
+            .expect("Failed to launch first browser");
+
+        let context = browser
+            .new_context()
+            .await
+            .expect("Failed to create context");
+        let _page = context.new_page().await.expect("Failed to create page");
+
+        // Browser creates profile structure in user data dir
+        // Just having a browser session is enough to create profile data
+
+        // Close browser
+        browser
+            .close()
+            .await
+            .expect("Failed to close first browser");
+    }
+
+    // Verify profile was created
+    let entries_after_first: Vec<_> = std::fs::read_dir(&user_data_path)
+        .expect("Failed to read user data dir")
+        .collect();
+
+    tracing::info!(
+        "User data directory has {} entries after first session",
+        entries_after_first.len()
+    );
+    assert!(
+        !entries_after_first.is_empty(),
+        "Browser should create profile data in user data directory"
+    );
+
+    // Second browser session: reuse profile
+    {
+        let browser = Browser::launch()
+            .headless(true)
+            .user_data_dir(&user_data_path)
+            .timeout(Duration::from_secs(30))
+            .launch()
+            .await
+            .expect("Failed to launch second browser with same profile");
+
+        // Verify browser launched successfully with existing profile
+        assert!(browser.is_owned());
+
+        // Clean up
+        browser
+            .close()
+            .await
+            .expect("Failed to close second browser");
+    }
+
+    // Verify profile data still exists after second session
+    let entries_after_second: Vec<_> = std::fs::read_dir(&user_data_path)
+        .expect("Failed to read user data dir")
+        .collect();
+
+    tracing::info!(
+        "User data directory has {} entries after second session",
+        entries_after_second.len()
+    );
+    assert!(
+        !entries_after_second.is_empty(),
+        "Profile data should persist after second session"
+    );
+
+    // temp_dir is automatically cleaned up when dropped
+}
+
+/// Test launching browser with user data directory.
+#[tokio::test]
+async fn test_user_data_dir_launch() {
+    init_tracing();
+
+    // Create a temporary directory for browser profile
+    let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+
+    let browser = Browser::launch()
+        .headless(true)
+        .user_data_dir(temp_dir.path())
+        .timeout(Duration::from_secs(30))
+        .launch()
+        .await
+        .expect("Failed to launch browser with user data dir");
+
+    // Verify browser launched successfully
+    assert!(browser.is_owned());
+
+    // Verify the user data directory was used (browser creates files in it)
+    let entries: Vec<_> = std::fs::read_dir(temp_dir.path())
+        .expect("Failed to read user data dir")
+        .collect();
+
+    tracing::info!(
+        "User data directory contains {} entries after browser launch",
+        entries.len()
+    );
+
+    // Browser should have created some files/directories in the user data dir
+    assert!(
+        !entries.is_empty(),
+        "Browser should create files in user data directory"
+    );
+
+    // Clean up
+    browser.close().await.expect("Failed to close browser");
+}

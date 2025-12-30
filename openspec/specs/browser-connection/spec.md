@@ -12,6 +12,7 @@ The launcher SHALL:
 - Parse the WebSocket URL from Chromium's stderr output
 - Establish WebSocket connection within a configurable timeout (default 30 seconds)
 - Support headless and headed modes via builder configuration
+- Support custom user data directory for persistent browser profiles
 
 #### Scenario: Launch headless browser successfully
 - **GIVEN** Chromium is installed and accessible
@@ -27,6 +28,18 @@ The launcher SHALL:
 - **GIVEN** Chromium is installed
 - **WHEN** `Browser::launch().args(["--no-sandbox", "--disable-gpu"]).launch().await` is called
 - **THEN** Chromium is launched with the specified arguments
+
+#### Scenario: Launch with user data directory
+- **GIVEN** Chromium is installed
+- **WHEN** `Browser::launch().user_data_dir("/path/to/profile").launch().await` is called
+- **THEN** Chromium is launched with `--user-data-dir=/path/to/profile`
+- **AND** browser state (cookies, localStorage, settings) persists in that directory
+
+#### Scenario: Persistent profile across sessions
+- **GIVEN** a browser was launched with a user data directory and cookies were set
+- **AND** the browser was closed
+- **WHEN** a new browser is launched with the same user data directory
+- **THEN** the previously set cookies are available
 
 #### Scenario: Launch timeout
 - **GIVEN** Chromium fails to start within timeout period
