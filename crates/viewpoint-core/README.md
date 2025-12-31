@@ -11,6 +11,7 @@ This crate provides the core browser, context, and page abstractions for the [Vi
 - Element locators (CSS, text, role, label, test ID, placeholder)
 - Element actions (click, fill, type, hover, check, select)
 - Automatic element waiting
+- **Automatic navigation waiting** - Actions that trigger navigation automatically wait for the page to load
 - **Browser Context Features:**
   - Cookie management (add, get, clear)
   - Storage state persistence (including IndexedDB)
@@ -242,6 +243,35 @@ context.add_init_script(
 
 // All pages in this context will have the script
 let page = context.new_page().await?;
+```
+
+### Navigation Auto-Wait
+
+Actions like `click()`, `press()`, `fill()`, `select_option()`, and `check()`/`uncheck()` automatically wait for any triggered navigation to complete before returning. This matches Playwright's default behavior and prevents race conditions.
+
+```rust
+use viewpoint_core::Browser;
+
+let browser = Browser::launch().headless(true).launch().await?;
+let context = browser.new_context().await?;
+let page = context.new_page().await?;
+page.goto("https://example.com").goto().await?;
+
+// Click a link - automatically waits for navigation to complete
+page.locator("a#nav-link").click().await?;
+// After click returns, the new page is fully loaded
+
+// Press Enter in a search form - waits for search results page
+page.locator("input#search").fill("query").await?;
+page.locator("input#search").press("Enter").await?;
+// Results page is now loaded
+
+// Opt out of auto-waiting when needed
+page.locator("a#link").click().no_wait_after(true).await?;
+// Returns immediately without waiting for navigation
+
+// Same for keyboard
+page.keyboard().press("Enter").no_wait_after(true).await?;
 ```
 
 ## License

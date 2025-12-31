@@ -1,12 +1,13 @@
 //! Locator actions for element interaction.
 
 use tracing::{debug, instrument};
-use viewpoint_cdp::protocol::input::{
-    DispatchKeyEventParams, DispatchMouseEventParams, MouseButton,
-};
+use viewpoint_cdp::protocol::input::DispatchKeyEventParams;
 
 use super::Locator;
-use super::builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
+use super::builders::{
+    CheckBuilder, ClickBuilder, DblclickBuilder, FillBuilder, HoverBuilder, PressBuilder,
+    TapBuilder, TypeBuilder,
+};
 use crate::error::LocatorError;
 
 impl<'a> Locator<'a> {
@@ -50,81 +51,51 @@ impl<'a> Locator<'a> {
 
     /// Double-click the element.
     ///
-    /// # Errors
+    /// Returns a builder that can be configured with additional options, or awaited
+    /// directly for a simple double-click.
     ///
-    /// Returns an error if the element cannot be clicked.
+    /// # Examples
     ///
-    /// # Panics
+    /// ```no_run
+    /// use viewpoint_core::Page;
     ///
-    /// Panics if a visible element lacks bounding box coordinates. This should
-    /// never occur as `wait_for_actionable` ensures visibility before returning.
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn dblclick(&self) -> Result<(), LocatorError> {
-        let info = self.wait_for_actionable().await?;
-
-        let x = info.x.expect("visible element has x")
-            + info.width.expect("visible element has width") / 2.0;
-        let y = info.y.expect("visible element has y")
-            + info.height.expect("visible element has height") / 2.0;
-
-        debug!(x, y, "Double-clicking element");
-
-        // First click
-        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_move(x, y))
-            .await?;
-        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_down(
-            x,
-            y,
-            MouseButton::Left,
-        ))
-        .await?;
-        self.dispatch_mouse_event(DispatchMouseEventParams::mouse_up(x, y, MouseButton::Left))
-            .await?;
-
-        // Second click
-        let mut down = DispatchMouseEventParams::mouse_down(x, y, MouseButton::Left);
-        down.click_count = Some(2);
-        self.dispatch_mouse_event(down).await?;
-
-        let mut up = DispatchMouseEventParams::mouse_up(x, y, MouseButton::Left);
-        up.click_count = Some(2);
-        self.dispatch_mouse_event(up).await?;
-
-        Ok(())
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple double-click - await directly
+    /// page.locator("button").dblclick().await?;
+    ///
+    /// // Double-click with options
+    /// page.locator("button").dblclick()
+    ///     .position(10.0, 5.0)
+    ///     .no_wait_after(true)
+    ///     .send().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn dblclick(&self) -> DblclickBuilder<'_, 'a> {
+        DblclickBuilder::new(self)
     }
 
     /// Fill the element with text (clears existing content first).
     ///
-    /// This is for input and textarea elements.
+    /// This is for input and textarea elements. Returns a builder that can be
+    /// configured with additional options, or awaited directly.
     ///
-    /// # Errors
+    /// # Examples
     ///
-    /// Returns an error if the element cannot be focused or text cannot be inserted.
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn fill(&self, text: &str) -> Result<(), LocatorError> {
-        let _info = self.wait_for_actionable().await?;
-
-        debug!(text, "Filling element");
-
-        // Focus the element
-        self.focus_element().await?;
-
-        // Select all and delete (clear)
-        self.dispatch_key_event(DispatchKeyEventParams::key_down("a"))
-            .await?;
-        // Send Ctrl+A
-        let mut select_all = DispatchKeyEventParams::key_down("a");
-        select_all.modifiers = Some(viewpoint_cdp::protocol::input::modifiers::CTRL);
-        self.dispatch_key_event(select_all).await?;
-
-        // Delete selected text
-        self.dispatch_key_event(DispatchKeyEventParams::key_down("Backspace"))
-            .await?;
-
-        // Insert the new text
-        self.insert_text(text).await?;
-
-        Ok(())
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple fill - await directly
+    /// page.locator("input").fill("hello").await?;
+    ///
+    /// // Fill without waiting for navigation
+    /// page.locator("input").fill("hello").no_wait_after(true).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn fill(&self, text: &str) -> FillBuilder<'_, 'a> {
+        FillBuilder::new(self, text)
     }
 
     /// Type text character by character.
@@ -162,50 +133,25 @@ impl<'a> Locator<'a> {
     ///
     /// Examples: "Enter", "Backspace", "Control+a", "Shift+Tab"
     ///
-    /// # Errors
+    /// Returns a builder that can be configured with additional options, or awaited
+    /// directly for a simple key press.
     ///
-    /// Returns an error if the element cannot be focused or the key cannot be pressed.
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn press(&self, key: &str) -> Result<(), LocatorError> {
-        self.wait_for_actionable().await?;
-
-        debug!(key, "Pressing key");
-
-        // Focus the element
-        self.focus_element().await?;
-
-        // Parse modifiers and key
-        let parts: Vec<&str> = key.split('+').collect();
-        let actual_key = parts.last().unwrap_or(&key);
-
-        let mut modifiers = 0;
-        for part in &parts[..parts.len().saturating_sub(1)] {
-            match part.to_lowercase().as_str() {
-                "control" | "ctrl" => {
-                    modifiers |= viewpoint_cdp::protocol::input::modifiers::CTRL;
-                }
-                "alt" => modifiers |= viewpoint_cdp::protocol::input::modifiers::ALT,
-                "shift" => modifiers |= viewpoint_cdp::protocol::input::modifiers::SHIFT,
-                "meta" | "cmd" => modifiers |= viewpoint_cdp::protocol::input::modifiers::META,
-                _ => {}
-            }
-        }
-
-        // Key down
-        let mut key_down = DispatchKeyEventParams::key_down(actual_key);
-        if modifiers != 0 {
-            key_down.modifiers = Some(modifiers);
-        }
-        self.dispatch_key_event(key_down).await?;
-
-        // Key up
-        let mut key_up = DispatchKeyEventParams::key_up(actual_key);
-        if modifiers != 0 {
-            key_up.modifiers = Some(modifiers);
-        }
-        self.dispatch_key_event(key_up).await?;
-
-        Ok(())
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple press - await directly
+    /// page.locator("input").press("Enter").await?;
+    ///
+    /// // Press without waiting for navigation (e.g., form submission)
+    /// page.locator("input").press("Enter").no_wait_after(true).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn press(&self, key: &str) -> PressBuilder<'_, 'a> {
+        PressBuilder::new(self, key)
     }
 
     /// Hover over the element.
@@ -283,40 +229,48 @@ impl<'a> Locator<'a> {
 
     /// Check a checkbox or radio button.
     ///
-    /// # Errors
+    /// Returns a builder that can be configured with additional options, or awaited
+    /// directly for a simple check operation.
     ///
-    /// Returns an error if the element cannot be checked.
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn check(&self) -> Result<(), LocatorError> {
-        let is_checked = self.is_checked().await?;
-
-        if is_checked {
-            debug!("Element already checked");
-        } else {
-            debug!("Checking element");
-            self.click().await?;
-        }
-
-        Ok(())
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple check - await directly
+    /// page.locator("input[type=checkbox]").check().await?;
+    ///
+    /// // Check without waiting for navigation
+    /// page.locator("input[type=checkbox]").check().no_wait_after(true).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn check(&self) -> CheckBuilder<'_, 'a> {
+        CheckBuilder::new_check(self)
     }
 
     /// Uncheck a checkbox.
     ///
-    /// # Errors
+    /// Returns a builder that can be configured with additional options, or awaited
+    /// directly for a simple uncheck operation.
     ///
-    /// Returns an error if the element cannot be unchecked.
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn uncheck(&self) -> Result<(), LocatorError> {
-        let is_checked = self.is_checked().await?;
-
-        if is_checked {
-            debug!("Unchecking element");
-            self.click().await?;
-        } else {
-            debug!("Element already unchecked");
-        }
-
-        Ok(())
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use viewpoint_core::Page;
+    ///
+    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple uncheck - await directly
+    /// page.locator("input[type=checkbox]").uncheck().await?;
+    ///
+    /// // Uncheck without waiting for navigation
+    /// page.locator("input[type=checkbox]").uncheck().no_wait_after(true).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn uncheck(&self) -> CheckBuilder<'_, 'a> {
+        CheckBuilder::new_uncheck(self)
     }
 
     /// Tap on the element (touch event).

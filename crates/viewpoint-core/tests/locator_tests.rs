@@ -304,13 +304,15 @@ async fn test_locator_select_option() {
 
     // Select by value
     size_select
-        .select_option("medium")
+        .select_option()
+        .value("medium")
         .await
         .expect("Failed to select by value");
 
-    // Select by visible text
+    // Select by visible text (label)
     size_select
-        .select_option("Large")
+        .select_option()
+        .label("Large")
         .await
         .expect("Failed to select by text");
 

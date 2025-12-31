@@ -47,7 +47,10 @@ pub(crate) mod selector;
 use std::time::Duration;
 
 pub use aria::{AriaCheckedState, AriaSnapshot};
-pub use builders::{ClickBuilder, HoverBuilder, TapBuilder, TypeBuilder};
+pub use builders::{
+    CheckBuilder, ClickBuilder, DblclickBuilder, FillBuilder, HoverBuilder, PressBuilder,
+    SelectOptionBuilder, TapBuilder, TypeBuilder,
+};
 pub use element::{BoundingBox, BoxModel, ElementHandle};
 pub use filter::{FilterBuilder, RoleLocatorBuilder};
 pub use selector::{AriaRole, Selector, TextOptions};

@@ -2,24 +2,15 @@
 //!
 //! This module contains methods for selecting options in `<select>` elements.
 
-use tracing::{debug, instrument};
-
 use super::Locator;
+use super::builders::SelectOptionBuilder;
 use super::selector::js_string_literal;
 use crate::error::LocatorError;
 
 impl Locator<'_> {
     /// Select an option in a `<select>` element by value, label, or index.
     ///
-    /// # Arguments
-    ///
-    /// * `option` - The option to select. Can be:
-    ///   - A string value matching the option's `value` attribute
-    ///   - A string matching the option's visible text
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the element is not a select or the option is not found.
+    /// Returns a builder that can be configured with additional options.
     ///
     /// # Example
     ///
@@ -28,44 +19,35 @@ impl Locator<'_> {
     ///
     /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
     /// // Select by value
-    /// page.locator("select#size").select_option("medium").await?;
+    /// page.locator("select#size").select_option().value("medium").await?;
     ///
-    /// // Select by visible text
-    /// page.locator("select#size").select_option("Medium Size").await?;
+    /// // Select by visible text (label)
+    /// page.locator("select#size").select_option().label("Medium Size").await?;
+    ///
+    /// // Select multiple options
+    /// page.locator("select#colors").select_option().values(&["red", "blue"]).await?;
+    ///
+    /// // Select without waiting for navigation
+    /// page.locator("select#nav").select_option().value("page2").no_wait_after(true).await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[instrument(level = "debug", skip(self), fields(selector = ?self.selector))]
-    pub async fn select_option(&self, option: &str) -> Result<(), LocatorError> {
-        self.wait_for_actionable().await?;
+    pub fn select_option(&self) -> SelectOptionBuilder<'_, '_> {
+        SelectOptionBuilder::new(self)
+    }
 
-        debug!(option, "Selecting option");
-
+    /// Internal method to select a single option (used by builder).
+    pub(crate) async fn select_option_internal(&self, option: &str) -> Result<(), LocatorError> {
         let js = build_select_option_js(&self.selector.to_js_expression(), option);
         let result = self.evaluate_js(&js).await?;
-
         check_select_result(&result)?;
         Ok(())
     }
 
-    /// Select multiple options in a `<select multiple>` element.
-    ///
-    /// # Arguments
-    ///
-    /// * `options` - A slice of option values or labels to select.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the element is not a multi-select or options are not found.
-    #[instrument(level = "debug", skip(self, options), fields(selector = ?self.selector))]
-    pub async fn select_options(&self, options: &[&str]) -> Result<(), LocatorError> {
-        self.wait_for_actionable().await?;
-
-        debug!(?options, "Selecting multiple options");
-
+    /// Internal method to select multiple options (used by builder).
+    pub(crate) async fn select_options_internal(&self, options: &[&str]) -> Result<(), LocatorError> {
         let js = build_select_options_js(&self.selector.to_js_expression(), options);
         let result = self.evaluate_js(&js).await?;
-
         check_select_result(&result)?;
         Ok(())
     }

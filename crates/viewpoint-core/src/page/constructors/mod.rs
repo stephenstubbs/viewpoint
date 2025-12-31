@@ -83,7 +83,7 @@ impl Page {
         // - When with_context_routes() is called (which creates a new registry with credentials), OR
         // - When route() is called on this page directly (lazy start)
         // This avoids duplicate listeners when context routes are applied.
-        let keyboard = Keyboard::new(connection.clone(), session_id.clone());
+        let keyboard = Keyboard::new(connection.clone(), session_id.clone(), frame_id.clone());
         let mouse = Mouse::new(connection.clone(), session_id.clone());
         let touchscreen = Touchscreen::new(connection.clone(), session_id.clone());
         let event_manager = Arc::new(PageEventManager::new(
@@ -192,7 +192,7 @@ impl Page {
             frame_id: self.frame_id.clone(),
             closed: self.closed,
             route_registry: self.route_registry.clone(),
-            keyboard: Keyboard::new(self.connection.clone(), self.session_id.clone()),
+            keyboard: Keyboard::new(self.connection.clone(), self.session_id.clone(), self.frame_id.clone()),
             mouse: Mouse::new(self.connection.clone(), self.session_id.clone()),
             touchscreen: Touchscreen::new(self.connection.clone(), self.session_id.clone()),
             event_manager: self.event_manager.clone(),

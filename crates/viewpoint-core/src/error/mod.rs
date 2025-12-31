@@ -220,6 +220,10 @@ pub enum LocatorError {
         "touch not enabled: call page.enable_touch() or set hasTouch: true in browser context options before using touch actions"
     )]
     TouchNotEnabled,
+
+    /// Wait error during action (e.g., navigation timeout after click).
+    #[error("wait error: {0}")]
+    WaitError(#[from] WaitError),
 }
 
 /// Errors related to network operations.

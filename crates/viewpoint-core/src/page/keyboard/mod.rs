@@ -10,13 +10,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::input::{
     DispatchKeyEventParams, InsertTextParams, KeyEventType, modifiers,
 };
 
 use crate::error::LocatorError;
+use crate::wait::NavigationWaiter;
 
 pub use keys::{KeyDefinition, get_key_definition};
 
@@ -127,21 +128,31 @@ pub struct Keyboard {
     connection: Arc<CdpConnection>,
     /// Session ID for the page.
     session_id: String,
+    /// Main frame ID for navigation detection.
+    frame_id: String,
     /// Keyboard state.
     state: Mutex<KeyboardState>,
 }
 
 impl Keyboard {
     /// Create a new keyboard controller.
-    pub(crate) fn new(connection: Arc<CdpConnection>, session_id: String) -> Self {
+    pub(crate) fn new(
+        connection: Arc<CdpConnection>,
+        session_id: String,
+        frame_id: String,
+    ) -> Self {
         Self {
             connection,
             session_id,
+            frame_id,
             state: Mutex::new(KeyboardState::new()),
         }
     }
 
     /// Press and release a key or key combination.
+    ///
+    /// Returns a builder that can be configured with additional options, or awaited
+    /// directly for a simple key press.
     ///
     /// # Arguments
     ///
@@ -156,20 +167,23 @@ impl Keyboard {
     /// use viewpoint_core::Page;
     ///
     /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+    /// // Simple press - await directly
     /// page.keyboard().press("Enter").await?;
-    /// page.keyboard().press("Control+a").await?;
-    /// page.keyboard().press("ControlOrMeta+c").await?;
+    ///
+    /// // Press without waiting for navigation
+    /// page.keyboard().press("Enter").no_wait_after(true).await?;
+    ///
+    /// // Press with delay
+    /// page.keyboard().press("Control+a").delay(std::time::Duration::from_millis(100)).await?;
     /// # Ok(())
     /// # }
     /// ```
-    #[instrument(level = "debug", skip(self), fields(key = %key))]
-    pub async fn press(&self, key: &str) -> Result<(), LocatorError> {
-        self.press_with_delay(key, None).await
+    pub fn press(&self, key: &str) -> KeyboardPressBuilder<'_> {
+        KeyboardPressBuilder::new(self, key)
     }
 
-    /// Press and release a key with a delay between down and up.
-    #[instrument(level = "debug", skip(self), fields(key = %key))]
-    pub async fn press_with_delay(
+    /// Internal method to perform the actual key press.
+    async fn press_internal(
         &self,
         key: &str,
         delay: Option<Duration>,
@@ -470,5 +484,92 @@ impl Keyboard {
             )
             .await?;
         Ok(())
+    }
+}
+
+// =============================================================================
+// KeyboardPressBuilder
+// =============================================================================
+
+/// Builder for keyboard press operations with configurable options.
+///
+/// Created via [`Keyboard::press`].
+#[derive(Debug)]
+pub struct KeyboardPressBuilder<'a> {
+    keyboard: &'a Keyboard,
+    key: String,
+    delay: Option<Duration>,
+    no_wait_after: bool,
+}
+
+impl<'a> KeyboardPressBuilder<'a> {
+    fn new(keyboard: &'a Keyboard, key: &str) -> Self {
+        Self {
+            keyboard,
+            key: key.to_string(),
+            delay: None,
+            no_wait_after: false,
+        }
+    }
+
+    /// Set a delay between key down and key up.
+    #[must_use]
+    pub fn delay(mut self, delay: Duration) -> Self {
+        self.delay = Some(delay);
+        self
+    }
+
+    /// Whether to skip waiting for navigation after the key press.
+    ///
+    /// By default, the press will wait for any triggered navigation to complete.
+    /// Set to `true` to return immediately after the key is pressed.
+    #[must_use]
+    pub fn no_wait_after(mut self, no_wait_after: bool) -> Self {
+        self.no_wait_after = no_wait_after;
+        self
+    }
+
+    /// Execute the press operation.
+    #[instrument(level = "debug", skip(self), fields(key = %self.key))]
+    pub async fn send(self) -> Result<(), LocatorError> {
+        // Set up navigation waiter before the action if needed
+        let navigation_waiter = if self.no_wait_after {
+            None
+        } else {
+            Some(NavigationWaiter::new(
+                self.keyboard.connection.subscribe_events(),
+                self.keyboard.session_id.clone(),
+                self.keyboard.frame_id.clone(),
+            ))
+        };
+
+        // Perform the press action
+        self.keyboard.press_internal(&self.key, self.delay).await?;
+
+        // Wait for navigation if triggered
+        if let Some(waiter) = navigation_waiter {
+            match waiter.wait_for_navigation_if_triggered().await {
+                Ok(navigated) => {
+                    if navigated {
+                        trace!("Navigation completed after keyboard press");
+                    }
+                }
+                Err(e) => {
+                    debug!(error = ?e, "Navigation wait failed after keyboard press");
+                    return Err(LocatorError::WaitError(e));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl<'a> std::future::IntoFuture for KeyboardPressBuilder<'a> {
+    type Output = Result<(), LocatorError>;
+    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
+
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(self.send())
     }
 }
