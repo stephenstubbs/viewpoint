@@ -1,4 +1,5 @@
 use super::*;
+use crate::scanner::create_validation_source;
 use proc_macro2::TokenStream as TokenStream2;
 
 fn parse_tokens(s: &str) -> TokenStream2 {

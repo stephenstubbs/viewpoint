@@ -11,6 +11,7 @@
 //! - **Raw interpolation**: Inject pre-built JavaScript using `@{expr}` syntax (unquoted)
 //! - **Zero runtime overhead**: Static strings when no interpolation is used
 //! - **Clear error messages**: Points to the exact location of syntax errors
+//! - **Full JavaScript syntax**: Single-quoted strings, template literals, regex, XPath, and more
 //!
 //! # Usage
 //!
@@ -68,6 +69,7 @@ use proc_macro::TokenStream;
 mod interpolation;
 mod js_macro;
 mod parser;
+mod scanner;
 
 /// A macro that validates JavaScript syntax at compile time.
 ///

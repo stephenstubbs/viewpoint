@@ -56,8 +56,10 @@ mod tests;
 ### JavaScript Code
 - **Always use `viewpoint_js::js!` macro** for inline JavaScript code
 - The macro provides **compile-time syntax validation** catching JS errors before runtime
+- **Full JavaScript syntax support**: single-quoted strings, template literals, regex, XPath, etc.
 - Use `#{expr}` for **value interpolation** (quoted/escaped Rust values)
 - Use `@{expr}` for **raw interpolation** (inject pre-built JS expressions as-is)
+- JavaScript `${expr}` in template literals is preserved (not Rust interpolation)
 - **Use `viewpoint_js_core` utilities** for string escaping when building dynamic JS
 - Never use raw string literals or `format!` for JavaScript code
 
@@ -66,6 +68,22 @@ use viewpoint_js::js;
 
 // Simple expression (returns &'static str)
 let code = js!{ document.title };
+
+// Single-quoted strings
+let code = js!{ console.log('hello') };
+
+// Template literals with JS interpolation (${} is preserved)
+let code = js!{ `Hello, ${userName}!` };
+
+// Template literals with Rust interpolation
+let name = "world";
+let code = js!{ `Hello, #{name}!` };
+
+// Regex literals
+let code = js!{ /^test/.test(str) };
+
+// XPath with mixed quotes
+let code = js!{ document.evaluate("//div[@class='item']", doc) };
 
 // Value interpolation - Rust values are quoted/escaped
 let selector = ".my-class";

@@ -3,22 +3,27 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 
-use crate::interpolation::{generate_interpolated_code, parse_interpolations};
+use crate::interpolation::generate_interpolated_code;
 use crate::parser::validate_js;
+use crate::scanner;
 
 /// Implementation of the js! macro.
 pub fn js_impl(input: TokenStream) -> TokenStream {
+    // Convert to proc_macro2 and get the string representation
+    // This goes through Rust's tokenizer, which may mangle some JS syntax
     let input2: TokenStream2 = input.into();
-
-    // Convert the token stream to a string
     let js_source = tokens_to_js_string(&input2);
+    
+    js_impl_from_source(&js_source)
+}
 
-    // Parse for interpolations first
-    let (segments, has_interpolation) = parse_interpolations(&js_source);
+/// Process JavaScript source and generate output code.
+fn js_impl_from_source(js_source: &str) -> TokenStream {
+    // Use the scanner to parse for interpolations
+    let (segments, has_interpolation) = scanner::scan_js_source(js_source);
 
-    // For validation, we need to replace interpolations with placeholders
-    // that are valid JavaScript
-    let validation_source = create_validation_source(&js_source);
+    // Create validation source with interpolations replaced by null
+    let validation_source = scanner::create_validation_source(js_source);
 
     // Validate the JavaScript syntax
     if let Err(err) = validate_js(&validation_source) {
@@ -98,45 +103,6 @@ fn needs_space_before_punct(_ch: char) -> bool {
 /// Determine if a space is needed after a punctuation character.
 fn needs_space_after_punct(ch: char) -> bool {
     matches!(ch, ',' | ';' | ':')
-}
-
-/// Create a version of the source suitable for validation.
-///
-/// Replaces interpolation markers with valid JavaScript placeholders.
-/// Handles both `#{...}` (value) and `@{...}` (raw) interpolation.
-fn create_validation_source(source: &str) -> String {
-    let mut result = String::new();
-    let mut chars = source.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        // Handle value interpolation: #{...} and raw interpolation: @{...}
-        if (c == '#' || c == '@') && chars.peek() == Some(&'{') {
-            chars.next(); // consume '{'
-            skip_interpolation_expr(&mut chars);
-            // Replace with a placeholder that's valid JS (null is always valid)
-            result.push_str("null");
-        } else {
-            result.push(c);
-        }
-    }
-
-    result
-}
-
-/// Skip over an interpolation expression in the character iterator.
-/// Expects the opening '{' to have already been consumed.
-fn skip_interpolation_expr(chars: &mut std::iter::Peekable<std::str::Chars>) {
-    let mut depth = 1;
-    for c in chars.by_ref() {
-        if c == '{' {
-            depth += 1;
-        } else if c == '}' {
-            depth -= 1;
-            if depth == 0 {
-                break;
-            }
-        }
-    }
 }
 
 #[cfg(test)]

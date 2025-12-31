@@ -13,6 +13,7 @@ errors early, before they reach the browser.
 - **Raw interpolation**: Inject pre-built JavaScript using `@{expr}` syntax (unquoted)
 - **Zero runtime overhead**: Static strings when no interpolation is used
 - **Clear error messages**: Points to the exact location of syntax errors
+- **Full JavaScript syntax support**: Single-quoted strings, template literals, regex literals, and more
 
 ## Usage
 
@@ -90,6 +91,33 @@ let selector_expr = "document.body";
 let attr_name = "data-id";
 let code = js!{ @{selector_expr}.setAttribute(#{attr_name}, "value") };
 // Produces: "document.body.setAttribute(\"data-id\", \"value\")"
+```
+
+### JavaScript Syntax Support
+
+The `js!` macro supports all JavaScript string and literal syntax:
+
+```rust
+use viewpoint_js::js;
+
+// Single-quoted strings
+let code = js!{ console.log('hello') };
+
+// Template literals with JavaScript interpolation
+let code = js!{ `Hello, ${userName}!` };
+
+// Template literals with Rust interpolation
+let name = "world";
+let code = js!{ `Hello, #{name}!` };
+
+// Regex literals
+let code = js!{ /^test/.test(str) };
+
+// XPath with mixed quotes
+let code = js!{ document.evaluate("//div[@class='item']", doc) };
+
+// CSS attribute selectors
+let code = js!{ document.querySelector('[data-id="test"]') };
 ```
 
 ### Compile-Time Errors
