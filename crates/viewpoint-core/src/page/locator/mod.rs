@@ -31,7 +31,7 @@
 
 mod actions;
 pub mod aria;
-mod aria_js;
+pub(crate) mod aria_js;
 mod aria_role;
 mod builders;
 mod debug;

@@ -208,3 +208,138 @@ fn test_aria_snapshot_frame_name_with_quotes() {
         yaml
     );
 }
+
+// =============================================================================
+// Node Reference Tests
+// =============================================================================
+
+#[test]
+fn test_aria_snapshot_ref_to_yaml() {
+    let mut snapshot = AriaSnapshot::with_role("button");
+    snapshot.name = Some("Submit".to_string());
+    snapshot.node_ref = Some("e12345".to_string());
+
+    let yaml = snapshot.to_yaml();
+    assert!(
+        yaml.contains("[ref=e12345]"),
+        "YAML should contain [ref=e12345], got: {}",
+        yaml
+    );
+}
+
+#[test]
+fn test_aria_snapshot_ref_to_yaml_no_ref() {
+    let snapshot = AriaSnapshot::with_role("button").name("Submit");
+
+    let yaml = snapshot.to_yaml();
+    assert!(
+        !yaml.contains("[ref="),
+        "YAML should not contain [ref=] when node_ref is None, got: {}",
+        yaml
+    );
+}
+
+#[test]
+fn test_aria_snapshot_ref_from_yaml() {
+    let yaml = r#"- button "Submit" [ref=e12345]"#;
+    let snapshot = AriaSnapshot::from_yaml(yaml).expect("Should parse YAML");
+
+    // The root is a wrapper, the actual button is the first child
+    assert_eq!(snapshot.children.len(), 1);
+    let button = &snapshot.children[0];
+
+    assert_eq!(button.role, Some("button".to_string()));
+    assert_eq!(button.name, Some("Submit".to_string()));
+    assert_eq!(button.node_ref, Some("e12345".to_string()));
+}
+
+#[test]
+fn test_aria_snapshot_ref_roundtrip() {
+    let mut original = AriaSnapshot::with_role("heading");
+    original.name = Some("Page Title".to_string());
+    original.level = Some(1);
+    original.node_ref = Some("e98765".to_string());
+
+    let yaml = original.to_yaml();
+    let parsed = AriaSnapshot::from_yaml(&yaml).expect("Should parse YAML");
+
+    // The parsed snapshot wraps the original in a root
+    assert_eq!(parsed.children.len(), 1);
+    let roundtripped = &parsed.children[0];
+
+    assert_eq!(roundtripped.role, original.role);
+    assert_eq!(roundtripped.name, original.name);
+    assert_eq!(roundtripped.level, original.level);
+    assert_eq!(roundtripped.node_ref, original.node_ref);
+}
+
+#[test]
+fn test_aria_snapshot_ref_serialization() {
+    let mut snapshot = AriaSnapshot::with_role("textbox");
+    snapshot.name = Some("Email".to_string());
+    snapshot.node_ref = Some("e42".to_string());
+
+    // ref should serialize to JSON as "ref"
+    let json = serde_json::to_string(&snapshot).expect("Should serialize");
+    assert!(json.contains(r#""ref":"e42""#), "JSON should contain ref field, got: {}", json);
+
+    // And deserialize
+    let deserialized: AriaSnapshot = serde_json::from_str(&json).expect("Should deserialize");
+    assert_eq!(deserialized.node_ref, Some("e42".to_string()));
+}
+
+#[test]
+fn test_aria_snapshot_ref_default_none() {
+    // When not provided, node_ref should default to None
+    let json = r#"{"role":"button","name":"Click me"}"#;
+    let snapshot: AriaSnapshot = serde_json::from_str(json).expect("Should deserialize");
+    assert!(
+        snapshot.node_ref.is_none(),
+        "node_ref should default to None"
+    );
+}
+
+#[test]
+fn test_aria_snapshot_ref_with_children() {
+    let mut button = AriaSnapshot::with_role("button");
+    button.name = Some("Submit".to_string());
+    button.node_ref = Some("e100".to_string());
+
+    let mut icon = AriaSnapshot::with_role("img");
+    icon.name = Some("Icon".to_string());
+    icon.node_ref = Some("e101".to_string());
+
+    button.children.push(icon);
+
+    let yaml = button.to_yaml();
+    assert!(yaml.contains("[ref=e100]"), "Parent should have ref, got: {}", yaml);
+    assert!(yaml.contains("[ref=e101]"), "Child should have ref, got: {}", yaml);
+}
+
+#[test]
+fn test_aria_snapshot_ref_with_other_attributes() {
+    let mut snapshot = AriaSnapshot::with_role("checkbox");
+    snapshot.name = Some("Accept terms".to_string());
+    snapshot.checked = Some(AriaCheckedState::True);
+    snapshot.disabled = Some(true);
+    snapshot.node_ref = Some("e999".to_string());
+
+    let yaml = snapshot.to_yaml();
+    // All attributes should be present
+    assert!(yaml.contains("[checked]"), "Should have [checked], got: {}", yaml);
+    assert!(yaml.contains("[disabled]"), "Should have [disabled], got: {}", yaml);
+    assert!(yaml.contains("[ref=e999]"), "Should have [ref=e999], got: {}", yaml);
+}
+
+#[test]
+fn test_aria_snapshot_ref_with_frame_boundary() {
+    let mut snapshot = AriaSnapshot::with_role("iframe");
+    snapshot.name = Some("Widget Frame".to_string());
+    snapshot.is_frame = Some(true);
+    snapshot.frame_url = Some("https://example.com".to_string());
+    snapshot.node_ref = Some("e555".to_string());
+
+    let yaml = snapshot.to_yaml();
+    assert!(yaml.contains("[frame-boundary]"), "Should have [frame-boundary], got: {}", yaml);
+    assert!(yaml.contains("[ref=e555]"), "Should have [ref=e555], got: {}", yaml);
+}

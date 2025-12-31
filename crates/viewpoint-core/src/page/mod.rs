@@ -2,6 +2,7 @@
 
 mod aria_snapshot;
 pub mod binding;
+mod ref_resolution;
 pub mod clock;
 mod clock_script;
 pub mod console;

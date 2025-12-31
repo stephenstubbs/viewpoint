@@ -3,6 +3,8 @@
 // Re-export AriaRole from aria_role module
 pub use super::aria_role::{AriaRole, implicit_role_selector};
 
+use viewpoint_cdp::protocol::dom::BackendNodeId;
+
 /// Options for text-based locators.
 #[derive(Debug, Clone, Default)]
 pub struct TextOptions {
@@ -55,6 +57,11 @@ pub enum Selector {
         child: Box<Selector>,
         has_not: bool,
     },
+    /// Backend node ID selector (from ARIA snapshot refs).
+    ///
+    /// This selector targets a specific element by its CDP backend node ID,
+    /// which is extracted from ARIA snapshot refs (format: `e{backendNodeId}`).
+    BackendNodeId(BackendNodeId),
 }
 
 impl std::fmt::Display for Selector {
@@ -115,6 +122,7 @@ impl std::fmt::Display for Selector {
                     write!(f, "{base}.filter(has={child})")
                 }
             }
+            Selector::BackendNodeId(id) => write!(f, "ref=e{id}"),
         }
     }
 }
@@ -349,6 +357,19 @@ impl Selector {
                         }})()"
                     )
                 }
+            }
+
+            Selector::BackendNodeId(id) => {
+                // Backend node ID selectors are resolved via CDP, not JS
+                // This JS expression is a placeholder that will be replaced
+                // by the actual element resolution in the Rust code
+                format!(
+                    r"(function() {{
+                        // Backend node ID selector (resolved via CDP DOM.resolveNode)
+                        // ID: {id}
+                        throw new Error('BackendNodeId selectors must be resolved via CDP');
+                    }})()"
+                )
             }
         }
     }

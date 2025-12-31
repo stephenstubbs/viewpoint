@@ -134,3 +134,64 @@ pub struct ResolveNodeResult {
     /// JavaScript object wrapper for given node.
     pub object: crate::protocol::runtime::RemoteObject,
 }
+
+/// Parameters for DOM.describeNode.
+///
+/// Describes node given its id. Does not require domain to be enabled.
+/// Does not start tracking any objects, can be used for automation.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DescribeNodeParams {
+    /// Identifier of the node.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub node_id: Option<NodeId>,
+    /// Identifier of the backend node.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backend_node_id: Option<BackendNodeId>,
+    /// JavaScript object id of the node wrapper.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub object_id: Option<String>,
+    /// The maximum depth at which children should be retrieved.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depth: Option<i32>,
+    /// Whether or not iframes and shadow roots should be traversed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pierce: Option<bool>,
+}
+
+/// Result of DOM.describeNode.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DescribeNodeResult {
+    /// Node description.
+    pub node: NodeDescription,
+}
+
+/// Node description from DOM.describeNode.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeDescription {
+    /// Node identifier that is passed into the rest of the DOM messages.
+    pub node_id: NodeId,
+    /// The BackendNodeId for this node.
+    pub backend_node_id: BackendNodeId,
+    /// Node's nodeType.
+    pub node_type: i32,
+    /// Node's nodeName.
+    pub node_name: String,
+    /// Node's local name.
+    pub local_name: String,
+    /// Node's nodeValue.
+    pub node_value: String,
+    /// Child count for Container nodes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub child_node_count: Option<i32>,
+    /// Child nodes of this node when requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub children: Option<Vec<Node>>,
+    /// Attributes of the Element node in the form of flat array.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes: Option<Vec<String>>,
+    /// Frame ID for frame owner elements.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_id: Option<String>,
+}

@@ -14,6 +14,16 @@ use crate::error::LocatorError;
 /// The snapshot represents the accessible structure as it would be
 /// exposed to assistive technologies.
 ///
+/// # Node References
+///
+/// Each element in the snapshot has a unique `node_ref` identifier (format: `e{backendNodeId}`)
+/// that can be used to interact with the element:
+///
+/// - `node_ref`: Unique reference for each element (e.g., `e12345`)
+///
+/// Use `Page::element_from_ref()` or `Page::locator_from_ref()` to interact with
+/// elements discovered in the snapshot.
+///
 /// # Frame Boundary Support
 ///
 /// For MCP (Model Context Protocol) servers and multi-frame accessibility testing,
@@ -25,6 +35,25 @@ use crate::error::LocatorError;
 /// - `iframe_refs`: Collected at root level, lists all iframe ref IDs for enumeration
 ///
 /// Frame boundaries are rendered in YAML as `[frame-boundary]` markers.
+///
+/// # Example with Node References
+///
+/// ```no_run
+/// use viewpoint_core::Page;
+///
+/// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
+/// // Capture snapshot with refs
+/// let snapshot = page.aria_snapshot().await?;
+///
+/// // Each element has a unique ref
+/// if let Some(ref node_ref) = snapshot.node_ref {
+///     // Use the ref to interact with the element
+///     let locator = page.locator_from_ref(node_ref);
+///     locator.click().await?;
+/// }
+/// # Ok(())
+/// # }
+/// ```
 ///
 /// # Example with Frame Boundaries
 ///
@@ -107,6 +136,35 @@ pub struct AriaSnapshot {
     /// enabling MCP servers to enumerate frames for separate content retrieval.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub iframe_refs: Vec<String>,
+    /// Unique reference identifier for this element.
+    ///
+    /// The ref is used to identify and interact with elements discovered in the
+    /// accessibility snapshot. It follows the format `e{backendNodeId}` where
+    /// `backendNodeId` is the CDP backend node identifier.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use viewpoint_core::AriaSnapshot;
+    ///
+    /// let mut snapshot = AriaSnapshot::with_role("button");
+    /// snapshot.node_ref = Some("e12345".to_string());
+    ///
+    /// let yaml = snapshot.to_yaml();
+    /// assert!(yaml.contains("[ref=e12345]"));
+    /// ```
+    ///
+    /// Refs can be used with `Page::element_from_ref()` or `Page::locator_from_ref()`
+    /// to interact with the element.
+    #[serde(rename = "ref", skip_serializing_if = "Option::is_none")]
+    pub node_ref: Option<String>,
+    /// Temporary element index used during snapshot capture.
+    ///
+    /// This field is used internally to map snapshot nodes to their corresponding
+    /// DOM elements during the ref resolution process. It is not serialized to YAML
+    /// and should not be used by external code.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) element_index: Option<usize>,
     /// Child elements.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<AriaSnapshot>,
@@ -218,6 +276,11 @@ impl AriaSnapshot {
                 }
             }
 
+            // Add node reference if present
+            if let Some(ref node_ref) = self.node_ref {
+                output.push_str(&format!(" [ref={}]", node_ref));
+            }
+
             output.push('\n');
 
             // Write children
@@ -282,6 +345,10 @@ impl AriaSnapshot {
                         // Parse frame-name="value"
                         let name = &s[12..s.len() - 1];
                         node.frame_name = Some(name.replace("\\\"", "\""));
+                    }
+                    s if s.starts_with("ref=") => {
+                        // Parse ref=e12345
+                        node.node_ref = Some(s[4..].to_string());
                     }
                     _ => {}
                 }
@@ -462,7 +529,7 @@ fn matches_name(pattern: &str, actual: &str) -> bool {
 }
 
 // Re-export the JavaScript code from the separate module
-pub use super::aria_js::aria_snapshot_js;
+pub use super::aria_js::{aria_snapshot_js, aria_snapshot_with_refs_js};
 
 #[cfg(test)]
 mod tests;
