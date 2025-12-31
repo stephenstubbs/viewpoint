@@ -407,7 +407,10 @@ impl Page {
 }
 
 /// Recursively apply refs to the snapshot tree based on element indices.
-fn apply_refs_to_snapshot(snapshot: &mut AriaSnapshot, ref_map: &HashMap<usize, BackendNodeId>) {
+///
+/// This function is used by both Page and Frame implementations to resolve
+/// element references after capturing an aria snapshot with element indices.
+pub(crate) fn apply_refs_to_snapshot(snapshot: &mut AriaSnapshot, ref_map: &HashMap<usize, BackendNodeId>) {
     // Apply ref if this node has an element_index
     if let Some(index) = snapshot.element_index {
         if let Some(&backend_node_id) = ref_map.get(&index) {

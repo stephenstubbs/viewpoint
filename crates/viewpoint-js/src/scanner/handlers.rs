@@ -292,7 +292,7 @@ impl Scanner<'_> {
         let mut depth = 1;
         let mut expr_str = String::new();
 
-        while let Some((_, c)) = self.chars.next() {
+        for (_, c) in self.chars.by_ref() {
             if c == '{' {
                 depth += 1;
                 expr_str.push(c);

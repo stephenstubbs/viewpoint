@@ -60,6 +60,7 @@ pub use evaluate::{JsHandle, Polling, WaitForFunctionBuilder};
 pub use events::PageEventManager;
 pub use file_chooser::{FileChooser, FilePayload};
 pub use frame::Frame;
+pub(crate) use frame::ExecutionContextRegistry;
 pub use frame_locator::{FrameElementLocator, FrameLocator, FrameRoleLocatorBuilder};
 pub use keyboard::Keyboard;
 pub use locator::{
@@ -121,6 +122,8 @@ pub struct Page {
     binding_manager: Arc<binding::BindingManager>,
     /// Custom test ID attribute (defaults to "data-testid").
     test_id_attribute: String,
+    /// Execution context registry for tracking frame contexts.
+    context_registry: Arc<ExecutionContextRegistry>,
 }
 
 // Manual Debug implementation since some fields don't implement Debug

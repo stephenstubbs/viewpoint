@@ -77,7 +77,7 @@ impl Page {
 
         let frame_info = result.frame_tree.frame;
 
-        Ok(Frame::new(
+        Ok(Frame::with_context_registry(
             self.connection.clone(),
             self.session_id.clone(),
             frame_info.id,
@@ -85,6 +85,7 @@ impl Page {
             frame_info.loader_id,
             frame_info.url,
             frame_info.name.unwrap_or_default(),
+            self.context_registry.clone(),
         ))
     }
 
@@ -132,7 +133,7 @@ impl Page {
     ) {
         let frame_info = &tree.frame;
 
-        frames.push(Frame::new(
+        frames.push(Frame::with_context_registry(
             self.connection.clone(),
             self.session_id.clone(),
             frame_info.id.clone(),
@@ -140,6 +141,7 @@ impl Page {
             frame_info.loader_id.clone(),
             frame_info.url.clone(),
             frame_info.name.clone().unwrap_or_default(),
+            self.context_registry.clone(),
         ));
 
         if let Some(children) = &tree.child_frames {

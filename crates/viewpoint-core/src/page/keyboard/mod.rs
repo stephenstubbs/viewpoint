@@ -3,94 +3,25 @@
 //! Provides direct keyboard control for simulating key presses, key holds,
 //! and text input.
 
+mod builder;
 mod keys;
+mod state;
 
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, instrument};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::input::{
-    DispatchKeyEventParams, InsertTextParams, KeyEventType, modifiers,
+    DispatchKeyEventParams, InsertTextParams, KeyEventType,
 };
 
 use crate::error::LocatorError;
-use crate::wait::NavigationWaiter;
 
+pub use builder::KeyboardPressBuilder;
 pub use keys::{KeyDefinition, get_key_definition};
-
-/// Check if a key is an uppercase letter that requires Shift.
-fn is_uppercase_letter(key: &str) -> bool {
-    key.len() == 1 && key.chars().next().is_some_and(|c| c.is_ascii_uppercase())
-}
-
-/// Check if a key is a modifier key.
-fn is_modifier_key(key: &str) -> bool {
-    matches!(
-        key,
-        "Alt"
-            | "AltLeft"
-            | "AltRight"
-            | "Control"
-            | "ControlLeft"
-            | "ControlRight"
-            | "Meta"
-            | "MetaLeft"
-            | "MetaRight"
-            | "Shift"
-            | "ShiftLeft"
-            | "ShiftRight"
-    )
-}
-
-/// Keyboard state tracking.
-#[derive(Debug)]
-struct KeyboardState {
-    /// Currently pressed modifier keys.
-    modifiers: i32,
-    /// Set of currently held keys.
-    pressed_keys: HashSet<String>,
-}
-
-impl KeyboardState {
-    fn new() -> Self {
-        Self {
-            modifiers: 0,
-            pressed_keys: HashSet::new(),
-        }
-    }
-
-    fn key_down(&mut self, key: &str) -> bool {
-        let is_repeat = self.pressed_keys.contains(key);
-        self.pressed_keys.insert(key.to_string());
-
-        // Update modifiers
-        match key {
-            "Alt" | "AltLeft" | "AltRight" => self.modifiers |= modifiers::ALT,
-            "Control" | "ControlLeft" | "ControlRight" => self.modifiers |= modifiers::CTRL,
-            "Meta" | "MetaLeft" | "MetaRight" => self.modifiers |= modifiers::META,
-            "Shift" | "ShiftLeft" | "ShiftRight" => self.modifiers |= modifiers::SHIFT,
-            _ => {}
-        }
-
-        is_repeat
-    }
-
-    fn key_up(&mut self, key: &str) {
-        self.pressed_keys.remove(key);
-
-        // Update modifiers
-        match key {
-            "Alt" | "AltLeft" | "AltRight" => self.modifiers &= !modifiers::ALT,
-            "Control" | "ControlLeft" | "ControlRight" => self.modifiers &= !modifiers::CTRL,
-            "Meta" | "MetaLeft" | "MetaRight" => self.modifiers &= !modifiers::META,
-            "Shift" | "ShiftLeft" | "ShiftRight" => self.modifiers &= !modifiers::SHIFT,
-            _ => {}
-        }
-    }
-}
+use state::{is_modifier_key, is_uppercase_letter, KeyboardState};
 
 /// Keyboard controller for direct keyboard input.
 ///
@@ -149,6 +80,21 @@ impl Keyboard {
         }
     }
 
+    /// Get the connection (for builder access).
+    pub(crate) fn connection(&self) -> &Arc<CdpConnection> {
+        &self.connection
+    }
+
+    /// Get the session ID (for builder access).
+    pub(crate) fn session_id(&self) -> &str {
+        &self.session_id
+    }
+
+    /// Get the frame ID (for builder access).
+    pub(crate) fn frame_id(&self) -> &str {
+        &self.frame_id
+    }
+
     /// Press and release a key or key combination.
     ///
     /// Returns a builder that can be configured with additional options, or awaited
@@ -160,30 +106,12 @@ impl Keyboard {
     ///   - A single key: `"Enter"`, `"a"`, `"F1"`
     ///   - A key combination: `"Control+c"`, `"Shift+Tab"`
     ///   - `ControlOrMeta` for cross-platform shortcuts
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use viewpoint_core::Page;
-    ///
-    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
-    /// // Simple press - await directly
-    /// page.keyboard().press("Enter").await?;
-    ///
-    /// // Press without waiting for navigation
-    /// page.keyboard().press("Enter").no_wait_after(true).await?;
-    ///
-    /// // Press with delay
-    /// page.keyboard().press("Control+a").delay(std::time::Duration::from_millis(100)).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn press(&self, key: &str) -> KeyboardPressBuilder<'_> {
         KeyboardPressBuilder::new(self, key)
     }
 
     /// Internal method to perform the actual key press.
-    async fn press_internal(
+    pub(crate) async fn press_internal(
         &self,
         key: &str,
         delay: Option<Duration>,
@@ -245,19 +173,6 @@ impl Keyboard {
     /// Press and hold a key.
     ///
     /// The key will remain pressed until `up()` is called.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use viewpoint_core::Page;
-    ///
-    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
-    /// page.keyboard().down("Shift").await?;
-    /// page.keyboard().press("a").await?; // Types 'A'
-    /// page.keyboard().up("Shift").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn down(&self, key: &str) -> Result<(), LocatorError> {
         let def = get_key_definition(key)
@@ -320,19 +235,6 @@ impl Keyboard {
     }
 
     /// Release a held key.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use viewpoint_core::Page;
-    ///
-    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
-    /// page.keyboard().down("Shift").await?;
-    /// // ... do stuff with Shift held
-    /// page.keyboard().up("Shift").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     #[instrument(level = "debug", skip(self), fields(key = %key))]
     pub async fn up(&self, key: &str) -> Result<(), LocatorError> {
         let def = get_key_definition(key)
@@ -373,17 +275,6 @@ impl Keyboard {
     ///
     /// This generates individual key events for each character.
     /// Use `insert_text()` for faster text entry without key events.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use viewpoint_core::Page;
-    ///
-    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
-    /// page.keyboard().type_text("Hello, World!").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     #[instrument(level = "debug", skip(self), fields(text_len = text.len()))]
     pub async fn type_text(&self, text: &str) -> Result<(), LocatorError> {
         self.type_text_with_delay(text, None).await
@@ -400,7 +291,7 @@ impl Keyboard {
             let char_str = ch.to_string();
 
             // Get key definition if available, otherwise just send char event
-            if let Some(_def) = get_key_definition(&char_str) {
+            if get_key_definition(&char_str).is_some() {
                 // Check if we need Shift for this character
                 let need_shift = ch.is_ascii_uppercase();
                 if need_shift {
@@ -446,17 +337,6 @@ impl Keyboard {
     ///
     /// This is faster than `type_text()` and works with non-ASCII characters.
     /// No keydown/keyup events are dispatched.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// use viewpoint_core::Page;
-    ///
-    /// # async fn example(page: &Page) -> Result<(), viewpoint_core::CoreError> {
-    /// page.keyboard().insert_text("Hello 👋 你好").await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     #[instrument(level = "debug", skip(self), fields(text_len = text.len()))]
     pub async fn insert_text(&self, text: &str) -> Result<(), LocatorError> {
         debug!("Inserting text directly");
@@ -484,92 +364,5 @@ impl Keyboard {
             )
             .await?;
         Ok(())
-    }
-}
-
-// =============================================================================
-// KeyboardPressBuilder
-// =============================================================================
-
-/// Builder for keyboard press operations with configurable options.
-///
-/// Created via [`Keyboard::press`].
-#[derive(Debug)]
-pub struct KeyboardPressBuilder<'a> {
-    keyboard: &'a Keyboard,
-    key: String,
-    delay: Option<Duration>,
-    no_wait_after: bool,
-}
-
-impl<'a> KeyboardPressBuilder<'a> {
-    fn new(keyboard: &'a Keyboard, key: &str) -> Self {
-        Self {
-            keyboard,
-            key: key.to_string(),
-            delay: None,
-            no_wait_after: false,
-        }
-    }
-
-    /// Set a delay between key down and key up.
-    #[must_use]
-    pub fn delay(mut self, delay: Duration) -> Self {
-        self.delay = Some(delay);
-        self
-    }
-
-    /// Whether to skip waiting for navigation after the key press.
-    ///
-    /// By default, the press will wait for any triggered navigation to complete.
-    /// Set to `true` to return immediately after the key is pressed.
-    #[must_use]
-    pub fn no_wait_after(mut self, no_wait_after: bool) -> Self {
-        self.no_wait_after = no_wait_after;
-        self
-    }
-
-    /// Execute the press operation.
-    #[instrument(level = "debug", skip(self), fields(key = %self.key))]
-    pub async fn send(self) -> Result<(), LocatorError> {
-        // Set up navigation waiter before the action if needed
-        let navigation_waiter = if self.no_wait_after {
-            None
-        } else {
-            Some(NavigationWaiter::new(
-                self.keyboard.connection.subscribe_events(),
-                self.keyboard.session_id.clone(),
-                self.keyboard.frame_id.clone(),
-            ))
-        };
-
-        // Perform the press action
-        self.keyboard.press_internal(&self.key, self.delay).await?;
-
-        // Wait for navigation if triggered
-        if let Some(waiter) = navigation_waiter {
-            match waiter.wait_for_navigation_if_triggered().await {
-                Ok(navigated) => {
-                    if navigated {
-                        trace!("Navigation completed after keyboard press");
-                    }
-                }
-                Err(e) => {
-                    debug!(error = ?e, "Navigation wait failed after keyboard press");
-                    return Err(LocatorError::WaitError(e));
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl<'a> std::future::IntoFuture for KeyboardPressBuilder<'a> {
-    type Output = Result<(), LocatorError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
-
-    fn into_future(self) -> Self::IntoFuture {
-        Box::pin(self.send())
     }
 }

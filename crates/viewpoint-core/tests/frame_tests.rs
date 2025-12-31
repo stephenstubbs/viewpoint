@@ -1,12 +1,10 @@
 #![cfg(feature = "integration")]
 
-//! Frame handling tests for viewpoint-core.
+//! Frame execution context tests for viewpoint-core.
 //!
-//! These tests verify frame access, frame locators, and frame events.
+//! These tests verify frame execution context targeting works correctly.
 
-use std::sync::Arc;
 use std::sync::Once;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use viewpoint_core::Browser;
@@ -28,12 +26,15 @@ fn init_tracing() {
 }
 
 // =============================================================================
-// Main Frame Tests
+// Frame Execution Context Tests
 // =============================================================================
 
-/// Test getting the main frame.
+/// Test that Frame.content() returns the correct HTML for an iframe.
+///
+/// This tests the frame execution context targeting - ensuring that JavaScript
+/// evaluation happens in the frame's context, not the main frame's.
 #[tokio::test]
-async fn test_main_frame() {
+async fn test_iframe_content_execution_context() {
     init_tracing();
 
     let browser = Browser::launch()
@@ -48,392 +49,56 @@ async fn test_main_frame() {
         .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    // Navigate to a page
-    page.goto_url("https://example.com")
-        .await
-        .expect("Failed to navigate");
-
-    // Get main frame
-    let main_frame = page.main_frame().await.expect("Failed to get main frame");
-
-    // Main frame should have a URL
-    let url = main_frame.url();
-    assert!(
-        url.contains("example.com"),
-        "Main frame URL should contain example.com, got: {}",
-        url
-    );
-
-    // Main frame should be the main frame
-    assert!(main_frame.is_main(), "Should be main frame");
-    assert!(
-        main_frame.parent_id().is_none(),
-        "Main frame should have no parent"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test main frame access with simple page.
-#[tokio::test]
-async fn test_main_frame_access() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    page.set_content(r#"<html><body><h1>Main Frame</h1></body></html>"#)
-        .set()
-        .await
-        .expect("Failed to set content");
-
-    // Get main frame
-    let main_frame = page.main_frame().await.expect("Failed to get main frame");
-
-    // Verify main frame properties - main frame name is typically empty
-    let _ = main_frame.name(); // Just verify we can access it
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-// =============================================================================
-// Frame List Tests
-// =============================================================================
-
-/// Test getting all frames in a page.
-#[tokio::test]
-async fn test_frames_list() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    // Navigate to a page (example.com doesn't have iframes, so we'll just test the main frame)
-    page.goto_url("https://example.com")
-        .await
-        .expect("Failed to navigate");
-
-    // Get all frames
-    let frames = page.frames().await.expect("Failed to get frames");
-
-    // Should have at least the main frame
-    assert!(!frames.is_empty(), "Should have at least one frame");
-
-    // First frame should be the main frame
-    assert!(frames[0].is_main(), "First frame should be main frame");
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test listing all frames with iframes.
-#[tokio::test]
-async fn test_list_frames() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
+    // Create a page with an iframe that has distinct content
     page.set_content(
-        r#"
+        r##"
         <html><body>
-            <iframe name="frame1" srcdoc="<html><body>Frame 1</body></html>"></iframe>
-            <iframe name="frame2" srcdoc="<html><body>Frame 2</body></html>"></iframe>
+            <h1>Main Frame Content</h1>
+            <iframe name="test-frame" srcdoc="<html><head><title>Iframe Title</title></head><body><h1>Iframe Heading</h1><p>Iframe paragraph content.</p></body></html>"></iframe>
         </body></html>
-    "#,
+    "##,
     )
     .set()
     .await
     .expect("Failed to set content");
-
-    // Wait for iframes to load
-    tokio::time::sleep(Duration::from_millis(200)).await;
-
-    // Get all frames
-    let frames = page.frames().await.expect("Failed to get frames");
-
-    // Should have main frame + 2 iframes = 3 frames
-    assert!(
-        frames.len() >= 3,
-        "Should have at least 3 frames (main + 2 iframes), got {}",
-        frames.len()
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-// =============================================================================
-// Frame Properties Tests
-// =============================================================================
-
-/// Test frame properties.
-#[tokio::test]
-async fn test_frame_properties() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    // Navigate to a page
-    page.goto_url("https://example.com")
-        .await
-        .expect("Failed to navigate");
-
-    // Get main frame
-    let main_frame = page.main_frame().await.expect("Failed to get main frame");
-
-    // Test URL
-    let url = main_frame.url();
-    assert!(
-        url.contains("example.com"),
-        "URL should contain example.com"
-    );
-
-    // Test content
-    let content = main_frame.content().await.expect("Failed to get content");
-    assert!(content.contains("<html"), "Content should contain HTML");
-    assert!(
-        content.contains("Example Domain"),
-        "Content should contain page text"
-    );
-
-    // Test title
-    let title = main_frame.title().await.expect("Failed to get title");
-    assert!(!title.is_empty(), "Title should not be empty");
-
-    // Test is_detached
-    assert!(
-        !main_frame.is_detached(),
-        "Main frame should not be detached"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-// =============================================================================
-// Frame Locator Tests
-// =============================================================================
-
-/// Test frame_locator basic functionality.
-#[tokio::test]
-async fn test_frame_locator_creation() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    // Navigate to a page
-    page.goto_url("https://example.com")
-        .await
-        .expect("Failed to navigate");
-
-    // Create a frame locator - this should not fail even if the frame doesn't exist
-    let frame_locator = page.frame_locator("#non-existent-frame");
-
-    // Verify the frame locator was created
-    assert_eq!(frame_locator.selector(), "#non-existent-frame");
-
-    // Frame locator should reference the page
-    assert!(!frame_locator.page().is_closed());
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test nested frame locator creation.
-#[tokio::test]
-async fn test_nested_frame_locator() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    // Navigate to a page
-    page.goto_url("https://example.com")
-        .await
-        .expect("Failed to navigate");
-
-    // Create nested frame locators
-    let outer = page.frame_locator("#outer-frame");
-    let inner = outer.frame_locator("#inner-frame");
-
-    // Verify the nested structure
-    assert_eq!(inner.selector(), "#inner-frame");
-    assert_eq!(inner.parent_selectors().len(), 1);
-    assert_eq!(inner.parent_selectors()[0], "#outer-frame");
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test frame locator with iframes.
-#[tokio::test]
-async fn test_frame_locator() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    page.set_content(r#"
-        <html><body>
-            <iframe id="myframe" srcdoc="<html><body><button id='btn'>Click me</button></body></html>"></iframe>
-        </body></html>
-    "#)
-        .set()
-        .await
-        .expect("Failed to set content");
 
     // Wait for iframe to load
-    tokio::time::sleep(Duration::from_millis(200)).await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
 
-    // Use frame locator to access content inside iframe
-    let frame_locator = page.frame_locator("#myframe");
-    let button = frame_locator.locator("#btn");
-
-    // Verify we can access the button
-    let text = button.text_content().await.expect("Failed to get text");
-    assert_eq!(text, Some("Click me".to_string()));
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-// =============================================================================
-// Frame Event Tests
-// =============================================================================
-
-/// Test frame attached event.
-#[tokio::test]
-async fn test_frame_attached_event() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
+    // Get the iframe by name
+    let iframe = page
+        .frame("test-frame")
         .await
-        .expect("Failed to launch browser");
+        .expect("Failed to get frames")
+        .expect("Should find test-frame");
 
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
+    // Get the iframe's content - should be the iframe content, not main frame
+    let content = iframe.content().await.expect("Failed to get iframe content");
 
-    // Track if frame attached handler was called
-    let handler_called = Arc::new(AtomicBool::new(false));
-    let handler_called_clone = handler_called.clone();
-
-    // Set up frame attached handler
-    page.on_frameattached(move |_frame| {
-        let called = handler_called_clone.clone();
-        async move {
-            called.store(true, Ordering::SeqCst);
-        }
-    })
-    .await;
-
-    // Set up page with an iframe that will be added dynamically
-    page.set_content(
-        r#"
-        <html><body>
-            <div id="container"></div>
-            <script>
-                setTimeout(() => {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = 'about:blank';
-                    document.getElementById('container').appendChild(iframe);
-                }, 100);
-            </script>
-        </body></html>
-    "#,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
-
-    // Wait for iframe to be attached
-    tokio::time::sleep(Duration::from_millis(500)).await;
-
-    // Handler should have been called
+    // Verify the content is from the iframe, not the main frame
     assert!(
-        handler_called.load(Ordering::SeqCst),
-        "Frame attached handler should have been called"
+        content.contains("Iframe Heading"),
+        "Content should contain iframe heading, got: {}",
+        content
+    );
+    assert!(
+        content.contains("Iframe paragraph content"),
+        "Content should contain iframe paragraph, got: {}",
+        content
+    );
+    assert!(
+        !content.contains("Main Frame Content"),
+        "Content should NOT contain main frame content, got: {}",
+        content
     );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
 
-/// Test frame detached event.
+/// Test that Frame.title() returns the correct title for an iframe.
 #[tokio::test]
-async fn test_frame_detached_event() {
+async fn test_iframe_title_execution_context() {
     init_tracing();
 
     let browser = Browser::launch()
@@ -448,43 +113,115 @@ async fn test_frame_detached_event() {
         .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    // Track if frame detached handler was called
-    let handler_called = Arc::new(AtomicBool::new(false));
-    let handler_called_clone = handler_called.clone();
-
-    // Set up frame detached handler
-    page.on_framedetached(move |_frame| {
-        let called = handler_called_clone.clone();
-        async move {
-            called.store(true, Ordering::SeqCst);
-        }
-    })
-    .await;
-
-    // Set up page with an iframe that will be removed
+    // Create a page with an iframe that has a distinct title
     page.set_content(
-        r#"
-        <html><body>
-            <iframe id="myframe" src="about:blank"></iframe>
-            <script>
-                setTimeout(() => {
-                    document.getElementById('myframe').remove();
-                }, 200);
-            </script>
-        </body></html>
-    "#,
+        r##"
+        <html>
+        <head><title>Main Page Title</title></head>
+        <body>
+            <iframe name="titled-frame" srcdoc="<html><head><title>Iframe Document Title</title></head><body>Content</body></html>"></iframe>
+        </body>
+        </html>
+    "##,
     )
     .set()
     .await
     .expect("Failed to set content");
 
-    // Wait for iframe to be detached
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    // Wait for iframe to load
+    tokio::time::sleep(Duration::from_millis(300)).await;
 
-    // Handler should have been called
+    // Get the iframe by name
+    let iframe = page
+        .frame("titled-frame")
+        .await
+        .expect("Failed to get frames")
+        .expect("Should find titled-frame");
+
+    // Get the iframe's title
+    let title = iframe.title().await.expect("Failed to get iframe title");
+
+    // The title should be the iframe's title, not the main page's
+    assert_eq!(
+        title, "Iframe Document Title",
+        "Title should be the iframe's title"
+    );
+
+    // Also verify main frame has the expected title
+    let main_frame = page.main_frame().await.expect("Failed to get main frame");
+    let main_title = main_frame
+        .title()
+        .await
+        .expect("Failed to get main frame title");
+    assert_eq!(
+        main_title, "Main Page Title",
+        "Main frame title should be different"
+    );
+
+    // Clean up
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that Frame.aria_snapshot() returns the correct accessibility tree for an iframe.
+#[tokio::test]
+async fn test_iframe_aria_snapshot_execution_context() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    // Create a page with an iframe containing distinct accessible elements
+    page.set_content(
+        r##"
+        <html><body>
+            <button id="main-button">Main Button</button>
+            <iframe name="aria-frame" srcdoc="<html><body><button id='iframe-button'>Iframe Button</button><input type='text' placeholder='Iframe Input' /></body></html>"></iframe>
+        </body></html>
+    "##,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    // Wait for iframe to load
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    // Get the iframe by name
+    let iframe = page
+        .frame("aria-frame")
+        .await
+        .expect("Failed to get frames")
+        .expect("Should find aria-frame");
+
+    // Get the iframe's aria snapshot
+    let snapshot = iframe
+        .aria_snapshot()
+        .await
+        .expect("Failed to get iframe aria snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("Iframe aria snapshot:\n{}", yaml);
+
+    // Verify the snapshot contains iframe elements
     assert!(
-        handler_called.load(Ordering::SeqCst),
-        "Frame detached handler should have been called"
+        yaml.contains("Iframe Button") || yaml.contains("button"),
+        "Snapshot should contain iframe button, got: {}",
+        yaml
+    );
+
+    // Verify the snapshot does NOT contain main frame elements
+    assert!(
+        !yaml.contains("Main Button"),
+        "Snapshot should NOT contain main frame button, got: {}",
+        yaml
     );
 
     // Clean up

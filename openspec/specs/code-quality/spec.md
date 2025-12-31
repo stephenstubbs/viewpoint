@@ -44,6 +44,11 @@ The codebase SHALL produce zero warnings when running `cargo clippy` with pedant
 - **THEN** the underlying issue SHALL be fixed instead
 - **AND** suppressions SHALL only be used for intentional design decisions with documented justification
 
+#### Scenario: Pedantic lint compliance
+- **WHEN** clippy suggests using `map_or` instead of `map().unwrap_or()`
+- **THEN** the code SHALL be updated to use the suggested pattern
+- **AND** similar pedantic improvements SHALL be applied consistently
+
 ### Requirement: Maintainable File Sizes
 
 Source files SHALL be kept to a maintainable size to enable effective code review and comprehension.
@@ -62,6 +67,11 @@ Source files SHALL be kept to a maintainable size to enable effective code revie
 - **WHEN** a file exceeds 500 lines
 - **THEN** the file SHALL be refactored into smaller modules
 - **AND** related functionality SHALL be grouped into logical submodules
+
+#### Scenario: Existing violations addressed
+- **WHEN** an audit identifies files exceeding 500 lines
+- **THEN** those files SHALL be refactored before new features are added
+- **AND** each refactored module SHALL have a single, clear responsibility
 
 ### Requirement: Module Organization
 

@@ -11,6 +11,7 @@ use crate::network::{RouteHandlerRegistry, WebSocketManager};
 
 use super::binding;
 use super::events::PageEventManager;
+use super::frame::ExecutionContextRegistry;
 use super::keyboard::Keyboard;
 use super::locator_handler::LocatorHandlerManager;
 use super::mouse::Mouse;
@@ -112,6 +113,13 @@ impl Page {
             ))
         });
 
+        // Create and start the execution context registry
+        let context_registry = Arc::new(ExecutionContextRegistry::new(
+            connection.clone(),
+            session_id.clone(),
+        ));
+        context_registry.start_listening();
+
         Self {
             connection,
             target_id,
@@ -130,6 +138,7 @@ impl Page {
             websocket_manager,
             binding_manager,
             test_id_attribute: DEFAULT_TEST_ID_ATTRIBUTE.to_string(),
+            context_registry,
         }
     }
 
@@ -203,6 +212,12 @@ impl Page {
             websocket_manager: self.websocket_manager.clone(),
             binding_manager: self.binding_manager.clone(),
             test_id_attribute: self.test_id_attribute.clone(),
+            context_registry: self.context_registry.clone(),
         }
+    }
+
+    /// Get the execution context registry.
+    pub(crate) fn context_registry(&self) -> &Arc<ExecutionContextRegistry> {
+        &self.context_registry
     }
 }

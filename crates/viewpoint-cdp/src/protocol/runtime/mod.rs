@@ -104,6 +104,21 @@ pub struct ExecutionContextDescription {
     pub origin: String,
     /// Human readable name describing given context.
     pub name: String,
+    /// Auxiliary data about the context, including frame information.
+    pub aux_data: Option<ExecutionContextAuxData>,
+}
+
+/// Auxiliary data for execution context.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecutionContextAuxData {
+    /// Frame ID associated with this execution context.
+    pub frame_id: Option<String>,
+    /// Whether this is the default context for the frame.
+    pub is_default: Option<bool>,
+    /// Type of the context (e.g., "default", "isolated", "worker").
+    #[serde(rename = "type")]
+    pub context_type: Option<String>,
 }
 
 /// Event: Runtime.executionContextDestroyed
