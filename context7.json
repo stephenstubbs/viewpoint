@@ -1,4 +1,27 @@
 {
   "url": "https://context7.com/stephenstubbs/viewpoint",
-  "public_key": "pk_HI0Qbp4SkQBGBCMXvGSJz"
+  "public_key": "pk_HI0Qbp4SkQBGBCMXvGSJz",
+  "projectTitle": "Viewpoint - Rust Browser Automation",
+  "description": "A Rust-native browser automation library inspired by Playwright. Provides high-level API for controlling Chromium browsers via Chrome DevTools Protocol (CDP) with support for element locators, assertions, network interception, and test fixtures.",
+  "rules": [
+    "Use `viewpoint-test` as the primary crate for testing. It re-exports `viewpoint-core` types.",
+    "Create a `TestHarness` for automatic browser setup/cleanup. Call `TestHarness::new().await?` to get started.",
+    "Use `page.goto(url).goto().await?` for navigation. The builder pattern allows configuring wait states.",
+    "Use `page.locator(selector)` to find elements. Locators auto-wait before performing actions.",
+    "Prefer semantic locators: `get_by_role()`, `get_by_label()`, `get_by_test_id()`, `get_by_text()`.",
+    "Use `expect(locator).to_be_visible().await?` for assertions. All assertions auto-wait.",
+    "Use `page.route(pattern, handler)` for network interception and mocking.",
+    "The `js!` macro validates JavaScript at compile time. Use `#{expr}` for value interpolation.",
+    "Browser contexts are isolated (like incognito). Use `browser.new_context()` for isolation.",
+    "Actions like `click()` auto-wait for navigation. Use `.no_wait_after(true)` to opt out."
+  ],
+  "exclude": [
+    "**/target/**",
+    "**/tests/**",
+    "**/*_test*.rs",
+    "**/openspec/**",
+    "**/examples/**",
+    "**/.git/**",
+    "**/Cargo.lock"
+  ]
 }

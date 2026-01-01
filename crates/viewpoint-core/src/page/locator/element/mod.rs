@@ -1,6 +1,6 @@
 //! Element handle types for low-level DOM operations.
 //!
-//! Unlike [`Locator`], an `ElementHandle` is bound to a specific element instance.
+//! Unlike [`super::Locator`], an `ElementHandle` is bound to a specific element instance.
 //! If the element is removed from the DOM, the handle becomes stale.
 
 use crate::Page;
@@ -21,10 +21,10 @@ pub struct BoundingBox {
 
 /// A handle to a DOM element.
 ///
-/// Unlike [`Locator`], an `ElementHandle` is bound to a specific element instance.
+/// Unlike [`super::Locator`], an `ElementHandle` is bound to a specific element instance.
 /// If the element is removed from the DOM, the handle becomes stale.
 ///
-/// Most operations should prefer using [`Locator`] for its auto-waiting and
+/// Most operations should prefer using [`super::Locator`] for its auto-waiting and
 /// re-querying capabilities. Use `ElementHandle` only when you need:
 /// - To pass an element reference to JavaScript
 /// - Low-level DOM operations

@@ -1,24 +1,152 @@
-//! Core types for the `viewpoint-js` macro.
+//! # Viewpoint JS Core - JavaScript Value Conversion
 //!
-//! This crate provides the [`ToJsValue`] trait used for interpolating Rust values
-//! into JavaScript code via the `js!` macro, as well as utilities for escaping
-//! strings for use in JavaScript.
+//! Core types for the `viewpoint-js` macro, providing the [`ToJsValue`] trait
+//! for converting Rust values to JavaScript representations, and utilities
+//! for escaping strings for use in JavaScript.
 //!
-//! # Example
+//! ## Features
+//!
+//! - **[`ToJsValue`] trait**: Convert Rust types to JavaScript value strings
+//! - **String escaping**: Properly escape strings for JavaScript contexts
+//! - **CSS attribute escaping**: Escape values for CSS attribute selectors
+//!
+//! ## Quick Start
 //!
 //! ```rust
-//! use viewpoint_js_core::{ToJsValue, escape_js_string, escape_for_css_attr};
+//! use viewpoint_js_core::{ToJsValue, escape_js_string};
 //!
-//! // ToJsValue for interpolation
+//! // Convert Rust values to JavaScript representation
 //! assert_eq!(42.to_js_value(), "42");
 //! assert_eq!(true.to_js_value(), "true");
 //! assert_eq!("hello".to_js_value(), r#""hello""#);
 //!
-//! // Direct string escaping
-//! assert_eq!(escape_js_string("hello"), r#""hello""#);
+//! // Escape a string for JavaScript
+//! assert_eq!(escape_js_string("line1\nline2"), r#""line1\nline2""#);
+//! ```
 //!
-//! // CSS attribute selector escaping (for use inside JS strings)
-//! assert_eq!(escape_for_css_attr("my-id"), r#"\"my-id\""#);
+//! ## The `ToJsValue` Trait
+//!
+//! The [`ToJsValue`] trait converts Rust values to their JavaScript representations.
+//! It's used by the `js!` macro for value interpolation (`#{expr}`):
+//!
+//! ```rust
+//! use viewpoint_js_core::ToJsValue;
+//!
+//! // Integers
+//! assert_eq!(42i32.to_js_value(), "42");
+//! assert_eq!((-17i64).to_js_value(), "-17");
+//!
+//! // Floats
+//! assert_eq!(3.14f64.to_js_value(), "3.14");
+//! assert_eq!(f64::INFINITY.to_js_value(), "Infinity");
+//! assert_eq!(f64::NAN.to_js_value(), "NaN");
+//!
+//! // Booleans
+//! assert_eq!(true.to_js_value(), "true");
+//! assert_eq!(false.to_js_value(), "false");
+//!
+//! // Strings (properly quoted and escaped)
+//! assert_eq!("hello".to_js_value(), r#""hello""#);
+//! assert_eq!("say \"hi\"".to_js_value(), r#""say \"hi\"""#);
+//! assert_eq!("line1\nline2".to_js_value(), r#""line1\nline2""#);
+//!
+//! // Option types
+//! assert_eq!(Some(42).to_js_value(), "42");
+//! assert_eq!(None::<i32>.to_js_value(), "null");
+//! ```
+//!
+//! ## String Escaping Functions
+//!
+//! ### `escape_js_string` - Double-Quoted Strings
+//!
+//! Escapes a string for use in a double-quoted JavaScript string literal:
+//!
+//! ```rust
+//! use viewpoint_js_core::escape_js_string;
+//!
+//! assert_eq!(escape_js_string("hello"), r#""hello""#);
+//! assert_eq!(escape_js_string("it's fine"), r#""it's fine""#);  // Single quotes preserved
+//! assert_eq!(escape_js_string(r#"say "hi""#), r#""say \"hi\"""#);  // Double quotes escaped
+//! assert_eq!(escape_js_string("tab\there"), r#""tab\there""#);
+//! ```
+//!
+//! ### `escape_js_string_single` - Single-Quoted Strings
+//!
+//! Escapes a string for use in a single-quoted JavaScript string literal:
+//!
+//! ```rust
+//! use viewpoint_js_core::escape_js_string_single;
+//!
+//! assert_eq!(escape_js_string_single("hello"), "'hello'");
+//! assert_eq!(escape_js_string_single("it's"), r"'it\'s'");  // Single quotes escaped
+//! assert_eq!(escape_js_string_single(r#"say "hi""#), r#"'say "hi"'"#);  // Double quotes preserved
+//! ```
+//!
+//! ### `escape_js_contents` - Without Quotes
+//!
+//! Escapes string contents without adding surrounding quotes:
+//!
+//! ```rust
+//! use viewpoint_js_core::escape_js_contents;
+//!
+//! assert_eq!(escape_js_contents("hello"), "hello");
+//! assert_eq!(escape_js_contents("line1\nline2"), r"line1\nline2");
+//! assert_eq!(escape_js_contents(r#"say "hi""#), r#"say \"hi\""#);
+//! ```
+//!
+//! ### `escape_for_css_attr` - CSS Attribute Selectors
+//!
+//! Escapes a string for use in CSS attribute selectors within JavaScript:
+//!
+//! ```rust
+//! use viewpoint_js_core::escape_for_css_attr;
+//!
+//! // For: document.querySelector('[data-testid="submit-button"]')
+//! let attr_value = escape_for_css_attr("submit-button");
+//! assert_eq!(attr_value, r#"\"submit-button\""#);
+//!
+//! // Use in a format string:
+//! let selector = format!(r#"document.querySelector('[data-testid={}]')"#, attr_value);
+//! assert_eq!(selector, r#"document.querySelector('[data-testid=\"submit-button\"]')"#);
+//! ```
+//!
+//! ## Implementing `ToJsValue` for Custom Types
+//!
+//! You can implement `ToJsValue` for your own types:
+//!
+//! ```rust
+//! use viewpoint_js_core::{ToJsValue, escape_js_string};
+//!
+//! struct User {
+//!     name: String,
+//!     age: u32,
+//! }
+//!
+//! impl ToJsValue for User {
+//!     fn to_js_value(&self) -> String {
+//!         format!(
+//!             r#"{{ name: {}, age: {} }}"#,
+//!             escape_js_string(&self.name),
+//!             self.age
+//!         )
+//!     }
+//! }
+//!
+//! let user = User { name: "John".to_string(), age: 30 };
+//! assert_eq!(user.to_js_value(), r#"{ name: "John", age: 30 }"#);
+//! ```
+//!
+//! ## JSON Support
+//!
+//! When the `json` feature is enabled, `serde_json::Value` implements `ToJsValue`:
+//!
+//! ```ignore
+//! use viewpoint_js_core::ToJsValue;
+//! use serde_json::json;
+//!
+//! let value = json!({ "key": "value", "number": 42 });
+//! let js = value.to_js_value();
+//! // Produces valid JavaScript object literal
 //! ```
 
 /// Escape a string for use in a JavaScript string literal (double-quoted).
@@ -212,7 +340,17 @@ fn escape_js_string_contents_into(s: &str, result: &mut String) {
 
 /// A trait for converting Rust types to JavaScript value representations.
 ///
-/// Types that implement this trait can be used in `js!` macro interpolation.
+/// Types that implement this trait can be used in `js!` macro interpolation
+/// with the `#{expr}` syntax.
+///
+/// # Built-in Implementations
+///
+/// - **Integers** (`i8`, `i16`, `i32`, `i64`, `i128`, `isize`, `u8`, `u16`, `u32`, `u64`, `u128`, `usize`): Converted to number strings
+/// - **Floats** (`f32`, `f64`): Converted to number strings, with special handling for `Infinity`, `-Infinity`, and `NaN`
+/// - **Booleans**: Converted to `"true"` or `"false"`
+/// - **Strings** (`str`, `String`): Properly quoted and escaped
+/// - **`Option<T>`**: `Some(v)` delegates to `v.to_js_value()`, `None` becomes `"null"`
+/// - **References**: Delegates to the inner type
 ///
 /// # Examples
 ///
@@ -222,6 +360,8 @@ fn escape_js_string_contents_into(s: &str, result: &mut String) {
 /// assert_eq!(42.to_js_value(), "42");
 /// assert_eq!(true.to_js_value(), "true");
 /// assert_eq!("hello".to_js_value(), r#""hello""#);
+/// assert_eq!(Some(42).to_js_value(), "42");
+/// assert_eq!(None::<i32>.to_js_value(), "null");
 /// ```
 pub trait ToJsValue {
     /// Convert this value to a JavaScript representation.

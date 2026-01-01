@@ -1,4 +1,160 @@
-//! Browser context management.
+//! # Browser Context Management
+//!
+//! Browser contexts are isolated environments within a browser, similar to incognito windows.
+//! Each context has its own cookies, cache, localStorage, and other browser storage.
+//!
+//! ## Features
+//!
+//! - **Isolation**: Each context is completely isolated from others
+//! - **Cookie Management**: Add, get, and clear cookies with [`BrowserContext::add_cookies`], [`BrowserContext::cookies`], [`BrowserContext::clear_cookies`]
+//! - **Storage State**: Save and restore browser state (cookies, localStorage) for authentication
+//! - **Permissions**: Grant permissions like geolocation, camera, microphone
+//! - **Geolocation**: Mock browser location with [`BrowserContext::set_geolocation`]
+//! - **HTTP Credentials**: Configure basic/digest authentication
+//! - **Extra Headers**: Add headers to all requests in the context
+//! - **Offline Mode**: Simulate network offline conditions
+//! - **Event Handling**: Listen for page creation and context close events
+//! - **Init Scripts**: Run scripts before every page load
+//! - **Custom Test ID**: Configure which attribute is used for test IDs
+//! - **Network Routing**: Intercept and mock requests at the context level
+//! - **HAR Recording**: Record network traffic for debugging
+//! - **Tracing**: Record traces for debugging
+//!
+//! ## Quick Start
+//!
+//! ```no_run
+//! use viewpoint_core::{Browser, BrowserContext, Permission};
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//!
+//! // Create a simple context
+//! let context = browser.new_context().await?;
+//!
+//! // Create a context with options
+//! let context = browser.new_context_builder()
+//!     .viewport(1920, 1080)
+//!     .geolocation(37.7749, -122.4194)
+//!     .permissions(vec![Permission::Geolocation])
+//!     .build()
+//!     .await?;
+//!
+//! // Create a page in the context
+//! let page = context.new_page().await?;
+//! page.goto("https://example.com").goto().await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Cookie Management
+//!
+//! ```ignore
+//! use viewpoint_core::{Browser, Cookie, SameSite};
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! // Add cookies
+//! context.add_cookies(vec![
+//!     Cookie {
+//!         name: "session".to_string(),
+//!         value: "abc123".to_string(),
+//!         domain: Some(".example.com".to_string()),
+//!         path: Some("/".to_string()),
+//!         expires: None,
+//!         http_only: Some(true),
+//!         secure: Some(true),
+//!         same_site: Some(SameSite::Lax),
+//!     }
+//! ]).await?;
+//!
+//! // Get all cookies
+//! let cookies = context.cookies(None).await?;
+//!
+//! // Get cookies for specific URLs
+//! let cookies = context.cookies(Some(&["https://example.com"])).await?;
+//!
+//! // Clear all cookies
+//! context.clear_cookies().clear().await?;
+//!
+//! // Clear cookies matching a pattern
+//! context.clear_cookies()
+//!     .domain("example.com")
+//!     .clear()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Storage State
+//!
+//! Save and restore browser state for authentication:
+//!
+//! ```ignore
+//! use viewpoint_core::{Browser, StorageStateSource};
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! // Save storage state after login
+//! context.storage_state()
+//!     .path("auth.json")
+//!     .save()
+//!     .await?;
+//!
+//! // Create a new context with saved state
+//! let context = browser.new_context_builder()
+//!     .storage_state_path("auth.json")
+//!     .build()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Event Handling
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! // Listen for new pages
+//! let handler_id = context.on_page(|page_info| async move {
+//!     println!("New page created: {}", page_info.target_id);
+//!     Ok(())
+//! }).await;
+//!
+//! // Listen for context close
+//! context.on_close(|| async {
+//!     println!("Context closed");
+//!     Ok(())
+//! }).await;
+//!
+//! // Remove handler later
+//! context.off_page(handler_id).await;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Tracing
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! // Start tracing
+//! context.tracing().start().await?;
+//!
+//! // ... perform actions ...
+//!
+//! // Stop and save trace
+//! context.tracing().stop("trace.zip").await?;
+//! # Ok(())
+//! # }
+//! ```
 
 mod api;
 pub mod binding;

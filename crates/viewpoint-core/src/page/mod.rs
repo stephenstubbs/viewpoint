@@ -1,4 +1,210 @@
-//! Page management and navigation.
+//! # Page Management and Interaction
+//!
+//! The `Page` type represents a browser tab and provides methods for navigation,
+//! content interaction, and capturing screenshots or PDFs.
+//!
+//! ## Features
+//!
+//! - **Navigation**: Navigate to URLs, go back/forward, reload
+//! - **Element Interaction**: Locate and interact with elements via [`Locator`]
+//! - **JavaScript Evaluation**: Execute JavaScript in the page context
+//! - **Screenshots**: Capture viewport or full page screenshots
+//! - **PDF Generation**: Generate PDFs from page content
+//! - **Input Devices**: Control keyboard, mouse, and touchscreen
+//! - **Event Handling**: Handle dialogs, downloads, console messages
+//! - **Network Interception**: Route, modify, and mock network requests
+//! - **Clock Mocking**: Control time in the page with [`Clock`]
+//! - **Frames**: Access and interact with iframes via [`Frame`] and [`FrameLocator`]
+//! - **Video Recording**: Record page interactions
+//!
+//! ## Quick Start
+//!
+//! ```no_run
+//! use viewpoint_core::{Browser, DocumentLoadState};
+//! use std::time::Duration;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//! let context = browser.new_context().await?;
+//! let page = context.new_page().await?;
+//!
+//! // Navigate to a URL
+//! page.goto("https://example.com")
+//!     .wait_until(DocumentLoadState::DomContentLoaded)
+//!     .goto()
+//!     .await?;
+//!
+//! // Get page title
+//! let title = page.title().await?;
+//! println!("Page title: {}", title);
+//!
+//! // Get current URL
+//! let url = page.url().await?;
+//! println!("Current URL: {}", url);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Element Interaction with Locators
+//!
+//! ```no_run
+//! use viewpoint_core::{Browser, AriaRole};
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Click a button
+//! page.locator("button#submit").click().await?;
+//!
+//! // Fill an input
+//! page.locator("input[name='email']").fill("user@example.com").await?;
+//!
+//! // Get text content
+//! let text = page.locator("h1").text_content().await?;
+//!
+//! // Use semantic locators
+//! page.get_by_role(AriaRole::Button)
+//!     .with_name("Submit")
+//!     .build()
+//!     .click()
+//!     .await?;
+//!
+//! page.get_by_label("Username").fill("john").await?;
+//! page.get_by_placeholder("Search...").fill("query").await?;
+//! page.get_by_test_id("submit-btn").click().await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Screenshots and PDF
+//!
+//! ```no_run
+//! use viewpoint_core::Browser;
+//! use viewpoint_core::page::PaperFormat;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Viewport screenshot
+//! page.screenshot()
+//!     .path("screenshot.png")
+//!     .capture()
+//!     .await?;
+//!
+//! // Full page screenshot
+//! page.screenshot()
+//!     .full_page(true)
+//!     .path("full-page.png")
+//!     .capture()
+//!     .await?;
+//!
+//! // Generate PDF
+//! page.pdf()
+//!     .format(PaperFormat::A4)
+//!     .path("document.pdf")
+//!     .generate()
+//!     .await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Input Devices
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Keyboard
+//! page.keyboard().press("Tab").await?;
+//! page.keyboard().type_text("Hello World").await?;
+//! page.keyboard().press("Control+a").await?;
+//!
+//! // Mouse
+//! page.mouse().click(100.0, 200.0).await?;
+//! page.mouse().move_to(300.0, 400.0).await?;
+//!
+//! // Touchscreen
+//! page.touchscreen().tap(100.0, 200.0).await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Event Handling
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Handle dialogs
+//! page.on_dialog(|dialog| async move {
+//!     println!("Dialog: {}", dialog.message());
+//!     dialog.accept(None).await
+//! }).await;
+//!
+//! // Handle downloads
+//! page.on_download(|download| async move {
+//!     download.save_as("file.zip").await
+//! }).await;
+//!
+//! // Handle console messages
+//! page.on_console(|msg| async move {
+//!     println!("[{}] {}", msg.message_type(), msg.text());
+//!     Ok(())
+//! }).await;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Frames
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Access iframe by selector
+//! let frame = page.frame_locator("iframe#content");
+//! frame.locator("button").click().await?;
+//!
+//! // Access iframe by name
+//! let frame = page.frame("content-frame").await;
+//! if let Some(f) = frame {
+//!     f.locator("input").fill("text").await?;
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Clock Mocking
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Install clock mocking
+//! page.clock().install().await?;
+//!
+//! // Set to specific time
+//! page.clock().set_fixed_time("2024-01-01T12:00:00Z").await?;
+//!
+//! // Advance time
+//! page.clock().run_for(60000).await?; // 60 seconds
+//! # Ok(())
+//! # }
+//! ```
 
 mod aria_snapshot;
 pub mod binding;
