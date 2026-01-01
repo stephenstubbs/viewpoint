@@ -80,6 +80,7 @@ use std::process::Child;
 use std::sync::Arc;
 use std::time::Duration;
 
+use tempfile::TempDir;
 use tokio::sync::Mutex;
 use tracing::info;
 use viewpoint_cdp::CdpConnection;
@@ -94,7 +95,7 @@ use crate::error::BrowserError;
 
 pub use connector::ConnectOverCdpBuilder;
 pub use context_builder::NewContextBuilder;
-pub use launcher::BrowserBuilder;
+pub use launcher::{BrowserBuilder, UserDataDir};
 
 /// Default timeout for browser operations.
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -118,6 +119,15 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 ///
 /// Use [`is_owned()`](Self::is_owned) to check if this browser was launched by us
 /// (vs connected to an existing process). Owned browsers are terminated when closed.
+///
+/// # User Data Directory
+///
+/// By default, browsers use an isolated temporary directory for user data
+/// (cookies, localStorage, settings). This prevents conflicts when running
+/// multiple browser instances and ensures clean sessions. The temporary
+/// directory is automatically cleaned up when the browser closes or is dropped.
+///
+/// See [`UserDataDir`] for configuration options.
 #[derive(Debug)]
 pub struct Browser {
     /// CDP connection to the browser.
@@ -126,6 +136,9 @@ pub struct Browser {
     process: Option<Mutex<Child>>,
     /// Whether the browser was launched by us (vs connected to).
     owned: bool,
+    /// Temporary user data directory (if using Temp or TempFromTemplate mode).
+    /// Stored here to ensure cleanup on drop.
+    _temp_user_data_dir: Option<TempDir>,
 }
 
 impl Browser {
@@ -171,6 +184,7 @@ impl Browser {
             connection: Arc::new(connection),
             process: None,
             owned: false,
+            _temp_user_data_dir: None,
         })
     }
 
@@ -282,12 +296,27 @@ impl Browser {
         Ok(contexts)
     }
 
-    /// Create a browser from an existing connection and process.
+    /// Create a browser from an existing connection and process (legacy, no temp dir).
     pub(crate) fn from_connection_and_process(connection: CdpConnection, process: Child) -> Self {
         Self {
             connection: Arc::new(connection),
             process: Some(Mutex::new(process)),
             owned: true,
+            _temp_user_data_dir: None,
+        }
+    }
+
+    /// Create a browser from a launch operation with optional temp directory.
+    pub(crate) fn from_launch(
+        connection: CdpConnection,
+        process: Child,
+        temp_user_data_dir: Option<TempDir>,
+    ) -> Self {
+        Self {
+            connection: Arc::new(connection),
+            process: Some(Mutex::new(process)),
+            owned: true,
+            _temp_user_data_dir: temp_user_data_dir,
         }
     }
 

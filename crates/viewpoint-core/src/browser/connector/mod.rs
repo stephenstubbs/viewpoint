@@ -130,6 +130,7 @@ impl ConnectOverCdpBuilder {
             connection: Arc::new(connection),
             process: None,
             owned: false,
+            _temp_user_data_dir: None,
         })
     }
 }

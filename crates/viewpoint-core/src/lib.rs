@@ -12,7 +12,7 @@ pub mod network;
 pub mod page;
 pub mod wait;
 
-pub use browser::{Browser, BrowserBuilder, ConnectOverCdpBuilder, NewContextBuilder};
+pub use browser::{Browser, BrowserBuilder, ConnectOverCdpBuilder, NewContextBuilder, UserDataDir};
 pub use context::{
     BrowserContext, ClearCookiesBuilder, ColorScheme, ContextEventManager, ContextOptions,
     ContextOptionsBuilder, Cookie, ForcedColors, Geolocation, HandlerId, HttpCredentials,
