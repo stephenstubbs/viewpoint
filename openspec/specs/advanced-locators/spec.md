@@ -128,7 +128,11 @@ Roles that allow name from content include:
 - `option` (option)
 - `tab`, `menuitem`, `treeitem`
 - `legend`, `caption`
+- `paragraph` (p) - NOTE: This deviates from strict W3C ARIA 1.2 spec (which lists paragraph as "name prohibited") but is included for practical automation purposes to capture visible text content in snapshots
 - Any element with explicit role allowing name from content
+
+Implicit HTML element roles SHALL include:
+- `p` -> `paragraph` role (per W3C ARIA 1.2 spec)
 
 Node resolution for element refs SHALL be performed concurrently to optimize performance for large DOMs.
 
@@ -151,6 +155,17 @@ Node resolution for element refs SHALL be performed concurrently to optimize per
 - **GIVEN** a page with `<h2 aria-label="Custom Name">Visible Text</h2>`
 - **WHEN** capturing an ARIA snapshot
 - **THEN** the snapshot SHALL include `heading (level 2) "Custom Name"`
+
+#### Scenario: Paragraph text content is captured for automation purposes
+- **GIVEN** a page with `<p>Score: 82</p>`
+- **WHEN** capturing an ARIA snapshot
+- **THEN** the snapshot SHALL include `paragraph "Score: 82"`
+- **NOTE** This enables test automation to verify and interact with paragraph content
+
+#### Scenario: Multiple paragraphs are captured
+- **GIVEN** a page with multiple `<p>` elements containing different text
+- **WHEN** capturing an ARIA snapshot
+- **THEN** each paragraph SHALL appear in the snapshot with its text content
 
 #### Scenario: Large DOM performance
 - **GIVEN** a page with 100+ elements

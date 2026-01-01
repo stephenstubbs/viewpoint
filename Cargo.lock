@@ -1117,6 +1117,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
+name = "nix"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
 name = "nu-ansi-term"
 version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2465,7 +2477,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "viewpoint-cdp"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "base64",
  "futures-util",
@@ -2482,13 +2494,14 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-core"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "base64",
  "bytes",
  "chrono",
  "futures",
  "glob",
+ "nix",
  "parking_lot",
  "regex",
  "reqwest",
@@ -2510,7 +2523,7 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-js"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2524,14 +2537,14 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-js-core"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "serde_json",
 ]
 
 [[package]]
 name = "viewpoint-test"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "serde_json",
  "thiserror",
@@ -2546,7 +2559,7 @@ dependencies = [
 
 [[package]]
 name = "viewpoint-test-macros"
-version = "0.2.14"
+version = "0.2.15"
 dependencies = [
  "proc-macro2",
  "quote",

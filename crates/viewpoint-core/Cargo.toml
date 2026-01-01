@@ -47,5 +47,8 @@ viewpoint-js.workspace = true
 viewpoint-js-core.workspace = true
 zip.workspace = true
 
+[target.'cfg(unix)'.dev-dependencies]
+nix.workspace = true
+
 [lints]
 workspace = true

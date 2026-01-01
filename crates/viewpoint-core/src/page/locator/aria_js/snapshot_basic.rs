@@ -169,6 +169,7 @@ pub fn aria_snapshot_js() -> &'static str {
                     "nav": "navigation",
                     "ol": "list",
                     "option": "option",
+                    "p": "paragraph",
                     "progress": "progressbar",
                     "section": "region",
                     "select": "combobox",
@@ -204,10 +205,13 @@ pub fn aria_snapshot_js() -> &'static str {
 
             // Roles that support "name from content" per W3C ARIA 1.2 spec
             // https://www.w3.org/TR/wai-aria-1.2/#namefromcontent
+            // Note: "paragraph" is added for automation purposes even though W3C spec
+            // marks it as "name prohibited". This ensures paragraph text content
+            // appears in snapshots for testing/automation use cases.
             const nameFromContentRoles = [
                 "button", "cell", "checkbox", "columnheader", "gridcell",
                 "heading", "link", "menuitem", "menuitemcheckbox", "menuitemradio",
-                "option", "radio", "row", "rowheader", "sectionhead",
+                "option", "paragraph", "radio", "row", "rowheader", "sectionhead",
                 "switch", "tab", "tooltip", "treeitem", "listitem"
             ];
 
