@@ -84,8 +84,8 @@ pub fn aria_snapshot_with_refs_js() -> &'static str {
 
                 const snapshot = { role: role, elementIndex: elementIndex };
 
-                // Get accessible name
-                const name = getAccessibleName(el);
+                // Get accessible name (pass role for name-from-content logic)
+                const name = getAccessibleName(el, role);
                 if (name) {
                     snapshot.name = name;
                 }
@@ -212,7 +212,16 @@ pub fn aria_snapshot_with_refs_js() -> &'static str {
                 return typeRoles[type] || "textbox";
             }
 
-            function getAccessibleName(el) {
+            // Roles that support "name from content" per W3C ARIA 1.2 spec
+            // https://www.w3.org/TR/wai-aria-1.2/#namefromcontent
+            const nameFromContentRoles = [
+                "button", "cell", "checkbox", "columnheader", "gridcell",
+                "heading", "link", "menuitem", "menuitemcheckbox", "menuitemradio",
+                "option", "radio", "row", "rowheader", "sectionhead",
+                "switch", "tab", "tooltip", "treeitem", "listitem"
+            ];
+
+            function getAccessibleName(el, role) {
                 // aria-label takes precedence
                 const ariaLabel = el.getAttribute("aria-label");
                 if (ariaLabel) return ariaLabel;
@@ -249,9 +258,11 @@ pub fn aria_snapshot_with_refs_js() -> &'static str {
                     return el.getAttribute("alt") || "";
                 }
 
-                // For buttons and links, use content
-                if (el.tagName === "BUTTON" || el.tagName === "A") {
-                    return el.textContent.trim();
+                // For elements with roles that support "name from content",
+                // derive the accessible name from text content
+                if (role && nameFromContentRoles.includes(role)) {
+                    const text = el.textContent.trim();
+                    if (text) return text;
                 }
 
                 // title attribute as fallback

@@ -103,55 +103,52 @@ The system SHALL provide locator query methods.
 
 The system SHALL support accessibility tree snapshots with frame boundary tracking and element references.
 
-#### Scenario: Get aria snapshot
-- **GIVEN** a locator
-- **WHEN** `locator.aria_snapshot().await` is called
-- **THEN** the accessibility tree for that element is returned
+The ARIA snapshot system SHALL capture accessibility tree structure including:
+- Element roles (explicit or implicit from HTML semantics)
+- Accessible names computed per W3C Accessible Name Computation spec
+- Accessible descriptions
+- State attributes (disabled, checked, expanded, selected, pressed)
+- Heading levels
+- Value attributes for range widgets
 
-#### Scenario: Snapshot includes roles
-- **GIVEN** an aria snapshot
-- **WHEN** the snapshot is examined
-- **THEN** element roles are included
+The accessible name computation SHALL:
+1. Check `aria-labelledby` first (concatenate referenced element text)
+2. Check `aria-label` attribute
+3. For form inputs, check associated `<label>` elements
+4. For images, use `alt` attribute
+5. For elements with roles that allow "name from content", use text content
+6. Use `title` attribute as final fallback
 
-#### Scenario: Snapshot includes names
-- **GIVEN** an aria snapshot
-- **WHEN** the snapshot is examined
-- **THEN** accessible names are included
+Roles that allow name from content include:
+- `heading` (h1-h6)
+- `link` (a with href)
+- `button`
+- `listitem` (li)
+- `cell`, `columnheader`, `rowheader` (td, th)
+- `option` (option)
+- `tab`, `menuitem`, `treeitem`
+- `legend`, `caption`
+- Any element with explicit role allowing name from content
 
-#### Scenario: Snapshot marks iframe as frame boundary
-- **GIVEN** a locator for an element containing an iframe
-- **WHEN** `locator.aria_snapshot().await` is called
-- **THEN** the iframe element has `role: "iframe"` and `is_frame: true`
+#### Scenario: Heading accessible name from text content
+- **GIVEN** a page with `<h2>Page Title</h2>`
+- **WHEN** capturing an ARIA snapshot
+- **THEN** the snapshot SHALL include `heading (level 2) "Page Title"`
 
-#### Scenario: Snapshot includes iframe metadata
-- **GIVEN** a locator for an element containing `<iframe name="payment" src="https://pay.example.com">`
-- **WHEN** `locator.aria_snapshot().await` is called
-- **THEN** the iframe node includes `frame_name: "payment"` and `frame_url: "https://pay.example.com"`
+#### Scenario: List item accessible name from text content
+- **GIVEN** a page with `<li>List Item Text</li>`
+- **WHEN** capturing an ARIA snapshot
+- **THEN** the snapshot SHALL include `listitem "List Item Text"`
 
-#### Scenario: Snapshot collects iframe refs
-- **GIVEN** a page with multiple iframes
-- **WHEN** `page.locator("body").aria_snapshot().await` is called
-- **THEN** the root snapshot's `iframe_refs` contains refs for all iframes found
+#### Scenario: Table cell accessible name from text content
+- **GIVEN** a page with `<td>Cell Value</td>`
+- **WHEN** capturing an ARIA snapshot
+- **THEN** the snapshot SHALL include `cell "Cell Value"`
 
-#### Scenario: Cross-origin iframe shows as boundary only
-- **GIVEN** a page with a cross-origin iframe
-- **WHEN** `locator.aria_snapshot().await` is called
-- **THEN** the iframe is marked with `is_frame: true` but has no children content
-
-#### Scenario: Snapshot includes element refs for all nodes
-- **GIVEN** a page with interactive and non-interactive elements
-- **WHEN** `locator.aria_snapshot().await` is called
-- **THEN** every node in the snapshot has a unique `ref` field (e.g., `e12345`)
-
-#### Scenario: Snapshot refs are stable identifiers
-- **GIVEN** an aria snapshot with element refs
-- **WHEN** the DOM has not been modified
-- **THEN** the same ref can be used to resolve to the original element
-
-#### Scenario: Dynamically created elements get refs
-- **GIVEN** a page where JavaScript dynamically creates elements
-- **WHEN** `locator.aria_snapshot().await` is called after element creation
-- **THEN** the dynamically created elements have valid refs in the snapshot
+#### Scenario: aria-label takes precedence over text content
+- **GIVEN** a page with `<h2 aria-label="Custom Name">Visible Text</h2>`
+- **WHEN** capturing an ARIA snapshot
+- **THEN** the snapshot SHALL include `heading (level 2) "Custom Name"`
 
 ### Requirement: Highlight
 

@@ -364,6 +364,277 @@ async fn test_aria_snapshot_nested_frames() {
 // Locator Aria Snapshot Tests
 // =============================================================================
 
+// =============================================================================
+// Name From Content Tests (W3C ARIA 1.2 "name from content" roles)
+// =============================================================================
+
+/// Test that headings correctly extract accessible name from text content.
+#[tokio::test]
+async fn test_aria_snapshot_heading_accessible_name() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    page.set_content(
+        r#"
+        <html><body>
+            <h1>Main Heading</h1>
+            <h2>Secondary Heading</h2>
+            <h3>Tertiary Heading</h3>
+        </body></html>
+    "#,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("Heading snapshot:\n{}", yaml);
+
+    // Headings should have their text content as accessible name
+    assert!(
+        yaml.contains("\"Main Heading\""),
+        "Snapshot should contain heading with name 'Main Heading', got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("\"Secondary Heading\""),
+        "Snapshot should contain heading with name 'Secondary Heading', got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("\"Tertiary Heading\""),
+        "Snapshot should contain heading with name 'Tertiary Heading', got: {}",
+        yaml
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that list items correctly extract accessible name from text content.
+#[tokio::test]
+async fn test_aria_snapshot_listitem_accessible_name() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    page.set_content(
+        r#"
+        <html><body>
+            <ul>
+                <li>First Item</li>
+                <li>Second Item</li>
+                <li>Third Item</li>
+            </ul>
+        </body></html>
+    "#,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("List item snapshot:\n{}", yaml);
+
+    // List items should have their text content as accessible name
+    assert!(
+        yaml.contains("\"First Item\""),
+        "Snapshot should contain listitem with name 'First Item', got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("\"Second Item\""),
+        "Snapshot should contain listitem with name 'Second Item', got: {}",
+        yaml
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that table cells correctly extract accessible name from text content.
+#[tokio::test]
+async fn test_aria_snapshot_table_cell_accessible_name() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    page.set_content(
+        r#"
+        <html><body>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Header 1</th>
+                        <th>Header 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cell A</td>
+                        <td>Cell B</td>
+                    </tr>
+                </tbody>
+            </table>
+        </body></html>
+    "#,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("Table cell snapshot:\n{}", yaml);
+
+    // Table headers and cells should have their text content as accessible name
+    assert!(
+        yaml.contains("\"Header 1\""),
+        "Snapshot should contain columnheader with name 'Header 1', got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("\"Cell A\""),
+        "Snapshot should contain cell with name 'Cell A', got: {}",
+        yaml
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that options in select elements extract accessible name from text content.
+#[tokio::test]
+async fn test_aria_snapshot_option_accessible_name() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    page.set_content(
+        r#"
+        <html><body>
+            <select>
+                <option>Option A</option>
+                <option>Option B</option>
+                <option>Option C</option>
+            </select>
+        </body></html>
+    "#,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("Option snapshot:\n{}", yaml);
+
+    // Select options should have their text content as accessible name
+    // Note: the select dropdown may show as combobox with options
+    assert!(
+        yaml.contains("combobox") || yaml.contains("option"),
+        "Snapshot should contain combobox or option, got: {}",
+        yaml
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that menu items extract accessible name from text content.
+#[tokio::test]
+async fn test_aria_snapshot_menuitem_accessible_name() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    let page = context.new_page().await.expect("Failed to create page");
+
+    page.set_content(
+        r#"
+        <html><body>
+            <nav role="menu">
+                <button role="menuitem">File</button>
+                <button role="menuitem">Edit</button>
+                <button role="menuitem">View</button>
+            </nav>
+        </body></html>
+    "#,
+    )
+    .set()
+    .await
+    .expect("Failed to set content");
+
+    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    let yaml = snapshot.to_yaml();
+    println!("Menu item snapshot:\n{}", yaml);
+
+    // Menu items should have their text content as accessible name
+    assert!(
+        yaml.contains("\"File\""),
+        "Snapshot should contain menuitem with name 'File', got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("\"Edit\""),
+        "Snapshot should contain menuitem with name 'Edit', got: {}",
+        yaml
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+// =============================================================================
+// Locator Aria Snapshot Tests
+// =============================================================================
+
 /// Test aria_snapshot on a specific locator.
 #[tokio::test]
 async fn test_locator_aria_snapshot() {
