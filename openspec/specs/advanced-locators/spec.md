@@ -130,6 +130,8 @@ Roles that allow name from content include:
 - `legend`, `caption`
 - Any element with explicit role allowing name from content
 
+Node resolution for element refs SHALL be performed concurrently to optimize performance for large DOMs.
+
 #### Scenario: Heading accessible name from text content
 - **GIVEN** a page with `<h2>Page Title</h2>`
 - **WHEN** capturing an ARIA snapshot
@@ -149,6 +151,12 @@ Roles that allow name from content include:
 - **GIVEN** a page with `<h2 aria-label="Custom Name">Visible Text</h2>`
 - **WHEN** capturing an ARIA snapshot
 - **THEN** the snapshot SHALL include `heading (level 2) "Custom Name"`
+
+#### Scenario: Large DOM performance
+- **GIVEN** a page with 100+ elements
+- **WHEN** capturing an ARIA snapshot with refs
+- **THEN** node resolution SHALL use concurrent CDP calls
+- **AND** the snapshot SHALL complete within a reasonable time
 
 ### Requirement: Highlight
 
@@ -196,6 +204,8 @@ The system SHALL support capturing accessibility snapshots for individual frames
 
 The system SHALL support capturing complete accessibility snapshots across all frames with element references.
 
+Frame snapshots SHALL be captured concurrently when capturing multi-frame snapshots to optimize performance.
+
 #### Scenario: Page-level multi-frame snapshot
 
 - **GIVEN** a page with same-origin iframes
@@ -230,6 +240,12 @@ The system SHALL support capturing complete accessibility snapshots across all f
 - **WHEN** `page.locator_from_ref(ref)` is called
 - **THEN** a Locator targeting that element is returned (even if the element is in an iframe)
 
+#### Scenario: Parallel frame capture
+- **GIVEN** a page with multiple same-origin iframes
+- **WHEN** `page.aria_snapshot_with_frames().await` is called
+- **THEN** child frame snapshots SHALL be captured concurrently
+- **AND** the total capture time SHALL be approximately the time of the slowest frame (not cumulative)
+
 ### Requirement: Element Ref Resolution
 
 The system SHALL support resolving snapshot refs back to elements for interaction.
@@ -263,4 +279,27 @@ The system SHALL support resolving snapshot refs back to elements for interactio
 - **GIVEN** a ref string from an aria snapshot
 - **WHEN** the ref is examined
 - **THEN** it is an opaque string that does not expose CDP-specific details to users
+
+### Requirement: Snapshot Performance Options
+
+The system SHALL support configuration options for snapshot capture performance tuning.
+
+#### Scenario: Configure max concurrency for node resolution
+- **GIVEN** a page with many elements
+- **WHEN** `page.aria_snapshot_with_options(SnapshotOptions { max_concurrency: Some(25), ..Default::default() }).await` is called
+- **THEN** at most 25 concurrent CDP calls SHALL be made for node resolution
+- **AND** the snapshot SHALL complete successfully
+
+#### Scenario: Disable ref resolution for faster snapshots
+- **GIVEN** a page with many elements
+- **WHEN** `page.aria_snapshot_with_options(SnapshotOptions { include_refs: false, ..Default::default() }).await` is called
+- **THEN** the snapshot SHALL be captured without resolving element refs
+- **AND** all `node_ref` fields SHALL be `None`
+- **AND** the capture SHALL complete faster than with refs enabled
+
+#### Scenario: Default options match existing behavior
+- **GIVEN** a page with elements
+- **WHEN** `page.aria_snapshot().await` is called
+- **THEN** the behavior SHALL match `page.aria_snapshot_with_options(SnapshotOptions::default()).await`
+- **AND** element refs SHALL be included in the snapshot
 

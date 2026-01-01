@@ -207,6 +207,7 @@
 //! ```
 
 mod aria_snapshot;
+pub use aria_snapshot::SnapshotOptions;
 pub mod binding;
 mod ref_resolution;
 pub mod clock;

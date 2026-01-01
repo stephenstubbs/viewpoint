@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use futures::stream::{FuturesUnordered, StreamExt};
 use tracing::{debug, instrument, trace};
 use viewpoint_cdp::protocol::dom::{BackendNodeId, DescribeNodeParams, DescribeNodeResult};
 use viewpoint_cdp::protocol::runtime::EvaluateParams;
@@ -9,7 +10,7 @@ use viewpoint_js::js;
 
 use super::Frame;
 use crate::error::PageError;
-use crate::page::aria_snapshot::apply_refs_to_snapshot;
+use crate::page::aria_snapshot::{apply_refs_to_snapshot, SnapshotOptions};
 use crate::page::locator::aria_js::aria_snapshot_with_refs_js;
 
 impl Frame {
@@ -39,22 +40,54 @@ impl Frame {
     /// - The snapshot cannot be parsed
     #[instrument(level = "debug", skip(self), fields(frame_id = %self.id))]
     pub async fn aria_snapshot(&self) -> Result<crate::page::locator::AriaSnapshot, PageError> {
+        self.aria_snapshot_with_options(SnapshotOptions::default())
+            .await
+    }
+
+    /// Capture an ARIA accessibility snapshot with custom options.
+    ///
+    /// See [`aria_snapshot`](Self::aria_snapshot) for details.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::SnapshotOptions;
+    ///
+    /// # async fn example(frame: &viewpoint_core::Frame) -> Result<(), viewpoint_core::CoreError> {
+    /// // Skip ref resolution for maximum performance
+    /// let options = SnapshotOptions::default().include_refs(false);
+    /// let snapshot = frame.aria_snapshot_with_options(options).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[instrument(level = "debug", skip(self, options), fields(frame_id = %self.id))]
+    pub async fn aria_snapshot_with_options(
+        &self,
+        options: SnapshotOptions,
+    ) -> Result<crate::page::locator::AriaSnapshot, PageError> {
         if self.is_detached() {
             return Err(PageError::EvaluationFailed("Frame is detached".to_string()));
         }
 
         // Capture snapshot with element collection for ref resolution
-        self.capture_snapshot_with_refs().await
+        self.capture_snapshot_with_refs(options).await
     }
 
     /// Internal method to capture a snapshot with refs resolved.
     ///
     /// This uses a two-phase approach:
     /// 1. JS traversal collects the snapshot and element references
-    /// 2. CDP calls resolve each element to its backendNodeId
-    #[instrument(level = "debug", skip(self), fields(frame_id = %self.id))]
+    /// 2. CDP calls resolve each element to its backendNodeId (in parallel)
+    ///
+    /// # Performance Optimizations
+    ///
+    /// - Uses `Runtime.getProperties` to batch-fetch all array element object IDs
+    /// - Uses `FuturesUnordered` to resolve node IDs in parallel
+    /// - Configurable concurrency limit to avoid overwhelming the browser
+    #[instrument(level = "debug", skip(self, options), fields(frame_id = %self.id))]
     pub(super) async fn capture_snapshot_with_refs(
         &self,
+        options: SnapshotOptions,
     ) -> Result<crate::page::locator::AriaSnapshot, PageError> {
         let snapshot_fn = aria_snapshot_with_refs_js();
 
@@ -99,7 +132,9 @@ impl Frame {
         })?;
 
         // Get the snapshot property (by value)
-        let snapshot_value = self.get_property_value(&result_object_id, "snapshot").await?;
+        let snapshot_value = self
+            .get_property_value(&result_object_id, "snapshot")
+            .await?;
 
         // Parse the snapshot
         let mut snapshot: crate::page::locator::AriaSnapshot =
@@ -107,54 +142,148 @@ impl Frame {
                 PageError::EvaluationFailed(format!("Failed to parse aria snapshot: {e}"))
             })?;
 
-        // Get the elements array as a RemoteObject
-        let elements_result = self.get_property_object(&result_object_id, "elements").await?;
-
-        if let Some(elements_object_id) = elements_result {
-            // Get the length of the elements array
-            let length_value = self
-                .get_property_value(&elements_object_id, "length")
+        // Only resolve refs if requested
+        if options.get_include_refs() {
+            // Get the elements array as a RemoteObject
+            let elements_result = self
+                .get_property_object(&result_object_id, "elements")
                 .await?;
-            let element_count = length_value.as_u64().unwrap_or(0) as usize;
 
-            debug!(element_count = element_count, "Resolving element refs");
+            if let Some(elements_object_id) = elements_result {
+                // Batch-fetch all array element object IDs using Runtime.getProperties
+                let element_object_ids = self.get_all_array_elements(&elements_object_id).await?;
+                let element_count = element_object_ids.len();
 
-            // Build a map of element index -> backendNodeId
-            let mut ref_map: HashMap<usize, BackendNodeId> = HashMap::new();
+                debug!(
+                    element_count = element_count,
+                    max_concurrency = options.get_max_concurrency(),
+                    "Resolving element refs in parallel"
+                );
 
-            for i in 0..element_count {
-                // Get the element at index i
-                if let Ok(Some(element_object_id)) =
-                    self.get_array_element(&elements_object_id, i).await
-                {
-                    // Get the backendNodeId for this element
-                    match self.describe_node(&element_object_id).await {
-                        Ok(backend_node_id) => {
-                            ref_map.insert(i, backend_node_id);
-                            trace!(
-                                index = i,
-                                backend_node_id = backend_node_id,
-                                "Resolved element ref"
-                            );
-                        }
-                        Err(e) => {
-                            debug!(index = i, error = %e, "Failed to get backendNodeId for element");
-                        }
-                    }
-                }
+                // Resolve all node IDs in parallel with concurrency limit
+                let ref_map = self
+                    .resolve_node_ids_parallel(element_object_ids, options.get_max_concurrency())
+                    .await;
+
+                debug!(
+                    resolved_count = ref_map.len(),
+                    total_count = element_count,
+                    "Completed parallel ref resolution"
+                );
+
+                // Apply refs to the snapshot tree
+                apply_refs_to_snapshot(&mut snapshot, &ref_map);
+
+                // Release the elements array to free memory
+                let _ = self.release_object(&elements_object_id).await;
             }
-
-            // Apply refs to the snapshot tree
-            apply_refs_to_snapshot(&mut snapshot, &ref_map);
-
-            // Release the elements array to free memory
-            let _ = self.release_object(&elements_object_id).await;
         }
 
         // Release the result object
         let _ = self.release_object(&result_object_id).await;
 
         Ok(snapshot)
+    }
+
+    /// Batch-fetch all array element object IDs using `Runtime.getProperties`.
+    ///
+    /// This replaces N individual `get_array_element()` calls with a single CDP call,
+    /// significantly reducing round-trips for large arrays.
+    async fn get_all_array_elements(
+        &self,
+        array_object_id: &str,
+    ) -> Result<Vec<(usize, String)>, PageError> {
+        #[derive(Debug, serde::Deserialize)]
+        struct PropertyDescriptor {
+            name: String,
+            value: Option<viewpoint_cdp::protocol::runtime::RemoteObject>,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct GetPropertiesResult {
+            result: Vec<PropertyDescriptor>,
+        }
+
+        let result: GetPropertiesResult = self
+            .connection
+            .send_command(
+                "Runtime.getProperties",
+                Some(serde_json::json!({
+                    "objectId": array_object_id,
+                    "ownProperties": true,
+                    "generatePreview": false
+                })),
+                Some(&self.session_id),
+            )
+            .await?;
+
+        // Filter to numeric indices and extract object IDs
+        let mut elements: Vec<(usize, String)> = Vec::new();
+
+        for prop in result.result {
+            // Parse numeric indices (array elements)
+            if let Ok(index) = prop.name.parse::<usize>() {
+                if let Some(value) = prop.value {
+                    if let Some(object_id) = value.object_id {
+                        elements.push((index, object_id));
+                    }
+                }
+            }
+        }
+
+        // Sort by index to maintain order
+        elements.sort_by_key(|(index, _)| *index);
+
+        trace!(element_count = elements.len(), "Batch-fetched array elements");
+
+        Ok(elements)
+    }
+
+    /// Resolve node IDs in parallel with a concurrency limit.
+    ///
+    /// Uses chunked processing with `FuturesUnordered` to limit concurrency
+    /// and avoid overwhelming the browser's CDP connection.
+    async fn resolve_node_ids_parallel(
+        &self,
+        element_object_ids: Vec<(usize, String)>,
+        max_concurrency: usize,
+    ) -> HashMap<usize, BackendNodeId> {
+        let mut ref_map = HashMap::new();
+
+        // Process in chunks to limit concurrency
+        for chunk in element_object_ids.chunks(max_concurrency) {
+            let futures: FuturesUnordered<_> = chunk
+                .iter()
+                .map(|(index, object_id)| {
+                    let index = *index;
+                    let object_id = object_id.clone();
+                    async move {
+                        match self.describe_node(&object_id).await {
+                            Ok(backend_node_id) => {
+                                trace!(
+                                    index = index,
+                                    backend_node_id = backend_node_id,
+                                    "Resolved element ref"
+                                );
+                                Some((index, backend_node_id))
+                            }
+                            Err(e) => {
+                                debug!(index = index, error = %e, "Failed to get backendNodeId for element");
+                                None
+                            }
+                        }
+                    }
+                })
+                .collect();
+
+            // Collect all results from this chunk
+            let results: Vec<_> = futures.collect().await;
+            for result in results.into_iter().flatten() {
+                ref_map.insert(result.0, result.1);
+            }
+        }
+
+        ref_map
     }
 
     /// Get a property value from a RemoteObject by name.
@@ -202,33 +331,6 @@ impl Frame {
                 Some(serde_json::json!({
                     "objectId": object_id,
                     "functionDeclaration": format!("function() {{ return this.{}; }}", property),
-                    "returnByValue": false
-                })),
-                Some(&self.session_id),
-            )
-            .await?;
-
-        Ok(result.result.object_id)
-    }
-
-    /// Get an element from an array by index.
-    pub(super) async fn get_array_element(
-        &self,
-        array_object_id: &str,
-        index: usize,
-    ) -> Result<Option<String>, PageError> {
-        #[derive(Debug, serde::Deserialize)]
-        struct CallResult {
-            result: viewpoint_cdp::protocol::runtime::RemoteObject,
-        }
-
-        let result: CallResult = self
-            .connection
-            .send_command(
-                "Runtime.callFunctionOn",
-                Some(serde_json::json!({
-                    "objectId": array_object_id,
-                    "functionDeclaration": format!("function() {{ return this[{}]; }}", index),
                     "returnByValue": false
                 })),
                 Some(&self.session_id),

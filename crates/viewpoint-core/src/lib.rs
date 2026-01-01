@@ -377,6 +377,8 @@ pub use page::{
     ScriptType,
     Selector,
     SetContentBuilder,
+    // Snapshot options
+    SnapshotOptions,
     StyleTagBuilder,
     TextOptions,
     TimeValue,
