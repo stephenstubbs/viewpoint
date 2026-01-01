@@ -13,6 +13,91 @@
 //! - **HAR Replay**: Replay recorded traffic for testing
 //! - **WebSocket Monitoring**: Track WebSocket connections and messages
 //!
+//! ## Mock API Responses
+//!
+//! Mock API endpoints to test UI without a backend:
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//!
+//! # async fn example() -> Result<(), viewpoint_core::CoreError> {
+//! # let browser = Browser::launch().headless(true).launch().await?;
+//! # let context = browser.new_context().await?;
+//! # let page = context.new_page().await?;
+//! // Mock a REST API endpoint with JSON response
+//! page.route("**/api/users", |route| async move {
+//!     route.fulfill()
+//!         .status(200)
+//!         .content_type("application/json")
+//!         .body(r#"{"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]}"#)
+//!         .fulfill()
+//!         .await
+//! }).await?;
+//!
+//! // Mock different responses based on request method
+//! page.route("**/api/items", |route| async move {
+//!     let method = route.request().method();
+//!     match method.as_str() {
+//!         "GET" => {
+//!             route.fulfill()
+//!                 .status(200)
+//!                 .content_type("application/json")
+//!                 .body(r#"[{"id": 1, "name": "Item 1"}]"#)
+//!                 .fulfill()
+//!                 .await
+//!         }
+//!         "POST" => {
+//!             route.fulfill()
+//!                 .status(201)
+//!                 .content_type("application/json")
+//!                 .body(r#"{"id": 2, "name": "New Item", "created": true}"#)
+//!                 .fulfill()
+//!                 .await
+//!         }
+//!         "DELETE" => {
+//!             route.fulfill()
+//!                 .status(204)
+//!                 .fulfill()
+//!                 .await
+//!         }
+//!         _ => route.continue_route().continue_route().await
+//!     }
+//! }).await?;
+//!
+//! // Mock error responses
+//! page.route("**/api/error", |route| async move {
+//!     route.fulfill()
+//!         .status(500)
+//!         .content_type("application/json")
+//!         .body(r#"{"error": "Internal Server Error", "code": "SERVER_ERROR"}"#)
+//!         .fulfill()
+//!         .await
+//! }).await?;
+//!
+//! // Mock 404 Not Found
+//! page.route("**/api/not-found", |route| async move {
+//!     route.fulfill()
+//!         .status(404)
+//!         .content_type("application/json")
+//!         .body(r#"{"error": "Resource not found"}"#)
+//!         .fulfill()
+//!         .await
+//! }).await?;
+//!
+//! // Mock delayed response for loading state testing
+//! page.route("**/api/slow", |route| async move {
+//!     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+//!     route.fulfill()
+//!         .status(200)
+//!         .content_type("application/json")
+//!         .body(r#"{"data": "loaded"}"#)
+//!         .fulfill()
+//!         .await
+//! }).await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Request Interception
 //!
 //! Use [`Route`] to intercept and handle network requests:
@@ -24,25 +109,15 @@
 //! # let browser = Browser::launch().headless(true).launch().await?;
 //! # let context = browser.new_context().await?;
 //! # let page = context.new_page().await?;
-//! // Mock an API response
-//! page.route("**/api/users", |route| async move {
-//!     route.fulfill()
-//!         .status(200)
-//!         .content_type("application/json")
-//!         .body(r#"[{"id": 1, "name": "Alice"}]"#)
-//!         .fulfill()
-//!         .await
-//! }).await?;
-//!
-//! // Block images
+//! // Block images for faster tests
 //! page.route("**/*.{png,jpg,jpeg,gif,webp}", |route| async move {
 //!     route.abort().await
 //! }).await?;
 //!
-//! // Modify request headers
+//! // Add authentication header to all API requests
 //! page.route("**/api/**", |route| async move {
 //!     route.continue_route()
-//!         .header("Authorization", "Bearer token123")
+//!         .header("Authorization", "Bearer test-token-123")
 //!         .continue_route()
 //!         .await
 //! }).await?;
@@ -50,9 +125,20 @@
 //! // Modify POST body
 //! page.route("**/api/submit", |route| async move {
 //!     route.continue_route()
-//!         .post_data(r#"{"modified": true}"#)
+//!         .post_data(r#"{"modified": true, "test": true}"#)
 //!         .continue_route()
 //!         .await
+//! }).await?;
+//!
+//! // Intercept and inspect request before continuing
+//! page.route("**/api/log", |route| async move {
+//!     let request = route.request();
+//!     println!("Request URL: {}", request.url());
+//!     println!("Request method: {}", request.method());
+//!     if let Some(body) = request.post_data() {
+//!         println!("Request body: {}", body);
+//!     }
+//!     route.continue_route().continue_route().await
 //! }).await?;
 //! # Ok(())
 //! # }

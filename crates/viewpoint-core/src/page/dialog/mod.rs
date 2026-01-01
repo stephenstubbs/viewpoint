@@ -2,6 +2,69 @@
 //!
 //! This module provides functionality for handling JavaScript dialogs
 //! (alert, confirm, prompt, beforeunload).
+//!
+//! # Intercepting and Responding to Dialogs
+//!
+//! Browser dialogs block page execution until handled. Use `page.on_dialog()`
+//! to intercept dialogs and respond with accept or dismiss:
+//!
+//! ```ignore
+//! use viewpoint_core::{Browser, Dialog, DialogType};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//! let context = browser.new_context().await?;
+//! let page = context.new_page().await?;
+//!
+//! // Handle all dialogs by accepting them
+//! page.on_dialog(|dialog| async move {
+//!     match dialog.type_() {
+//!         DialogType::Alert => {
+//!             println!("Alert: {}", dialog.message());
+//!             dialog.accept().await
+//!         }
+//!         DialogType::Confirm => {
+//!             println!("Confirm: {}", dialog.message());
+//!             dialog.accept().await  // Click "OK"
+//!         }
+//!         DialogType::Prompt => {
+//!             println!("Prompt: {}", dialog.message());
+//!             // Respond with custom text
+//!             dialog.accept_with_text("my response").await
+//!         }
+//!         DialogType::Beforeunload => {
+//!             dialog.dismiss().await  // Stay on page
+//!         }
+//!     }
+//! }).await;
+//!
+//! page.goto("https://example.com").goto().await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Dismissing Dialogs
+//!
+//! To dismiss (cancel) a dialog instead of accepting it:
+//!
+//! ```ignore
+//! page.on_dialog(|dialog| async move {
+//!     dialog.dismiss().await  // Click "Cancel" or dismiss
+//! }).await;
+//! ```
+//!
+//! # Responding to Prompt Dialogs with Custom Values
+//!
+//! ```ignore
+//! page.on_dialog(|dialog| async move {
+//!     if matches!(dialog.type_(), DialogType::Prompt) {
+//!         // Enter custom text in the prompt
+//!         dialog.accept_with_text("custom value").await
+//!     } else {
+//!         dialog.accept().await
+//!     }
+//! }).await;
+//! ```
 
 use std::sync::Arc;
 

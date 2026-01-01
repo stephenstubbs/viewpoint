@@ -1,7 +1,222 @@
-//! WebSocket monitoring.
+//! WebSocket monitoring and testing.
 //!
 //! This module provides functionality for monitoring WebSocket connections,
-//! including frame events for sent and received messages.
+//! including frame events for sent and received messages. Use this to test
+//! real-time features without polling.
+//!
+//! # Strategy for Testing Dynamic WebSocket Content
+//!
+//! Testing WebSocket-driven dynamic content requires:
+//! 1. Set up WebSocket listeners **before** navigation
+//! 2. Navigate to the page that establishes WebSocket connections
+//! 3. Use Viewpoint's auto-waiting locator assertions to verify DOM updates
+//! 4. Optionally capture WebSocket messages for detailed verification
+//!
+//! ## Verifying WebSocket Data Updates in the DOM (Without Polling)
+//!
+//! The key insight is to use Viewpoint's built-in auto-waiting assertions
+//! (`expect(locator).to_have_text()`, `to_be_visible()`, etc.) which automatically
+//! wait for conditions without manual polling:
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//! use viewpoint_test::expect;  // from viewpoint-test crate
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//! let context = browser.new_context().await?;
+//! let page = context.new_page().await?;
+//!
+//! // Navigate to page with WebSocket-driven live data
+//! page.goto("https://example.com/live-dashboard").goto().await?;
+//!
+//! // Auto-waiting assertions verify DOM updates without polling!
+//! // These wait up to 30 seconds for the condition to be true
+//!
+//! // Verify that live data container becomes visible
+//! expect(page.locator(".live-data-container")).to_be_visible().await?;
+//!
+//! // Verify that WebSocket data rendered specific text content
+//! expect(page.locator(".stock-price")).to_contain_text("$").await?;
+//!
+//! // Verify multiple data points updated via WebSocket
+//! expect(page.locator(".connection-status")).to_have_text("Connected").await?;
+//! expect(page.locator(".last-update")).not().to_be_empty().await?;
+//!
+//! // Verify a list populated by WebSocket messages
+//! expect(page.locator(".message-list li")).to_have_count_greater_than(0).await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Capturing and Verifying Specific WebSocket Messages
+//!
+//! For more detailed verification, capture WebSocket frames and correlate
+//! with DOM state:
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//! use viewpoint_test::expect;
+//! use std::sync::Arc;
+//! use tokio::sync::Mutex;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//! let context = browser.new_context().await?;
+//! let page = context.new_page().await?;
+//!
+//! // Capture WebSocket messages for verification
+//! let received_messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+//! let messages_clone = received_messages.clone();
+//!
+//! // Set up WebSocket monitoring BEFORE navigation
+//! page.on_websocket(move |ws| {
+//!     let messages = messages_clone.clone();
+//!     async move {
+//!         println!("WebSocket connected: {}", ws.url());
+//!         
+//!         // Capture all received frames
+//!         ws.on_framereceived(move |frame| {
+//!             let messages = messages.clone();
+//!             async move {
+//!                 if frame.is_text() {
+//!                     messages.lock().await.push(frame.payload().to_string());
+//!                 }
+//!             }
+//!         }).await;
+//!     }
+//! }).await;
+//!
+//! // Navigate to the page
+//! page.goto("https://example.com/realtime-chat").goto().await?;
+//!
+//! // Wait for WebSocket data to be reflected in the DOM
+//! // The auto-waiting assertion handles timing without polling
+//! expect(page.locator(".chat-messages")).to_be_visible().await?;
+//! expect(page.locator(".chat-message")).to_have_count_greater_than(0).await?;
+//!
+//! // Verify the DOM content matches what was received via WebSocket
+//! let messages = received_messages.lock().await;
+//! if !messages.is_empty() {
+//!     // Parse the WebSocket message (assuming JSON)
+//!     let first_msg = &messages[0];
+//!     if first_msg.contains("\"text\":") {
+//!         // Verify the message text appears in the DOM
+//!         let msg_text = page.locator(".chat-message").first().text_content().await?;
+//!         assert!(msg_text.is_some(), "Message should be rendered in DOM");
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Waiting for Specific WebSocket Events Before DOM Verification
+//!
+//! Use synchronization primitives to coordinate between WebSocket events
+//! and DOM assertions:
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//! use viewpoint_test::expect;
+//! use std::sync::Arc;
+//! use std::sync::atomic::{AtomicBool, Ordering};
+//! use tokio::sync::Notify;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let browser = Browser::launch().headless(true).launch().await?;
+//! let context = browser.new_context().await?;
+//! let page = context.new_page().await?;
+//!
+//! // Use Notify to signal when specific data arrives
+//! let data_ready = Arc::new(Notify::new());
+//! let data_ready_clone = data_ready.clone();
+//!
+//! page.on_websocket(move |ws| {
+//!     let notify = data_ready_clone.clone();
+//!     async move {
+//!         ws.on_framereceived(move |frame| {
+//!             let notify = notify.clone();
+//!             async move {
+//!                 // Signal when we receive the expected data
+//!                 if frame.payload().contains("\"status\":\"ready\"") {
+//!                     notify.notify_one();
+//!                 }
+//!             }
+//!         }).await;
+//!     }
+//! }).await;
+//!
+//! page.goto("https://example.com/app").goto().await?;
+//!
+//! // Wait for the specific WebSocket message (with timeout)
+//! tokio::select! {
+//!     _ = data_ready.notified() => {
+//!         // Data arrived, now verify DOM reflects it
+//!         expect(page.locator(".status-indicator")).to_have_text("Ready").await?;
+//!         expect(page.locator(".data-panel")).to_be_visible().await?;
+//!     }
+//!     _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+//!         panic!("Timeout waiting for WebSocket data");
+//!     }
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Complete Example: Testing a Real-Time Stock Ticker
+//!
+//! ```ignore
+//! use viewpoint_core::Browser;
+//! use viewpoint_test::{TestHarness, expect};
+//! use std::sync::Arc;
+//! use tokio::sync::Mutex;
+//!
+//! #[tokio::test]
+//! async fn test_stock_ticker_updates() -> Result<(), Box<dyn std::error::Error>> {
+//!     let harness = TestHarness::new().await?;
+//!     let page = harness.page();
+//!
+//!     // Track stock updates received via WebSocket
+//!     let stock_updates: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+//!     let updates_clone = stock_updates.clone();
+//!
+//!     // Monitor WebSocket for stock price updates
+//!     page.on_websocket(move |ws| {
+//!         let updates = updates_clone.clone();
+//!         async move {
+//!             if ws.url().contains("stock-feed") {
+//!                 ws.on_framereceived(move |frame| {
+//!                     let updates = updates.clone();
+//!                     async move {
+//!                         updates.lock().await.push(frame.payload().to_string());
+//!                     }
+//!                 }).await;
+//!             }
+//!         }
+//!     }).await;
+//!
+//!     // Navigate to the stock ticker page
+//!     page.goto("https://example.com/stocks").goto().await?;
+//!
+//!     // Verify the ticker display updates (auto-waits for DOM changes)
+//!     expect(page.locator(".stock-ticker")).to_be_visible().await?;
+//!     expect(page.locator(".stock-price")).to_contain_text("$").await?;
+//!     
+//!     // Verify connection indicator shows live status
+//!     expect(page.locator(".connection-status"))
+//!         .to_have_text("Live")
+//!         .await?;
+//!
+//!     // Verify at least one price update was rendered
+//!     expect(page.locator(".price-change")).not().to_be_empty().await?;
+//!
+//!     // Confirm WebSocket messages were received
+//!     let updates = stock_updates.lock().await;
+//!     assert!(!updates.is_empty(), "Should have received stock updates via WebSocket");
+//!
+//!     Ok(())
+//! }
+//! ```
 
 // Allow dead code for websocket monitoring scaffolding (spec: network-events)
 

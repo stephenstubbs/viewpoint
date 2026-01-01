@@ -60,10 +60,16 @@
 - [x] 8.2 Add appropriate exclusion patterns (tests, internal modules)
 - [x] 8.3 Add `rules` field with best practices for AI agents
 - [x] 8.4 Add descriptive `projectTitle` and `description`
-- [ ] 8.5 Trigger re-index on Context7 and verify improvement
+- [x] 8.5 Trigger re-index on Context7 and verify improvement
 
 ## 9. Validation
 - [x] 9.1 Run `cargo doc --no-deps --all-features` with no warnings
 - [x] 9.2 Review generated documentation for completeness
 - [x] 9.3 Verify all code examples compile (`cargo test --doc`)
-- [ ] 9.4 Check Context7 benchmark score improvement
+- [x] 9.4 Check Context7 benchmark score improvement
+
+## 10. Targeted Benchmark Improvements (Added)
+Based on failing benchmark questions, added targeted documentation:
+- [x] 10.1 Add accessibility testing at scale examples (multi-page, parallel auditing)
+- [x] 10.2 Add form filling with multiple locators examples (label, placeholder, test-id, role)
+- [x] 10.3 Add mock API network interception examples (JSON responses, error mocking, method-based routing)

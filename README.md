@@ -287,6 +287,103 @@ async fn test_accessibility() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Accessibility Testing at Scale
+
+For testing accessibility across multiple pages while managing performance, use a shared browser instance and validate ARIA attributes and semantic HTML:
+
+```rust
+use viewpoint_test::{TestHarness, expect};
+use viewpoint_core::{Browser, AriaRole};
+
+#[tokio::test]
+async fn test_accessibility_at_scale() -> Result<(), Box<dyn std::error::Error>> {
+    // Share browser across pages for better performance
+    let browser = Browser::launch().headless(true).launch().await?;
+    
+    // Define pages to audit
+    let pages_to_audit = vec![
+        "https://example.com/",
+        "https://example.com/about",
+        "https://example.com/contact",
+        "https://example.com/products",
+    ];
+    
+    for url in pages_to_audit {
+        // Fresh context per page for isolation
+        let mut context = browser.new_context().await?;
+        let page = context.new_page().await?;
+        page.goto(url).goto().await?;
+        
+        // 1. Validate page has a title
+        let title = page.title().await?;
+        assert!(!title.is_empty(), "{}: Page must have a title", url);
+        
+        // 2. Validate main landmark exists (semantic HTML)
+        let main_count = page.get_by_role(AriaRole::Main).build().count().await?;
+        assert!(main_count >= 1, "{}: Page must have <main> landmark", url);
+        
+        // 3. Validate navigation landmark exists
+        let nav_count = page.get_by_role(AriaRole::Navigation).build().count().await?;
+        assert!(nav_count >= 1, "{}: Page must have <nav> landmark", url);
+        
+        // 4. Validate heading hierarchy (must have h1)
+        let h1_count = page.locator("h1").count().await?;
+        assert!(h1_count >= 1, "{}: Page must have at least one <h1>", url);
+        
+        // 5. Validate all images have alt text
+        let images = page.locator("img");
+        let img_count = images.count().await?;
+        for i in 0..img_count {
+            let alt = images.nth(i as i32).get_attribute("alt").await?;
+            assert!(alt.is_some(), "{}: Image {} missing alt attribute", url, i);
+        }
+        
+        // 6. Validate buttons have accessible names
+        let buttons = page.get_by_role(AriaRole::Button).build();
+        let btn_count = buttons.count().await?;
+        for i in 0..btn_count {
+            let button = buttons.nth(i as i32);
+            let text = button.text_content().await?;
+            let aria_label = button.get_attribute("aria-label").await?;
+            assert!(
+                text.map(|t| !t.trim().is_empty()).unwrap_or(false) || aria_label.is_some(),
+                "{}: Button {} must have accessible name", url, i
+            );
+        }
+        
+        // 7. Validate form inputs have labels
+        let inputs = page.locator("input:not([type='hidden']):not([type='submit'])");
+        let input_count = inputs.count().await?;
+        for i in 0..input_count {
+            let input = inputs.nth(i as i32);
+            let id = input.get_attribute("id").await?;
+            let aria_label = input.get_attribute("aria-label").await?;
+            let aria_labelledby = input.get_attribute("aria-labelledby").await?;
+            assert!(
+                id.is_some() || aria_label.is_some() || aria_labelledby.is_some(),
+                "{}: Input {} must have label association", url, i
+            );
+        }
+        
+        // 8. Capture full ARIA snapshot for detailed review
+        let snapshot = page.aria_snapshot().await?;
+        println!("{}: ARIA snapshot:\n{}", url, snapshot.to_yaml());
+        
+        context.close().await?;
+    }
+    
+    Ok(())
+}
+```
+
+### Performance Tips for Accessibility Testing at Scale
+
+1. **Share browser instance**: Create one `Browser` and reuse it across pages
+2. **Fresh context per page**: Use `browser.new_context()` for each page to ensure isolation
+3. **Parallel execution**: Use `tokio::spawn` to test multiple pages concurrently
+4. **Batch similar checks**: Group validations by type to minimize DOM queries
+5. **Use role locators**: `get_by_role()` queries the accessibility tree directly
+
 ## Network Interception
 
 Mock network requests or serve responses from HAR files:
@@ -345,6 +442,67 @@ async fn test_websocket() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+## Testing Dynamic WebSocket Content
+
+When testing applications that receive real-time data via WebSocket, verify that data updates are correctly reflected in the DOM without polling by using auto-waiting assertions:
+
+```rust
+use viewpoint_test::{TestHarness, expect};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+#[tokio::test]
+async fn test_websocket_updates_dom() -> Result<(), Box<dyn std::error::Error>> {
+    let harness = TestHarness::new().await?;
+    let page = harness.page();
+
+    // Capture WebSocket messages for verification
+    let messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let messages_clone = messages.clone();
+
+    // Set up WebSocket monitoring BEFORE navigation
+    page.on_websocket(move |ws| {
+        let msgs = messages_clone.clone();
+        async move {
+            ws.on_framereceived(move |frame| {
+                let msgs = msgs.clone();
+                async move {
+                    if frame.is_text() {
+                        msgs.lock().await.push(frame.payload().to_string());
+                    }
+                }
+            }).await;
+        }
+    }).await;
+
+    // Navigate to page with WebSocket-driven live data
+    page.goto("https://example.com/live-dashboard").goto().await?;
+
+    // Auto-waiting assertions verify DOM updates WITHOUT polling!
+    // These automatically wait up to 30 seconds for the condition
+
+    // Verify that live data container becomes visible
+    expect(&page.locator(".live-data-container")).to_be_visible().await?;
+
+    // Verify that WebSocket data rendered specific text content
+    expect(&page.locator(".stock-price")).to_contain_text("$").await?;
+
+    // Verify connection status updated via WebSocket
+    expect(&page.locator(".connection-status")).to_have_text("Connected").await?;
+
+    // Verify a list populated by WebSocket messages has items
+    expect(&page.locator(".message-list li")).to_have_count_greater_than(0).await?;
+
+    // Optionally verify WebSocket messages were received
+    let received = messages.lock().await;
+    assert!(!received.is_empty(), "Should have received WebSocket data");
+
+    Ok(())
+}
+```
+
+The key insight is that `expect(locator).to_have_text()`, `to_be_visible()`, and similar assertions automatically wait for the condition to become true, eliminating the need for manual polling or sleep statements when testing WebSocket-driven UI updates.
 
 ## Exposed Functions
 

@@ -1,4 +1,103 @@
 //! Test harness for browser automation tests.
+//!
+//! The [`TestHarness`] manages browser lifecycle (launch and cleanup) automatically,
+//! providing a clean fixture for each test case.
+//!
+//! # Automatic Browser Lifecycle Management
+//!
+//! The harness handles all setup and teardown automatically:
+//!
+//! ```ignore
+//! use viewpoint_test::TestHarness;
+//!
+//! #[tokio::test]
+//! async fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+//!     // Setup: launches browser, creates context and page
+//!     let harness = TestHarness::new().await?;
+//!     let page = harness.page();
+//!
+//!     page.goto("https://example.com").goto().await?;
+//!     // ... test logic ...
+//!
+//!     Ok(())  // Cleanup: browser is automatically closed when harness is dropped
+//! }
+//! ```
+//!
+//! # Sharing Browser Across Multiple Tests (Module-Scoped Fixtures)
+//!
+//! For faster test execution, share a browser across multiple tests:
+//!
+//! ```ignore
+//! use viewpoint_test::TestHarness;
+//! use viewpoint_core::Browser;
+//! use std::sync::OnceLock;
+//!
+//! // Shared browser for all tests in this module
+//! static SHARED_BROWSER: OnceLock<Browser> = OnceLock::new();
+//!
+//! async fn get_shared_browser() -> &'static Browser {
+//!     if let Some(browser) = SHARED_BROWSER.get() {
+//!         return browser;
+//!     }
+//!     let browser = Browser::launch().headless(true).launch().await.unwrap();
+//!     SHARED_BROWSER.set(browser).unwrap();
+//!     SHARED_BROWSER.get().unwrap()
+//! }
+//!
+//! #[tokio::test]
+//! async fn test_one() -> Result<(), Box<dyn std::error::Error>> {
+//!     let browser = get_shared_browser().await;
+//!     // Fresh context and page, reuses browser
+//!     let harness = TestHarness::from_browser(browser).await?;
+//!     let page = harness.page();
+//!     
+//!     page.goto("https://example.com").goto().await?;
+//!     Ok(())  // Context and page cleaned up, browser stays alive
+//! }
+//!
+//! #[tokio::test]
+//! async fn test_two() -> Result<(), Box<dyn std::error::Error>> {
+//!     let browser = get_shared_browser().await;
+//!     let harness = TestHarness::from_browser(browser).await?;
+//!     let page = harness.page();
+//!     
+//!     page.goto("https://example.org").goto().await?;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # Fixture Scoping Levels
+//!
+//! | Method | Browser | Context | Page | Use Case |
+//! |--------|---------|---------|------|----------|
+//! | `TestHarness::new()` | New | New | New | Full isolation (default) |
+//! | `TestHarness::from_browser(&browser)` | Shared | New | New | Faster tests, context isolation |
+//! | `TestHarness::from_context(&context)` | Shared | Shared | New | Share cookies/state across tests |
+//!
+//! # Custom Configuration
+//!
+//! ```ignore
+//! use viewpoint_test::{TestHarness, TestConfig};
+//! use std::time::Duration;
+//!
+//! #[tokio::test]
+//! async fn test_with_config() -> Result<(), Box<dyn std::error::Error>> {
+//!     let harness = TestHarness::builder()
+//!         .headless(false)  // Show browser for debugging
+//!         .timeout(Duration::from_secs(60))
+//!         .build()
+//!         .await?;
+//!     
+//!     // Or use TestConfig directly
+//!     let config = TestConfig::builder()
+//!         .headless(true)
+//!         .timeout(Duration::from_secs(30))
+//!         .build();
+//!     let harness = TestHarness::with_config(config).await?;
+//!     
+//!     Ok(())
+//! }
+//! ```
 
 use tracing::{debug, info, instrument, warn};
 
