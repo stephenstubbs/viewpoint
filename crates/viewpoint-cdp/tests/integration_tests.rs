@@ -1,4 +1,5 @@
 #![cfg(feature = "integration")]
+#![allow(clippy::uninlined_format_args)]
 
 //! Integration tests for viewpoint-cdp.
 //!

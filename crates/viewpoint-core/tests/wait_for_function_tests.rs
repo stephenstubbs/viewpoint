@@ -33,8 +33,15 @@ async fn test_wait_for_function_boolean_true() {
         .wait()
         .await;
 
-    assert!(result.is_ok(), "wait_for_function should succeed: {:?}", result.err());
-    assert!(result.unwrap().is_none(), "Boolean true should return None (no handle)");
+    assert!(
+        result.is_ok(),
+        "wait_for_function should succeed: {:?}",
+        result.err()
+    );
+    assert!(
+        result.unwrap().is_none(),
+        "Boolean true should return None (no handle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -57,7 +64,10 @@ async fn test_wait_for_function_number() {
         .await;
 
     assert!(result.is_ok(), "wait_for_function should succeed");
-    assert!(result.unwrap().is_none(), "Number should return None (no handle)");
+    assert!(
+        result.unwrap().is_none(),
+        "Number should return None (no handle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -80,7 +90,10 @@ async fn test_wait_for_function_string() {
         .await;
 
     assert!(result.is_ok(), "wait_for_function should succeed");
-    assert!(result.unwrap().is_none(), "String should return None (no handle)");
+    assert!(
+        result.unwrap().is_none(),
+        "String should return None (no handle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -103,7 +116,11 @@ async fn test_wait_for_function_text_includes() {
         .wait()
         .await;
 
-    assert!(result.is_ok(), "wait_for_function should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "wait_for_function should succeed: {:?}",
+        result.err()
+    );
     assert!(
         result.unwrap().is_none(),
         "String.includes() returns boolean, should be None"
@@ -159,7 +176,10 @@ async fn test_wait_for_function_query_selector() {
 
     assert!(result.is_ok(), "wait_for_function should succeed");
     let handle = result.unwrap();
-    assert!(handle.is_some(), "querySelector result should return Some(JsHandle)");
+    assert!(
+        handle.is_some(),
+        "querySelector result should return Some(JsHandle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -183,7 +203,10 @@ async fn test_wait_for_function_object_literal() {
 
     assert!(result.is_ok(), "wait_for_function should succeed");
     let handle = result.unwrap();
-    assert!(handle.is_some(), "Object literal should return Some(JsHandle)");
+    assert!(
+        handle.is_some(),
+        "Object literal should return Some(JsHandle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -299,8 +322,7 @@ async fn test_wait_for_function_timeout() {
     let err = result.unwrap_err();
     assert!(
         err.to_string().contains("Timeout"),
-        "Error should mention timeout: {}",
-        err
+        "Error should mention timeout: {err}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -359,7 +381,10 @@ async fn test_wait_for_function_with_arg() {
 
     assert!(result.is_ok(), "wait_for_function_with_arg should succeed");
     let handle = result.unwrap();
-    assert!(handle.is_some(), "querySelector result should return Some(JsHandle)");
+    assert!(
+        handle.is_some(),
+        "querySelector result should return Some(JsHandle)"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }

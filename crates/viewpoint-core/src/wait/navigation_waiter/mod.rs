@@ -6,8 +6,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::{broadcast, Mutex};
-use tokio::time::{timeout, Instant};
+use tokio::sync::{Mutex, broadcast};
+use tokio::time::{Instant, timeout};
 use tracing::{debug, instrument, trace};
 use viewpoint_cdp::CdpEvent;
 

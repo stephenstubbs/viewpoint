@@ -321,5 +321,3 @@ async fn test_route_fetch_with_headers() {
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
-
-

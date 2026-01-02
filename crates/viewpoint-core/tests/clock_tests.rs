@@ -1,4 +1,5 @@
 #![cfg(feature = "integration")]
+#![allow(clippy::float_cmp, clippy::unreadable_literal)]
 
 //! Clock mocking tests for viewpoint-core.
 //!
@@ -202,9 +203,7 @@ async fn test_clock_fast_forward() {
     let expected_time = time_before + 3600.0 * 1000.0;
     assert!(
         (time_after - expected_time).abs() < 1000.0,
-        "Time should have advanced by ~1 hour. Before: {}, After: {}",
-        time_before,
-        time_after
+        "Time should have advanced by ~1 hour. Before: {time_before}, After: {time_after}"
     );
 
     // Uninstall clock
@@ -329,9 +328,7 @@ async fn test_clock_system_time() {
     // Time should have advanced (allowing some tolerance)
     assert!(
         time2 > time1,
-        "System time should flow: {} should be > {}",
-        time2,
-        time1
+        "System time should flow: {time2} should be > {time1}"
     );
 
     // Uninstall clock

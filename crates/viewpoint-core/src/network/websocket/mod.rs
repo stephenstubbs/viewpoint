@@ -220,6 +220,8 @@
 
 // Allow dead code for websocket monitoring scaffolding (spec: network-events)
 
+mod event_listener;
+
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
@@ -227,12 +229,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use tokio::sync::{RwLock, broadcast};
-use tracing::{debug, trace};
 use viewpoint_cdp::CdpConnection;
-use viewpoint_cdp::protocol::{
-    WebSocketClosedEvent, WebSocketCreatedEvent, WebSocketFrame as CdpWebSocketFrame,
-    WebSocketFrameReceivedEvent, WebSocketFrameSentEvent,
-};
+use viewpoint_cdp::protocol::WebSocketFrame as CdpWebSocketFrame;
 
 /// A WebSocket connection being monitored.
 ///
@@ -508,98 +506,12 @@ impl WebSocketManager {
             return;
         }
 
-        let mut events = self.connection.subscribe_events();
-        let session_id = self.session_id.clone();
-        let websockets = self.websockets.clone();
-        let handler = self.handler.clone();
-
-        tokio::spawn(async move {
-            debug!("WebSocket manager started listening for events");
-
-            while let Ok(event) = events.recv().await {
-                // Filter events for this session
-                if event.session_id.as_deref() != Some(&session_id) {
-                    continue;
-                }
-
-                match event.method.as_str() {
-                    "Network.webSocketCreated" => {
-                        if let Some(params) = &event.params {
-                            if let Ok(created) =
-                                serde_json::from_value::<WebSocketCreatedEvent>(params.clone())
-                            {
-                                trace!(
-                                    "WebSocket created: {} -> {}",
-                                    created.request_id, created.url
-                                );
-
-                                let ws = WebSocket::new(created.request_id.clone(), created.url);
-
-                                // Store the WebSocket
-                                {
-                                    let mut sockets = websockets.write().await;
-                                    sockets.insert(created.request_id, ws.clone());
-                                }
-
-                                // Call the handler
-                                let h = handler.read().await;
-                                if let Some(ref handler_fn) = *h {
-                                    handler_fn(ws).await;
-                                }
-                            }
-                        }
-                    }
-                    "Network.webSocketClosed" => {
-                        if let Some(params) = &event.params {
-                            if let Ok(closed) =
-                                serde_json::from_value::<WebSocketClosedEvent>(params.clone())
-                            {
-                                trace!("WebSocket closed: {}", closed.request_id);
-
-                                let sockets = websockets.read().await;
-                                if let Some(ws) = sockets.get(&closed.request_id) {
-                                    ws.mark_closed();
-                                }
-                            }
-                        }
-                    }
-                    "Network.webSocketFrameSent" => {
-                        if let Some(params) = &event.params {
-                            if let Ok(frame_event) =
-                                serde_json::from_value::<WebSocketFrameSentEvent>(params.clone())
-                            {
-                                trace!("WebSocket frame sent: {}", frame_event.request_id);
-
-                                let sockets = websockets.read().await;
-                                if let Some(ws) = sockets.get(&frame_event.request_id) {
-                                    let frame = WebSocketFrame::from_cdp(&frame_event.response);
-                                    ws.emit_frame_sent(frame);
-                                }
-                            }
-                        }
-                    }
-                    "Network.webSocketFrameReceived" => {
-                        if let Some(params) = &event.params {
-                            if let Ok(frame_event) = serde_json::from_value::<
-                                WebSocketFrameReceivedEvent,
-                            >(params.clone())
-                            {
-                                trace!("WebSocket frame received: {}", frame_event.request_id);
-
-                                let sockets = websockets.read().await;
-                                if let Some(ws) = sockets.get(&frame_event.request_id) {
-                                    let frame = WebSocketFrame::from_cdp(&frame_event.response);
-                                    ws.emit_frame_received(frame);
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            debug!("WebSocket manager stopped listening");
-        });
+        event_listener::spawn_event_listener(
+            self.connection.clone(),
+            self.session_id.clone(),
+            self.websockets.clone(),
+            self.handler.clone(),
+        );
     }
 
     /// Get a WebSocket by request ID.

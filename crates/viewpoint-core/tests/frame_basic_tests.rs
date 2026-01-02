@@ -60,8 +60,7 @@ async fn test_main_frame() {
     let url = main_frame.url();
     assert!(
         url.contains("example.com"),
-        "Main frame URL should contain example.com, got: {}",
-        url
+        "Main frame URL should contain example.com, got: {url}"
     );
 
     // Main frame should be the main frame
@@ -92,7 +91,7 @@ async fn test_main_frame_access() {
         .expect("Failed to create context");
     let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(r#"<html><body><h1>Main Frame</h1></body></html>"#)
+    page.set_content(r"<html><body><h1>Main Frame</h1></body></html>")
         .set()
         .await
         .expect("Failed to set content");

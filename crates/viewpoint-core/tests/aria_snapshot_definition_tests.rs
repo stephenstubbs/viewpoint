@@ -20,7 +20,7 @@ async fn test_aria_snapshot_definition_list() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <dl>
                 <dt>HTML</dt>
@@ -29,7 +29,7 @@ async fn test_aria_snapshot_definition_list() {
                 <dd>Cascading Style Sheets</dd>
             </dl>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -37,30 +37,26 @@ async fn test_aria_snapshot_definition_list() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Definition list snapshot:\n{}", yaml);
+    println!("Definition list snapshot:\n{yaml}");
 
     // dt elements should have "term" role
     assert!(
         yaml.contains("term"),
-        "Snapshot should contain 'term' role for dt elements, got: {}",
-        yaml
+        "Snapshot should contain 'term' role for dt elements, got: {yaml}"
     );
     // dd elements should have "definition" role
     assert!(
         yaml.contains("definition"),
-        "Snapshot should contain 'definition' role for dd elements, got: {}",
-        yaml
+        "Snapshot should contain 'definition' role for dd elements, got: {yaml}"
     );
     // Content should be captured
     assert!(
         yaml.contains("HTML"),
-        "Snapshot should contain dt text content, got: {}",
-        yaml
+        "Snapshot should contain dt text content, got: {yaml}"
     );
     assert!(
         yaml.contains("HyperText Markup Language"),
-        "Snapshot should contain dd text content, got: {}",
-        yaml
+        "Snapshot should contain dd text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -71,14 +67,14 @@ async fn test_aria_snapshot_dt_term() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <dl>
                 <dt>API</dt>
                 <dd>Application Programming Interface</dd>
             </dl>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -86,17 +82,15 @@ async fn test_aria_snapshot_dt_term() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("DT term snapshot:\n{}", yaml);
+    println!("DT term snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("term"),
-        "Snapshot should contain 'term' role, got: {}",
-        yaml
+        "Snapshot should contain 'term' role, got: {yaml}"
     );
     assert!(
         yaml.contains("API"),
-        "Snapshot should contain term text, got: {}",
-        yaml
+        "Snapshot should contain term text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -107,14 +101,14 @@ async fn test_aria_snapshot_dd_definition() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <dl>
                 <dt>REST</dt>
                 <dd>Representational State Transfer</dd>
             </dl>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -122,17 +116,15 @@ async fn test_aria_snapshot_dd_definition() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("DD definition snapshot:\n{}", yaml);
+    println!("DD definition snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("definition"),
-        "Snapshot should contain 'definition' role, got: {}",
-        yaml
+        "Snapshot should contain 'definition' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Representational State Transfer"),
-        "Snapshot should contain definition text, got: {}",
-        yaml
+        "Snapshot should contain definition text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -147,11 +139,11 @@ async fn test_aria_snapshot_dfn_term() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <p><dfn>API</dfn> stands for Application Programming Interface.</p>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -159,18 +151,16 @@ async fn test_aria_snapshot_dfn_term() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Dfn term snapshot:\n{}", yaml);
+    println!("Dfn term snapshot:\n{yaml}");
 
     // dfn should have "term" role
     assert!(
         yaml.contains("term"),
-        "Snapshot should contain 'term' role for dfn, got: {}",
-        yaml
+        "Snapshot should contain 'term' role for dfn, got: {yaml}"
     );
     assert!(
         yaml.contains("API"),
-        "Snapshot should contain dfn text content, got: {}",
-        yaml
+        "Snapshot should contain dfn text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -193,17 +183,15 @@ async fn test_aria_snapshot_dfn_with_abbreviation() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Dfn with abbreviation snapshot:\n{}", yaml);
+    println!("Dfn with abbreviation snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("term"),
-        "Snapshot should contain 'term' role, got: {}",
-        yaml
+        "Snapshot should contain 'term' role, got: {yaml}"
     );
     assert!(
         yaml.contains("WWW"),
-        "Snapshot should contain dfn text content, got: {}",
-        yaml
+        "Snapshot should contain dfn text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -218,7 +206,7 @@ async fn test_aria_snapshot_definition_list_multiple_dds() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <dl>
                 <dt>Firefox</dt>
@@ -226,7 +214,7 @@ async fn test_aria_snapshot_definition_list_multiple_dds() {
                 <dd>Developed by Mozilla Foundation</dd>
             </dl>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -234,22 +222,19 @@ async fn test_aria_snapshot_definition_list_multiple_dds() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Definition list with multiple dds snapshot:\n{}", yaml);
+    println!("Definition list with multiple dds snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("Firefox"),
-        "Snapshot should contain term, got: {}",
-        yaml
+        "Snapshot should contain term, got: {yaml}"
     );
     assert!(
         yaml.contains("free, open source"),
-        "Snapshot should contain first definition, got: {}",
-        yaml
+        "Snapshot should contain first definition, got: {yaml}"
     );
     assert!(
         yaml.contains("Mozilla Foundation"),
-        "Snapshot should contain second definition, got: {}",
-        yaml
+        "Snapshot should contain second definition, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");

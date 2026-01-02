@@ -17,7 +17,7 @@ use common::init_tracing;
 // Test HTML Templates
 // =============================================================================
 
-const SIMPLE_HTML: &str = r#"
+const SIMPLE_HTML: &str = r"
 <!DOCTYPE html>
 <html>
 <head>
@@ -34,7 +34,7 @@ const SIMPLE_HTML: &str = r#"
     <p>It contains multiple paragraphs of text to test formatting.</p>
 </body>
 </html>
-"#;
+";
 
 // =============================================================================
 // Default PDF Generation Tests

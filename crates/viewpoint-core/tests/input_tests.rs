@@ -415,5 +415,3 @@ async fn test_mouse_down_up() {
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
-
-

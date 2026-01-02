@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp, clippy::unreadable_literal)]
+
 use super::*;
 
 #[test]
@@ -113,7 +115,7 @@ fn test_security_details_debug() {
         san_list: vec![],
     };
 
-    let debug_str = format!("{:?}", details);
+    let debug_str = format!("{details:?}");
     assert!(debug_str.contains("TLS 1.3"));
     assert!(debug_str.contains("test.com"));
 }

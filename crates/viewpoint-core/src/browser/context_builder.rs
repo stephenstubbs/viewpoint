@@ -2,13 +2,13 @@
 
 use std::time::Duration;
 
+use crate::BrowserContext;
 use crate::context::{
     ColorScheme, ContextOptionsBuilder, ForcedColors, Permission, ReducedMotion, StorageState,
 };
 use crate::devices::DeviceDescriptor;
 use crate::error::BrowserError;
 use crate::page::VideoOptions;
-use crate::BrowserContext;
 
 use super::Browser;
 

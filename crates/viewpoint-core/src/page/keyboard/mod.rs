@@ -13,15 +13,13 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing::{debug, instrument};
 use viewpoint_cdp::CdpConnection;
-use viewpoint_cdp::protocol::input::{
-    DispatchKeyEventParams, InsertTextParams, KeyEventType,
-};
+use viewpoint_cdp::protocol::input::{DispatchKeyEventParams, InsertTextParams, KeyEventType};
 
 use crate::error::LocatorError;
 
 pub use builder::KeyboardPressBuilder;
 pub use keys::{KeyDefinition, get_key_definition};
-use state::{is_modifier_key, is_uppercase_letter, KeyboardState};
+use state::{KeyboardState, is_modifier_key, is_uppercase_letter};
 
 /// Keyboard controller for direct keyboard input.
 ///

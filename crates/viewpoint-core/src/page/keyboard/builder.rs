@@ -85,7 +85,8 @@ impl<'a> KeyboardPressBuilder<'a> {
 
 impl<'a> std::future::IntoFuture for KeyboardPressBuilder<'a> {
     type Output = Result<(), LocatorError>;
-    type IntoFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
+    type IntoFuture =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Self::Output> + Send + 'a>>;
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(self.send())

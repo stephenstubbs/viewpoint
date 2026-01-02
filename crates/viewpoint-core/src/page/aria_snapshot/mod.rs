@@ -67,97 +67,24 @@
 //! # }
 //! ```
 
+mod cdp_helpers;
+mod frame_stitching;
+mod options;
+mod ref_resolution;
+
 use std::collections::HashMap;
 
 use futures::stream::{FuturesUnordered, StreamExt};
-use tracing::{debug, instrument, trace, warn};
-use viewpoint_cdp::protocol::dom::{BackendNodeId, DescribeNodeParams, DescribeNodeResult};
+use tracing::{debug, instrument};
 use viewpoint_js::js;
 
-use super::locator::aria_js::aria_snapshot_with_refs_js;
-use super::locator::AriaSnapshot;
-use super::ref_resolution::format_ref;
+use self::frame_stitching::stitch_frame_content;
+pub use self::options::SnapshotOptions;
+pub(crate) use self::ref_resolution::apply_refs_to_snapshot;
 use super::Page;
+use super::locator::AriaSnapshot;
+use super::locator::aria_js::aria_snapshot_with_refs_js;
 use crate::error::PageError;
-
-/// Default maximum number of concurrent CDP calls for node resolution.
-pub const DEFAULT_MAX_CONCURRENCY: usize = 50;
-
-/// Configuration options for ARIA snapshot capture.
-///
-/// Use this struct to tune snapshot performance and behavior.
-///
-/// # Example
-///
-/// ```no_run
-/// use viewpoint_core::SnapshotOptions;
-///
-/// // Default options
-/// let options = SnapshotOptions::default();
-///
-/// // Skip ref resolution for faster snapshots
-/// let options = SnapshotOptions::default().include_refs(false);
-///
-/// // Increase concurrency for fast networks
-/// let options = SnapshotOptions::default().max_concurrency(100);
-/// ```
-#[derive(Debug, Clone)]
-pub struct SnapshotOptions {
-    /// Maximum number of concurrent CDP calls for node resolution.
-    ///
-    /// Higher values improve performance but may overwhelm slow connections.
-    /// Default: 50
-    max_concurrency: usize,
-
-    /// Whether to include element refs (backendNodeIds) in the snapshot.
-    ///
-    /// Set to `false` to skip ref resolution for maximum performance when
-    /// you only need the accessibility tree structure.
-    /// Default: true
-    include_refs: bool,
-}
-
-impl Default for SnapshotOptions {
-    fn default() -> Self {
-        Self {
-            max_concurrency: DEFAULT_MAX_CONCURRENCY,
-            include_refs: true,
-        }
-    }
-}
-
-impl SnapshotOptions {
-    /// Set the maximum number of concurrent CDP calls for node resolution.
-    ///
-    /// Higher values improve performance but may overwhelm slow connections.
-    /// Default: 50
-    #[must_use]
-    pub fn max_concurrency(mut self, max: usize) -> Self {
-        self.max_concurrency = max;
-        self
-    }
-
-    /// Set whether to include element refs (backendNodeIds) in the snapshot.
-    ///
-    /// Set to `false` to skip ref resolution for maximum performance when
-    /// you only need the accessibility tree structure.
-    /// Default: true
-    #[must_use]
-    pub fn include_refs(mut self, include: bool) -> Self {
-        self.include_refs = include;
-        self
-    }
-
-    /// Get the maximum concurrency setting.
-    pub fn get_max_concurrency(&self) -> usize {
-        self.max_concurrency
-    }
-
-    /// Get whether refs should be included.
-    pub fn get_include_refs(&self) -> bool {
-        self.include_refs
-    }
-}
 
 impl Page {
     /// Capture an ARIA accessibility snapshot of the entire page including all frames.
@@ -277,7 +204,7 @@ impl Page {
                     match frame.aria_snapshot_with_options(opts).await {
                         Ok(snapshot) => Some((frame_id, frame_url, frame_name, snapshot)),
                         Err(e) => {
-                            warn!(
+                            tracing::warn!(
                                 error = %e,
                                 frame_id = %frame_id,
                                 frame_url = %frame_url,
@@ -467,9 +394,7 @@ impl Page {
 
             if let Some(elements_object_id) = elements_result {
                 // Batch-fetch all array element object IDs using Runtime.getProperties
-                let element_object_ids = self
-                    .get_all_array_elements(&elements_object_id)
-                    .await?;
+                let element_object_ids = self.get_all_array_elements(&elements_object_id).await?;
                 let element_count = element_object_ids.len();
 
                 debug!(
@@ -501,277 +426,5 @@ impl Page {
         let _ = self.release_object(&result_object_id).await;
 
         Ok(snapshot)
-    }
-
-    /// Batch-fetch all array element object IDs using `Runtime.getProperties`.
-    ///
-    /// This replaces N individual `get_array_element()` calls with a single CDP call,
-    /// significantly reducing round-trips for large arrays.
-    async fn get_all_array_elements(
-        &self,
-        array_object_id: &str,
-    ) -> Result<Vec<(usize, String)>, PageError> {
-        #[derive(Debug, serde::Deserialize)]
-        struct PropertyDescriptor {
-            name: String,
-            value: Option<viewpoint_cdp::protocol::runtime::RemoteObject>,
-        }
-
-        #[derive(Debug, serde::Deserialize)]
-        struct GetPropertiesResult {
-            result: Vec<PropertyDescriptor>,
-        }
-
-        let result: GetPropertiesResult = self
-            .connection()
-            .send_command(
-                "Runtime.getProperties",
-                Some(serde_json::json!({
-                    "objectId": array_object_id,
-                    "ownProperties": true,
-                    "generatePreview": false
-                })),
-                Some(self.session_id()),
-            )
-            .await?;
-
-        // Filter to numeric indices and extract object IDs
-        let mut elements: Vec<(usize, String)> = Vec::new();
-
-        for prop in result.result {
-            // Parse numeric indices (array elements)
-            if let Ok(index) = prop.name.parse::<usize>() {
-                if let Some(value) = prop.value {
-                    if let Some(object_id) = value.object_id {
-                        elements.push((index, object_id));
-                    }
-                }
-            }
-        }
-
-        // Sort by index to maintain order
-        elements.sort_by_key(|(index, _)| *index);
-
-        trace!(element_count = elements.len(), "Batch-fetched array elements");
-
-        Ok(elements)
-    }
-
-    /// Resolve node IDs in parallel with a concurrency limit.
-    ///
-    /// Uses chunked processing with `FuturesUnordered` to limit concurrency
-    /// and avoid overwhelming the browser's CDP connection.
-    async fn resolve_node_ids_parallel(
-        &self,
-        element_object_ids: Vec<(usize, String)>,
-        max_concurrency: usize,
-    ) -> HashMap<usize, BackendNodeId> {
-        let mut ref_map = HashMap::new();
-
-        // Process in chunks to limit concurrency
-        for chunk in element_object_ids.chunks(max_concurrency) {
-            let futures: FuturesUnordered<_> = chunk
-                .iter()
-                .map(|(index, object_id)| {
-                    let index = *index;
-                    let object_id = object_id.clone();
-                    async move {
-                        match self.describe_node(&object_id).await {
-                            Ok(backend_node_id) => {
-                                trace!(
-                                    index = index,
-                                    backend_node_id = backend_node_id,
-                                    "Resolved element ref"
-                                );
-                                Some((index, backend_node_id))
-                            }
-                            Err(e) => {
-                                debug!(index = index, error = %e, "Failed to get backendNodeId for element");
-                                None
-                            }
-                        }
-                    }
-                })
-                .collect();
-
-            // Collect all results from this chunk
-            let results: Vec<_> = futures.collect().await;
-            for result in results.into_iter().flatten() {
-                ref_map.insert(result.0, result.1);
-            }
-        }
-
-        ref_map
-    }
-
-    /// Get a property value from a RemoteObject by name.
-    async fn get_property_value(
-        &self,
-        object_id: &str,
-        property: &str,
-    ) -> Result<serde_json::Value, PageError> {
-        #[derive(Debug, serde::Deserialize)]
-        struct CallResult {
-            result: viewpoint_cdp::protocol::runtime::RemoteObject,
-        }
-
-        let result: CallResult = self
-            .connection()
-            .send_command(
-                "Runtime.callFunctionOn",
-                Some(serde_json::json!({
-                    "objectId": object_id,
-                    "functionDeclaration": format!("function() {{ return this.{}; }}", property),
-                    "returnByValue": true
-                })),
-                Some(self.session_id()),
-            )
-            .await?;
-
-        Ok(result.result.value.unwrap_or(serde_json::Value::Null))
-    }
-
-    /// Get a property as a RemoteObject from a RemoteObject by name.
-    async fn get_property_object(
-        &self,
-        object_id: &str,
-        property: &str,
-    ) -> Result<Option<String>, PageError> {
-        #[derive(Debug, serde::Deserialize)]
-        struct CallResult {
-            result: viewpoint_cdp::protocol::runtime::RemoteObject,
-        }
-
-        let result: CallResult = self
-            .connection()
-            .send_command(
-                "Runtime.callFunctionOn",
-                Some(serde_json::json!({
-                    "objectId": object_id,
-                    "functionDeclaration": format!("function() {{ return this.{}; }}", property),
-                    "returnByValue": false
-                })),
-                Some(self.session_id()),
-            )
-            .await?;
-
-        Ok(result.result.object_id)
-    }
-
-    /// Get the backendNodeId for an element by its object ID.
-    async fn describe_node(&self, object_id: &str) -> Result<BackendNodeId, PageError> {
-        let result: DescribeNodeResult = self
-            .connection()
-            .send_command(
-                "DOM.describeNode",
-                Some(DescribeNodeParams {
-                    node_id: None,
-                    backend_node_id: None,
-                    object_id: Some(object_id.to_string()),
-                    depth: Some(0),
-                    pierce: None,
-                }),
-                Some(self.session_id()),
-            )
-            .await?;
-
-        Ok(result.node.backend_node_id)
-    }
-
-    /// Release a RemoteObject by its object ID.
-    async fn release_object(&self, object_id: &str) -> Result<(), PageError> {
-        let _: serde_json::Value = self
-            .connection()
-            .send_command(
-                "Runtime.releaseObject",
-                Some(serde_json::json!({
-                    "objectId": object_id
-                })),
-                Some(self.session_id()),
-            )
-            .await?;
-
-        Ok(())
-    }
-}
-
-/// Recursively apply refs to the snapshot tree based on element indices.
-///
-/// This function is used by both Page and Frame implementations to resolve
-/// element references after capturing an aria snapshot with element indices.
-pub(crate) fn apply_refs_to_snapshot(snapshot: &mut AriaSnapshot, ref_map: &HashMap<usize, BackendNodeId>) {
-    // Apply ref if this node has an element_index
-    if let Some(index) = snapshot.element_index {
-        if let Some(&backend_node_id) = ref_map.get(&index) {
-            snapshot.node_ref = Some(format_ref(backend_node_id));
-        }
-        // Clear the element_index now that we've processed it
-        snapshot.element_index = None;
-    }
-
-    // Recursively process children
-    for child in &mut snapshot.children {
-        apply_refs_to_snapshot(child, ref_map);
-    }
-}
-
-/// Recursively stitch frame content into aria snapshot at iframe boundaries.
-///
-/// This function traverses the snapshot tree looking for nodes with `is_frame: true`.
-/// When found, it attempts to find the corresponding frame snapshot and adds that
-/// content as children of the iframe node.
-fn stitch_frame_content(
-    snapshot: &mut AriaSnapshot,
-    frame_snapshots: &HashMap<String, AriaSnapshot>,
-    depth: usize,
-) {
-    // Prevent infinite recursion - max depth of 10 nested frames
-    const MAX_DEPTH: usize = 10;
-    if depth > MAX_DEPTH {
-        warn!(
-            depth = depth,
-            "Max frame nesting depth exceeded, stopping recursion"
-        );
-        return;
-    }
-
-    // If this is a frame boundary, try to get its content
-    if snapshot.is_frame == Some(true) {
-        // Try to find the matching frame snapshot
-        let frame_snapshot = snapshot
-            .frame_url
-            .as_ref()
-            .and_then(|url| frame_snapshots.get(url))
-            .or_else(|| {
-                snapshot
-                    .frame_name
-                    .as_ref()
-                    .and_then(|name| frame_snapshots.get(name))
-            });
-
-        if let Some(frame_content) = frame_snapshot {
-            debug!(
-                frame_url = ?snapshot.frame_url,
-                frame_name = ?snapshot.frame_name,
-                depth = depth,
-                "Stitching frame content into snapshot"
-            );
-
-            // Add the frame's content as children of this iframe node
-            // Clear is_frame to prevent re-processing this boundary
-            snapshot.is_frame = Some(false);
-            snapshot.children = vec![frame_content.clone()];
-        } else {
-            debug!(
-                frame_url = ?snapshot.frame_url,
-                frame_name = ?snapshot.frame_name,
-                "No matching frame snapshot found for iframe boundary"
-            );
-        }
-    }
-
-    // Recursively process children
-    for child in &mut snapshot.children {
-        stitch_frame_content(child, frame_snapshots, depth + 1);
     }
 }

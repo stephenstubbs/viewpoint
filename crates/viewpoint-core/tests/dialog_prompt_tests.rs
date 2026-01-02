@@ -106,7 +106,7 @@ async fn test_dialog_prompt_event() {
         .expect("Failed to click button");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
-    let received_type = dialog_type.lock().await.clone();
+    let received_type = *dialog_type.lock().await;
     assert!(
         matches!(received_type, Some(DialogType::Prompt)),
         "Expected Prompt dialog type"
@@ -341,7 +341,7 @@ async fn test_dialog_beforeunload_event() {
         .expect("Failed to click button");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
-    let received_type = dialog_type.lock().await.clone();
+    let received_type = *dialog_type.lock().await;
     // Note: beforeunload may or may not fire in headless mode depending on browser
     // This test verifies the mechanism works when it does fire
     if received_type.is_some() {

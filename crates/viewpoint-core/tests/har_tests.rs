@@ -1,4 +1,5 @@
 #![cfg(feature = "integration")]
+#![allow(clippy::float_cmp)]
 
 //! Tests for HAR (HTTP Archive) format support.
 

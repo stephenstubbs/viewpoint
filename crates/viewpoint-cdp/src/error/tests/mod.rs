@@ -133,7 +133,7 @@ fn test_error_debug_format() {
         code: -32600,
         message: "Invalid Request".to_string(),
     };
-    let debug_str = format!("{:?}", err);
+    let debug_str = format!("{err:?}");
     assert!(debug_str.contains("Protocol"));
     assert!(debug_str.contains("-32600"));
     assert!(debug_str.contains("Invalid Request"));

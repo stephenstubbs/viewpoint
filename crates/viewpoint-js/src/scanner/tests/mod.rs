@@ -5,7 +5,9 @@ use crate::interpolation::Segment;
 
 // Helper to check if segments contain a literal with given text
 fn has_literal(segments: &[Segment], text: &str) -> bool {
-    segments.iter().any(|s| matches!(s, Segment::Literal(s) if s == text))
+    segments
+        .iter()
+        .any(|s| matches!(s, Segment::Literal(s) if s == text))
 }
 
 fn literal_contains(segments: &[Segment], substr: &str) -> bool {
@@ -253,7 +255,11 @@ fn test_at_without_brace() {
 fn test_nested_braces_in_interpolation() {
     let (segments, has_interp) = scan_js_source("#{vec![1, 2]}");
     assert!(has_interp);
-    assert!(segments.iter().any(|s| matches!(s, Segment::ValueInterpolation(_))));
+    assert!(
+        segments
+            .iter()
+            .any(|s| matches!(s, Segment::ValueInterpolation(_)))
+    );
 }
 
 #[test]

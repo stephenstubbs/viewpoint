@@ -108,7 +108,10 @@ impl Frame {
         {
             let data = self.data.read();
             if let Some(&context_id) = data.execution_contexts.get(world_name) {
-                debug!(context_id = context_id, "Using cached isolated world context");
+                debug!(
+                    context_id = context_id,
+                    "Using cached isolated world context"
+                );
                 return Ok(context_id);
             }
         }

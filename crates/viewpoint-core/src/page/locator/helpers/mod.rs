@@ -71,7 +71,9 @@ impl Locator<'_> {
     pub(super) async fn query_element_info(&self) -> Result<ElementInfo, LocatorError> {
         // Handle BackendNodeId selector specially - resolve via CDP
         if let Selector::BackendNodeId(backend_node_id) = &self.selector {
-            return self.query_element_info_by_backend_id(*backend_node_id).await;
+            return self
+                .query_element_info_by_backend_id(*backend_node_id)
+                .await;
         }
 
         let selector_expr = self.selector.to_js_expression();

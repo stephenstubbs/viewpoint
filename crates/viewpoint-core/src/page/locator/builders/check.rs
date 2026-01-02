@@ -2,8 +2,8 @@
 
 use tracing::{debug, instrument};
 
-use super::click::ClickBuilder;
 use super::super::Locator;
+use super::click::ClickBuilder;
 use crate::error::LocatorError;
 use crate::wait::NavigationWaiter;
 

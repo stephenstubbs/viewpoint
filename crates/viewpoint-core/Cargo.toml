@@ -46,6 +46,7 @@ tracing-subscriber.workspace = true
 viewpoint-js.workspace = true
 viewpoint-js-core.workspace = true
 zip.workspace = true
+serial_test.workspace = true
 
 [target.'cfg(unix)'.dev-dependencies]
 nix.workspace = true

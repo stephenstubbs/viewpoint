@@ -1,3 +1,5 @@
+#![allow(clippy::float_cmp, clippy::assertions_on_constants)]
+
 use super::*;
 
 #[test]

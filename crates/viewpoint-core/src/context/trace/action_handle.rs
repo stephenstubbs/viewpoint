@@ -1,7 +1,7 @@
 //! Action handle for tracking action duration in traces.
 
-use tokio::sync::RwLock;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use super::types::TracingState;
 

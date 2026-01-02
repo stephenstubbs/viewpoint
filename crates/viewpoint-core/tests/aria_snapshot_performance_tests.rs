@@ -53,10 +53,7 @@ async fn test_large_dom_snapshot_performance() {
     // Generate a page with 100+ interactive elements
     let mut html = String::from("<html><body><h1>Performance Test</h1>\n");
     for i in 0..100 {
-        html.push_str(&format!(
-            "<button id=\"btn{}\">Button {}</button>\n",
-            i, i
-        ));
+        html.push_str(&format!("<button id=\"btn{i}\">Button {i}</button>\n"));
     }
     html.push_str("</body></html>");
 
@@ -70,11 +67,8 @@ async fn test_large_dom_snapshot_performance() {
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let duration = start.elapsed();
 
-    println!("Large DOM snapshot captured in {:?}", duration);
-    println!(
-        "Snapshot has {} children at root",
-        snapshot.children.len()
-    );
+    println!("Large DOM snapshot captured in {duration:?}");
+    println!("Snapshot has {} children at root", snapshot.children.len());
 
     // Verify the snapshot contains our buttons (check for refs)
     let yaml = snapshot.to_yaml();
@@ -88,8 +82,7 @@ async fn test_large_dom_snapshot_performance() {
     // With parallel processing, should be much faster
     assert!(
         duration < Duration::from_secs(5),
-        "Snapshot should complete in under 5 seconds, took {:?}",
-        duration
+        "Snapshot should complete in under 5 seconds, took {duration:?}"
     );
 
     // Clean up
@@ -116,7 +109,7 @@ async fn test_snapshot_without_refs_performance() {
     // Generate a page with 100 elements
     let mut html = String::from("<html><body>\n");
     for i in 0..100 {
-        html.push_str(&format!("<button>Button {}</button>\n", i));
+        html.push_str(&format!("<button>Button {i}</button>\n"));
     }
     html.push_str("</body></html>");
 
@@ -139,8 +132,8 @@ async fn test_snapshot_without_refs_performance() {
         .expect("Failed to get snapshot");
     let duration_without_refs = start_without_refs.elapsed();
 
-    println!("Snapshot WITH refs: {:?}", duration_with_refs);
-    println!("Snapshot WITHOUT refs: {:?}", duration_without_refs);
+    println!("Snapshot WITH refs: {duration_with_refs:?}");
+    println!("Snapshot WITHOUT refs: {duration_without_refs:?}");
 
     // Verify refs are present/absent as expected
     let yaml_with = snapshot_with_refs.to_yaml();
@@ -159,7 +152,9 @@ async fn test_snapshot_without_refs_performance() {
     if duration_without_refs < duration_with_refs {
         println!(
             "Without refs was {:?} faster",
-            duration_with_refs - duration_without_refs
+            duration_with_refs
+                .checked_sub(duration_without_refs)
+                .unwrap()
         );
     }
 
@@ -216,10 +211,10 @@ async fn test_multi_frame_parallel_capture() {
         .expect("Failed to get multi-frame snapshot");
     let duration = start.elapsed();
 
-    println!("Multi-frame snapshot captured in {:?}", duration);
+    println!("Multi-frame snapshot captured in {duration:?}");
 
     let yaml = snapshot.to_yaml();
-    println!("Multi-frame snapshot:\n{}", yaml);
+    println!("Multi-frame snapshot:\n{yaml}");
 
     // Verify all frames were captured (should see content from multiple frames)
     // With parallel capture, this should be faster than sequential
@@ -227,8 +222,7 @@ async fn test_multi_frame_parallel_capture() {
     // Performance expectation: should complete in under 5 seconds
     assert!(
         duration < Duration::from_secs(5),
-        "Multi-frame snapshot should complete in under 5 seconds, took {:?}",
-        duration
+        "Multi-frame snapshot should complete in under 5 seconds, took {duration:?}"
     );
 
     // Clean up
@@ -259,7 +253,7 @@ async fn test_snapshot_options_max_concurrency() {
     // Generate a page with 50 elements
     let mut html = String::from("<html><body>\n");
     for i in 0..50 {
-        html.push_str(&format!("<button>Button {}</button>\n", i));
+        html.push_str(&format!("<button>Button {i}</button>\n"));
     }
     html.push_str("</body></html>");
 
@@ -286,8 +280,8 @@ async fn test_snapshot_options_max_concurrency() {
         .expect("Failed to get snapshot");
     let duration_high = start_high.elapsed();
 
-    println!("Low concurrency (5): {:?}", duration_low);
-    println!("High concurrency (100): {:?}", duration_high);
+    println!("Low concurrency (5): {duration_low:?}");
+    println!("High concurrency (100): {duration_high:?}");
 
     // Both should complete successfully
     // Higher concurrency should generally be faster, but we don't assert
@@ -336,13 +330,12 @@ async fn test_snapshot_options_include_refs_false() {
 
     // Verify structure is still captured
     let yaml = snapshot.to_yaml();
-    println!("Snapshot without refs:\n{}", yaml);
+    println!("Snapshot without refs:\n{yaml}");
 
     // Should have the elements but no refs
     assert!(
         yaml.contains("button") || yaml.contains("link"),
-        "Snapshot should still contain elements, got: {}",
-        yaml
+        "Snapshot should still contain elements, got: {yaml}"
     );
 
     // Check that node_ref is None on root (since we skipped ref resolution)
@@ -373,12 +366,12 @@ async fn test_frame_snapshot_with_options() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r##"
+        r#"
         <html><body>
             <h1>Main Page</h1>
             <iframe name="contentframe" srcdoc="<html><body><button>Frame Button</button></body></html>"></iframe>
         </body></html>
-    "##,
+    "#,
     )
     .set()
     .await
@@ -402,7 +395,7 @@ async fn test_frame_snapshot_with_options() {
         .expect("Failed to get frame snapshot");
 
     let yaml = snapshot.to_yaml();
-    println!("Frame snapshot without refs:\n{}", yaml);
+    println!("Frame snapshot without refs:\n{yaml}");
 
     // Should have structure but no refs
     assert!(

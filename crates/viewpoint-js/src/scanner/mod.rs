@@ -124,12 +124,7 @@ impl<'a> Scanner<'a> {
     }
 
     /// Process a character and update state.
-    fn process_char(
-        &mut self,
-        c: char,
-        idx: usize,
-        literal: &mut String,
-    ) -> Option<ScanResult> {
+    fn process_char(&mut self, c: char, idx: usize, literal: &mut String) -> Option<ScanResult> {
         match self.state {
             ScanState::Normal => self.handle_normal(c, idx, literal),
             ScanState::DoubleString => {

@@ -63,10 +63,9 @@ impl ExecutionContextRegistry {
                 match event.method.as_str() {
                     "Runtime.executionContextCreated" => {
                         if let Some(params) = event.params.as_ref() {
-                            if let Ok(created_event) =
-                                serde_json::from_value::<ExecutionContextCreatedEvent>(
-                                    params.clone(),
-                                )
+                            if let Ok(created_event) = serde_json::from_value::<
+                                ExecutionContextCreatedEvent,
+                            >(params.clone())
                             {
                                 registry.handle_context_created(created_event);
                             }

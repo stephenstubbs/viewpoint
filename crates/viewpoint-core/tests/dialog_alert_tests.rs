@@ -150,7 +150,7 @@ async fn test_dialog_type_alert() {
         .expect("Failed to click button");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
-    let received_type = dialog_type.lock().await.clone();
+    let received_type = *dialog_type.lock().await;
     assert!(
         matches!(received_type, Some(DialogType::Alert)),
         "Expected Alert dialog type"
@@ -252,7 +252,7 @@ async fn test_dialog_confirm_event() {
         .expect("Failed to click button");
     tokio::time::sleep(Duration::from_millis(200)).await;
 
-    let received_type = dialog_type.lock().await.clone();
+    let received_type = *dialog_type.lock().await;
     assert!(
         matches!(received_type, Some(DialogType::Confirm)),
         "Expected Confirm dialog type"

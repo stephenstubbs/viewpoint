@@ -51,12 +51,12 @@ async fn test_iframe_content_execution_context() {
 
     // Create a page with an iframe that has distinct content
     page.set_content(
-        r##"
+        r#"
         <html><body>
             <h1>Main Frame Content</h1>
             <iframe name="test-frame" srcdoc="<html><head><title>Iframe Title</title></head><body><h1>Iframe Heading</h1><p>Iframe paragraph content.</p></body></html>"></iframe>
         </body></html>
-    "##,
+    "#,
     )
     .set()
     .await
@@ -73,23 +73,23 @@ async fn test_iframe_content_execution_context() {
         .expect("Should find test-frame");
 
     // Get the iframe's content - should be the iframe content, not main frame
-    let content = iframe.content().await.expect("Failed to get iframe content");
+    let content = iframe
+        .content()
+        .await
+        .expect("Failed to get iframe content");
 
     // Verify the content is from the iframe, not the main frame
     assert!(
         content.contains("Iframe Heading"),
-        "Content should contain iframe heading, got: {}",
-        content
+        "Content should contain iframe heading, got: {content}"
     );
     assert!(
         content.contains("Iframe paragraph content"),
-        "Content should contain iframe paragraph, got: {}",
-        content
+        "Content should contain iframe paragraph, got: {content}"
     );
     assert!(
         !content.contains("Main Frame Content"),
-        "Content should NOT contain main frame content, got: {}",
-        content
+        "Content should NOT contain main frame content, got: {content}"
     );
 
     // Clean up
@@ -115,14 +115,14 @@ async fn test_iframe_title_execution_context() {
 
     // Create a page with an iframe that has a distinct title
     page.set_content(
-        r##"
+        r#"
         <html>
         <head><title>Main Page Title</title></head>
         <body>
             <iframe name="titled-frame" srcdoc="<html><head><title>Iframe Document Title</title></head><body>Content</body></html>"></iframe>
         </body>
         </html>
-    "##,
+    "#,
     )
     .set()
     .await
@@ -181,12 +181,12 @@ async fn test_iframe_aria_snapshot_execution_context() {
 
     // Create a page with an iframe containing distinct accessible elements
     page.set_content(
-        r##"
+        r#"
         <html><body>
             <button id="main-button">Main Button</button>
             <iframe name="aria-frame" srcdoc="<html><body><button id='iframe-button'>Iframe Button</button><input type='text' placeholder='Iframe Input' /></body></html>"></iframe>
         </body></html>
-    "##,
+    "#,
     )
     .set()
     .await
@@ -208,20 +208,18 @@ async fn test_iframe_aria_snapshot_execution_context() {
         .await
         .expect("Failed to get iframe aria snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Iframe aria snapshot:\n{}", yaml);
+    println!("Iframe aria snapshot:\n{yaml}");
 
     // Verify the snapshot contains iframe elements
     assert!(
         yaml.contains("Iframe Button") || yaml.contains("button"),
-        "Snapshot should contain iframe button, got: {}",
-        yaml
+        "Snapshot should contain iframe button, got: {yaml}"
     );
 
     // Verify the snapshot does NOT contain main frame elements
     assert!(
         !yaml.contains("Main Button"),
-        "Snapshot should NOT contain main frame button, got: {}",
-        yaml
+        "Snapshot should NOT contain main frame button, got: {yaml}"
     );
 
     // Clean up

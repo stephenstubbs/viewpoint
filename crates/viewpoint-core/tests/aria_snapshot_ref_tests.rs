@@ -61,13 +61,12 @@ async fn test_aria_snapshot_includes_refs_for_buttons() {
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Snapshot with refs:\n{}", yaml);
+    println!("Snapshot with refs:\n{yaml}");
 
     // Verify refs are present for buttons (format: [ref=eXXX])
     assert!(
         yaml.contains("[ref=e"),
-        "Snapshot should contain refs for buttons, got: {}",
-        yaml
+        "Snapshot should contain refs for buttons, got: {yaml}"
     );
 
     // Clean up
@@ -92,12 +91,12 @@ async fn test_aria_snapshot_includes_refs_for_headings() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <h1>Main Title</h1>
             <h2>Subtitle</h2>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -106,13 +105,12 @@ async fn test_aria_snapshot_includes_refs_for_headings() {
     // Capture snapshot
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Snapshot with heading refs:\n{}", yaml);
+    println!("Snapshot with heading refs:\n{yaml}");
 
     // Verify refs are present for headings
     assert!(
         yaml.contains("[ref=e"),
-        "Snapshot should contain refs for headings, got: {}",
-        yaml
+        "Snapshot should contain refs for headings, got: {yaml}"
     );
 
     // Clean up
@@ -150,7 +148,7 @@ async fn test_ref_resolution_and_click() {
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Initial snapshot:\n{}", yaml);
+    println!("Initial snapshot:\n{yaml}");
 
     // Find the button's ref in the snapshot
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
@@ -166,7 +164,7 @@ async fn test_ref_resolution_and_click() {
     }
 
     let button_ref = find_button_ref(&snapshot).expect("Should find button ref");
-    println!("Found button ref: {}", button_ref);
+    println!("Found button ref: {button_ref}");
 
     // Click using the ref
     let handle = page
@@ -193,7 +191,11 @@ async fn test_ref_resolution_and_click() {
         .text_content()
         .await
         .expect("Failed to get text");
-    assert_eq!(new_text.as_deref(), Some("Clicked!"), "Button text should have changed");
+    assert_eq!(
+        new_text.as_deref(),
+        Some("Clicked!"),
+        "Button text should have changed"
+    );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -242,7 +244,7 @@ async fn test_ref_for_dynamic_elements() {
     // Capture snapshot after dynamic element is created
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Snapshot with dynamic element:\n{}", yaml);
+    println!("Snapshot with dynamic element:\n{yaml}");
 
     // Find the dynamic button's ref
     fn find_dynamic_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
@@ -260,7 +262,7 @@ async fn test_ref_for_dynamic_elements() {
     }
 
     let button_ref = find_dynamic_button_ref(&snapshot).expect("Should find dynamic button ref");
-    println!("Found dynamic button ref: {}", button_ref);
+    println!("Found dynamic button ref: {button_ref}");
 
     // Verify we can resolve the ref
     let handle = page
@@ -305,7 +307,10 @@ async fn test_invalid_ref_handling() {
 
     // Try to resolve a non-existent backend node ID
     let result = page.element_from_ref("e999999999").await;
-    assert!(result.is_err(), "Should fail for non-existent backend node ID");
+    assert!(
+        result.is_err(),
+        "Should fail for non-existent backend node ID"
+    );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
@@ -418,13 +423,12 @@ async fn test_main_frame_aria_snapshot_includes_refs() {
         .expect("Failed to get frame snapshot");
 
     let yaml = frame_snapshot.to_yaml();
-    println!("Main frame snapshot with refs:\n{}", yaml);
+    println!("Main frame snapshot with refs:\n{yaml}");
 
     // Verify refs are present for elements (format: [ref=eXXX])
     assert!(
         yaml.contains("[ref=e"),
-        "Main frame snapshot should contain refs for elements, got: {}",
-        yaml
+        "Main frame snapshot should contain refs for elements, got: {yaml}"
     );
 
     // Verify we can find a button ref in the snapshot structure

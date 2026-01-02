@@ -45,7 +45,10 @@ impl Locator<'_> {
     }
 
     /// Internal method to select multiple options (used by builder).
-    pub(crate) async fn select_options_internal(&self, options: &[&str]) -> Result<(), LocatorError> {
+    pub(crate) async fn select_options_internal(
+        &self,
+        options: &[&str],
+    ) -> Result<(), LocatorError> {
         let js = build_select_options_js(&self.selector.to_js_expression(), options);
         let result = self.evaluate_js(&js).await?;
         check_select_result(&result)?;

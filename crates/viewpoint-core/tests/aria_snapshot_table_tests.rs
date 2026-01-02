@@ -20,7 +20,7 @@ async fn test_aria_snapshot_table_caption() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <table>
                 <caption>Monthly Sales Report</caption>
@@ -38,7 +38,7 @@ async fn test_aria_snapshot_table_caption() {
                 </tbody>
             </table>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -46,17 +46,15 @@ async fn test_aria_snapshot_table_caption() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Table caption snapshot:\n{}", yaml);
+    println!("Table caption snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("caption"),
-        "Snapshot should contain 'caption' role, got: {}",
-        yaml
+        "Snapshot should contain 'caption' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Monthly Sales Report"),
-        "Snapshot should contain caption text, got: {}",
-        yaml
+        "Snapshot should contain caption text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -71,7 +69,7 @@ async fn test_aria_snapshot_thead() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <table>
                 <thead>
@@ -90,7 +88,7 @@ async fn test_aria_snapshot_thead() {
                 </tbody>
             </table>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -98,19 +96,17 @@ async fn test_aria_snapshot_thead() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Thead snapshot:\n{}", yaml);
+    println!("Thead snapshot:\n{yaml}");
 
     // thead should have "rowgroup" role
     assert!(
         yaml.contains("rowgroup"),
-        "Snapshot should contain 'rowgroup' role for thead, got: {}",
-        yaml
+        "Snapshot should contain 'rowgroup' role for thead, got: {yaml}"
     );
     // Column headers should be captured
     assert!(
         yaml.contains("columnheader") || yaml.contains("Name"),
-        "Snapshot should contain column headers, got: {}",
-        yaml
+        "Snapshot should contain column headers, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -125,7 +121,7 @@ async fn test_aria_snapshot_tfoot() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <table>
                 <thead>
@@ -152,7 +148,7 @@ async fn test_aria_snapshot_tfoot() {
                 </tfoot>
             </table>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -160,19 +156,17 @@ async fn test_aria_snapshot_tfoot() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Tfoot snapshot:\n{}", yaml);
+    println!("Tfoot snapshot:\n{yaml}");
 
     // Both thead and tfoot should have "rowgroup" role
     // We should see multiple rowgroups (thead, tbody, tfoot)
     assert!(
         yaml.contains("rowgroup"),
-        "Snapshot should contain 'rowgroup' role for tfoot, got: {}",
-        yaml
+        "Snapshot should contain 'rowgroup' role for tfoot, got: {yaml}"
     );
     assert!(
         yaml.contains("Total"),
-        "Snapshot should contain tfoot content, got: {}",
-        yaml
+        "Snapshot should contain tfoot content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -187,7 +181,7 @@ async fn test_aria_snapshot_complete_table() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <table>
                 <caption>Quarterly Report</caption>
@@ -215,7 +209,7 @@ async fn test_aria_snapshot_complete_table() {
                 </tfoot>
             </table>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -223,18 +217,24 @@ async fn test_aria_snapshot_complete_table() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Complete table snapshot:\n{}", yaml);
+    println!("Complete table snapshot:\n{yaml}");
 
     // Check all table structure elements
     assert!(yaml.contains("table"), "Should contain table");
     assert!(yaml.contains("caption"), "Should contain caption");
-    assert!(yaml.contains("rowgroup"), "Should contain rowgroup (thead/tbody/tfoot)");
+    assert!(
+        yaml.contains("rowgroup"),
+        "Should contain rowgroup (thead/tbody/tfoot)"
+    );
     assert!(yaml.contains("row"), "Should contain row");
     assert!(
         yaml.contains("columnheader") || yaml.contains("Quarter"),
         "Should contain column headers"
     );
-    assert!(yaml.contains("cell") || yaml.contains("Q1"), "Should contain cells");
+    assert!(
+        yaml.contains("cell") || yaml.contains("Q1"),
+        "Should contain cells"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }

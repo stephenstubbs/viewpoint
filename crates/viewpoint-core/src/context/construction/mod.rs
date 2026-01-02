@@ -9,7 +9,7 @@ use tracing::debug;
 use viewpoint_cdp::CdpConnection;
 
 use crate::context::trace::TracingState;
-use crate::context::{binding, routing, ContextOptions, DEFAULT_TEST_ID_ATTRIBUTE};
+use crate::context::{ContextOptions, DEFAULT_TEST_ID_ATTRIBUTE, binding, routing};
 use crate::error::ContextError;
 
 use super::{BrowserContext, ContextEventManager};

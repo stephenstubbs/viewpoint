@@ -421,6 +421,21 @@ impl PageEventManager {
         download_handling::wait_for_download(&self.wait_for_download_tx, timeout).await
     }
 
+    /// Register a download waiter and return the receiver.
+    /// Use this when you need to register before performing an action.
+    pub async fn register_download_waiter(&self) -> oneshot::Receiver<Download> {
+        download_handling::register_download_waiter(&self.wait_for_download_tx).await
+    }
+
+    /// Await a previously registered download waiter with timeout.
+    pub async fn await_download_waiter(
+        &self,
+        rx: oneshot::Receiver<Download>,
+        timeout: Duration,
+    ) -> Result<Download, PageError> {
+        download_handling::await_download_waiter(rx, timeout).await
+    }
+
     /// Wait for a file chooser to open.
     pub async fn wait_for_file_chooser(&self, timeout: Duration) -> Result<FileChooser, PageError> {
         download_handling::wait_for_file_chooser(&self.wait_for_file_chooser_tx, timeout).await

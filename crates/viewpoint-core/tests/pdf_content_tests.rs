@@ -18,7 +18,7 @@ use common::init_tracing;
 // Test HTML Templates
 // =============================================================================
 
-const SIMPLE_HTML: &str = r#"
+const SIMPLE_HTML: &str = r"
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,7 +35,7 @@ const SIMPLE_HTML: &str = r#"
     <p>It contains multiple paragraphs of text to test formatting.</p>
 </body>
 </html>
-"#;
+";
 
 const MULTI_PAGE_HTML: &str = r#"
 <!DOCTYPE html>
@@ -58,7 +58,7 @@ const MULTI_PAGE_HTML: &str = r#"
 </html>
 "#;
 
-const BACKGROUND_HTML: &str = r#"
+const BACKGROUND_HTML: &str = r"
 <!DOCTYPE html>
 <html>
 <head>
@@ -77,7 +77,7 @@ const BACKGROUND_HTML: &str = r#"
     <p>This document has background colors and gradients.</p>
 </body>
 </html>
-"#;
+";
 
 // =============================================================================
 // Header and Footer Tests

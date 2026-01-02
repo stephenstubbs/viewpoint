@@ -57,13 +57,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get text content programmatically
     println!("7. Reading text content...");
     let text = heading.text_content().await?;
-    println!("   Heading text: {:?}\n", text);
+    println!("   Heading text: {text:?}\n");
 
     // Check element count
     println!("8. Counting paragraph elements...");
     let paragraphs = page.locator("p");
     let count = paragraphs.count().await?;
-    println!("   Found {} paragraph(s).\n", count);
+    println!("   Found {count} paragraph(s).\n");
 
     // Harness cleanup happens automatically on drop
     println!("9. Test complete! Browser will close automatically.\n");

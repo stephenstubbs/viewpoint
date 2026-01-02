@@ -167,7 +167,7 @@ fn test_response_null_result() {
     let resp: CdpResponse = serde_json::from_str(json).unwrap();
     // Serde with Option<Value> treats null as None
     // This is expected behavior for CDP responses
-    assert!(resp.result.is_none() || resp.result.as_ref().is_some_and(|v| v.is_null()));
+    assert!(resp.result.is_none() || resp.result.as_ref().is_some_and(serde_json::Value::is_null));
 }
 
 #[test]

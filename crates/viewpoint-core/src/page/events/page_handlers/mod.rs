@@ -364,17 +364,20 @@ impl Page {
         // Enable downloads first
         self.event_manager.set_download_behavior(true).await?;
 
-        // Start waiting and then perform action
+        // Register the download waiter BEFORE performing the action
+        // This ensures we don't miss the download event due to race conditions
         let timeout = DEFAULT_NAVIGATION_TIMEOUT;
-        let download_future = self.event_manager.wait_for_download(timeout);
+        let download_rx = self.event_manager.register_download_waiter().await;
 
-        // Perform the action
+        // Perform the action that triggers the download
         action()
             .await
             .map_err(|e| PageError::EvaluationFailed(e.to_string()))?;
 
-        // Wait for the download
-        download_future.await
+        // Now await the download with timeout
+        self.event_manager
+            .await_download_waiter(download_rx, timeout)
+            .await
     }
 
     // =========================================================================

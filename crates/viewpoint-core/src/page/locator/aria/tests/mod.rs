@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use super::*;
 
 #[test]
@@ -281,7 +283,11 @@ fn test_aria_snapshot_ref_serialization() {
 
     // ref should serialize to JSON as "ref"
     let json = serde_json::to_string(&snapshot).expect("Should serialize");
-    assert!(json.contains(r#""ref":"e42""#), "JSON should contain ref field, got: {}", json);
+    assert!(
+        json.contains(r#""ref":"e42""#),
+        "JSON should contain ref field, got: {}",
+        json
+    );
 
     // And deserialize
     let deserialized: AriaSnapshot = serde_json::from_str(&json).expect("Should deserialize");
@@ -312,8 +318,16 @@ fn test_aria_snapshot_ref_with_children() {
     button.children.push(icon);
 
     let yaml = button.to_yaml();
-    assert!(yaml.contains("[ref=e100]"), "Parent should have ref, got: {}", yaml);
-    assert!(yaml.contains("[ref=e101]"), "Child should have ref, got: {}", yaml);
+    assert!(
+        yaml.contains("[ref=e100]"),
+        "Parent should have ref, got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("[ref=e101]"),
+        "Child should have ref, got: {}",
+        yaml
+    );
 }
 
 #[test]
@@ -326,9 +340,21 @@ fn test_aria_snapshot_ref_with_other_attributes() {
 
     let yaml = snapshot.to_yaml();
     // All attributes should be present
-    assert!(yaml.contains("[checked]"), "Should have [checked], got: {}", yaml);
-    assert!(yaml.contains("[disabled]"), "Should have [disabled], got: {}", yaml);
-    assert!(yaml.contains("[ref=e999]"), "Should have [ref=e999], got: {}", yaml);
+    assert!(
+        yaml.contains("[checked]"),
+        "Should have [checked], got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("[disabled]"),
+        "Should have [disabled], got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("[ref=e999]"),
+        "Should have [ref=e999], got: {}",
+        yaml
+    );
 }
 
 #[test]
@@ -340,6 +366,14 @@ fn test_aria_snapshot_ref_with_frame_boundary() {
     snapshot.node_ref = Some("e555".to_string());
 
     let yaml = snapshot.to_yaml();
-    assert!(yaml.contains("[frame-boundary]"), "Should have [frame-boundary], got: {}", yaml);
-    assert!(yaml.contains("[ref=e555]"), "Should have [ref=e555], got: {}", yaml);
+    assert!(
+        yaml.contains("[frame-boundary]"),
+        "Should have [frame-boundary], got: {}",
+        yaml
+    );
+    assert!(
+        yaml.contains("[ref=e555]"),
+        "Should have [ref=e555], got: {}",
+        yaml
+    );
 }

@@ -13,7 +13,7 @@ pub fn js_impl(input: TokenStream) -> TokenStream {
     // This goes through Rust's tokenizer, which may mangle some JS syntax
     let input2: TokenStream2 = input.into();
     let js_source = tokens_to_js_string(&input2);
-    
+
     js_impl_from_source(&js_source)
 }
 

@@ -10,7 +10,7 @@ use viewpoint_js::js;
 
 use super::Frame;
 use crate::error::PageError;
-use crate::page::aria_snapshot::{apply_refs_to_snapshot, SnapshotOptions};
+use crate::page::aria_snapshot::{SnapshotOptions, apply_refs_to_snapshot};
 use crate::page::locator::aria_js::aria_snapshot_with_refs_js;
 
 impl Frame {
@@ -234,7 +234,10 @@ impl Frame {
         // Sort by index to maintain order
         elements.sort_by_key(|(index, _)| *index);
 
-        trace!(element_count = elements.len(), "Batch-fetched array elements");
+        trace!(
+            element_count = elements.len(),
+            "Batch-fetched array elements"
+        );
 
         Ok(elements)
     }

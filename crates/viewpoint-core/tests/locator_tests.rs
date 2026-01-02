@@ -151,7 +151,17 @@ async fn test_locator_fill_and_type() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <input type="text" name="custname" placeholder="Customer Name">
+                <input type="tel" name="custtel" placeholder="Phone">
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await
@@ -199,7 +209,17 @@ async fn test_locator_press() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <input type="text" name="custname" placeholder="Customer Name">
+                <input type="tel" name="custtel" placeholder="Phone">
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await
@@ -226,7 +246,16 @@ async fn test_locator_clear() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <input type="text" name="custname" placeholder="Customer Name">
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await
@@ -247,13 +276,25 @@ async fn test_locator_check_uncheck() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <label>
+                    <input type="checkbox" id="cheese" value="cheese" name="topping">
+                    Cheese
+                </label>
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await
         .expect("Failed to navigate");
 
-    // Find a checkbox (the toppings checkboxes)
+    // Find the checkbox
     let checkbox = page.locator("input[type='checkbox'][value='cheese']");
 
     // Check it
@@ -433,7 +474,16 @@ async fn test_locator_input_value() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <input type="text" name="custname" placeholder="Customer Name">
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await
@@ -460,7 +510,16 @@ async fn test_locator_focus() {
 
     let (browser, _context, page) = setup().await;
 
-    page.goto("https://httpbin.org/forms/post")
+    // Use a local data URL to avoid external network dependencies
+    let html = r#"data:text/html,
+        <html><body>
+            <form>
+                <input type="text" name="custname" placeholder="Customer Name">
+            </form>
+        </body></html>
+    "#;
+
+    page.goto(html)
         .wait_until(DocumentLoadState::Load)
         .goto()
         .await

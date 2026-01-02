@@ -47,12 +47,12 @@ async fn test_aria_snapshot_simple_page() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <h1>Main Title</h1>
             <button>Click me</button>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -63,13 +63,12 @@ async fn test_aria_snapshot_simple_page() {
 
     // Convert to YAML for inspection
     let yaml = snapshot.to_yaml();
-    println!("Snapshot YAML:\n{}", yaml);
+    println!("Snapshot YAML:\n{yaml}");
 
     // Verify basic structure
     assert!(
         yaml.contains("heading") || yaml.contains("button"),
-        "Snapshot should contain heading or button, got: {}",
-        yaml
+        "Snapshot should contain heading or button, got: {yaml}"
     );
 
     // Clean up
@@ -115,13 +114,12 @@ async fn test_aria_snapshot_iframe_boundary_detection() {
     // Capture snapshot
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Snapshot with iframe:\n{}", yaml);
+    println!("Snapshot with iframe:\n{yaml}");
 
     // Verify iframe is marked as frame boundary
     assert!(
         yaml.contains("iframe") || yaml.contains("[frame-boundary]"),
-        "Snapshot should contain iframe or frame-boundary marker, got: {}",
-        yaml
+        "Snapshot should contain iframe or frame-boundary marker, got: {yaml}"
     );
 
     // Clean up
@@ -234,13 +232,12 @@ async fn test_frame_aria_snapshot() {
         .expect("Failed to get frame snapshot");
 
     let yaml = frame_snapshot.to_yaml();
-    println!("Frame snapshot:\n{}", yaml);
+    println!("Frame snapshot:\n{yaml}");
 
     // Verify frame content is captured
     assert!(
         yaml.contains("button") || yaml.contains("heading"),
-        "Frame snapshot should contain button or heading, got: {}",
-        yaml
+        "Frame snapshot should contain button or heading, got: {yaml}"
     );
 
     // Clean up
@@ -290,14 +287,13 @@ async fn test_aria_snapshot_with_frames() {
         .expect("Failed to get multi-frame snapshot");
 
     let yaml = snapshot.to_yaml();
-    println!("Multi-frame snapshot:\n{}", yaml);
+    println!("Multi-frame snapshot:\n{yaml}");
 
     // The snapshot should contain both main page and frame content
     // (though exact format depends on stitching)
     assert!(
         yaml.contains("heading") || yaml.contains("button"),
-        "Multi-frame snapshot should contain page elements, got: {}",
-        yaml
+        "Multi-frame snapshot should contain page elements, got: {yaml}"
     );
 
     // Clean up
@@ -348,7 +344,7 @@ async fn test_aria_snapshot_nested_frames() {
         .expect("Failed to get snapshot");
 
     let yaml = snapshot.to_yaml();
-    println!("Nested frames snapshot:\n{}", yaml);
+    println!("Nested frames snapshot:\n{yaml}");
 
     // Should have content from multiple levels
     assert!(
@@ -386,13 +382,13 @@ async fn test_aria_snapshot_heading_accessible_name() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <h1>Main Heading</h1>
             <h2>Secondary Heading</h2>
             <h3>Tertiary Heading</h3>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -400,23 +396,20 @@ async fn test_aria_snapshot_heading_accessible_name() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Heading snapshot:\n{}", yaml);
+    println!("Heading snapshot:\n{yaml}");
 
     // Headings should have their text content as accessible name
     assert!(
         yaml.contains("\"Main Heading\""),
-        "Snapshot should contain heading with name 'Main Heading', got: {}",
-        yaml
+        "Snapshot should contain heading with name 'Main Heading', got: {yaml}"
     );
     assert!(
         yaml.contains("\"Secondary Heading\""),
-        "Snapshot should contain heading with name 'Secondary Heading', got: {}",
-        yaml
+        "Snapshot should contain heading with name 'Secondary Heading', got: {yaml}"
     );
     assert!(
         yaml.contains("\"Tertiary Heading\""),
-        "Snapshot should contain heading with name 'Tertiary Heading', got: {}",
-        yaml
+        "Snapshot should contain heading with name 'Tertiary Heading', got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -440,7 +433,7 @@ async fn test_aria_snapshot_listitem_accessible_name() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <ul>
                 <li>First Item</li>
@@ -448,7 +441,7 @@ async fn test_aria_snapshot_listitem_accessible_name() {
                 <li>Third Item</li>
             </ul>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -456,18 +449,16 @@ async fn test_aria_snapshot_listitem_accessible_name() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("List item snapshot:\n{}", yaml);
+    println!("List item snapshot:\n{yaml}");
 
     // List items should have their text content as accessible name
     assert!(
         yaml.contains("\"First Item\""),
-        "Snapshot should contain listitem with name 'First Item', got: {}",
-        yaml
+        "Snapshot should contain listitem with name 'First Item', got: {yaml}"
     );
     assert!(
         yaml.contains("\"Second Item\""),
-        "Snapshot should contain listitem with name 'Second Item', got: {}",
-        yaml
+        "Snapshot should contain listitem with name 'Second Item', got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -491,7 +482,7 @@ async fn test_aria_snapshot_table_cell_accessible_name() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <table>
                 <thead>
@@ -508,7 +499,7 @@ async fn test_aria_snapshot_table_cell_accessible_name() {
                 </tbody>
             </table>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -516,18 +507,16 @@ async fn test_aria_snapshot_table_cell_accessible_name() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Table cell snapshot:\n{}", yaml);
+    println!("Table cell snapshot:\n{yaml}");
 
     // Table headers and cells should have their text content as accessible name
     assert!(
         yaml.contains("\"Header 1\""),
-        "Snapshot should contain columnheader with name 'Header 1', got: {}",
-        yaml
+        "Snapshot should contain columnheader with name 'Header 1', got: {yaml}"
     );
     assert!(
         yaml.contains("\"Cell A\""),
-        "Snapshot should contain cell with name 'Cell A', got: {}",
-        yaml
+        "Snapshot should contain cell with name 'Cell A', got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -551,7 +540,7 @@ async fn test_aria_snapshot_option_accessible_name() {
     let page = context.new_page().await.expect("Failed to create page");
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <select>
                 <option>Option A</option>
@@ -559,7 +548,7 @@ async fn test_aria_snapshot_option_accessible_name() {
                 <option>Option C</option>
             </select>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -567,14 +556,13 @@ async fn test_aria_snapshot_option_accessible_name() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Option snapshot:\n{}", yaml);
+    println!("Option snapshot:\n{yaml}");
 
     // Select options should have their text content as accessible name
     // Note: the select dropdown may show as combobox with options
     assert!(
         yaml.contains("combobox") || yaml.contains("option"),
-        "Snapshot should contain combobox or option, got: {}",
-        yaml
+        "Snapshot should contain combobox or option, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -614,18 +602,16 @@ async fn test_aria_snapshot_menuitem_accessible_name() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Menu item snapshot:\n{}", yaml);
+    println!("Menu item snapshot:\n{yaml}");
 
     // Menu items should have their text content as accessible name
     assert!(
         yaml.contains("\"File\""),
-        "Snapshot should contain menuitem with name 'File', got: {}",
-        yaml
+        "Snapshot should contain menuitem with name 'File', got: {yaml}"
     );
     assert!(
         yaml.contains("\"Edit\""),
-        "Snapshot should contain menuitem with name 'Edit', got: {}",
-        yaml
+        "Snapshot should contain menuitem with name 'Edit', got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -675,13 +661,12 @@ async fn test_locator_aria_snapshot() {
         .expect("Failed to get form snapshot");
 
     let yaml = form_snapshot.to_yaml();
-    println!("Form snapshot:\n{}", yaml);
+    println!("Form snapshot:\n{yaml}");
 
     // Should contain form elements
     assert!(
         yaml.contains("form") || yaml.contains("textbox") || yaml.contains("button"),
-        "Form snapshot should contain form, textbox, or button, got: {}",
-        yaml
+        "Form snapshot should contain form, textbox, or button, got: {yaml}"
     );
 
     // Clean up

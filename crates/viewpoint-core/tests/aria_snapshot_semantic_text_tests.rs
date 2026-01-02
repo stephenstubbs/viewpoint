@@ -23,11 +23,11 @@ async fn test_aria_snapshot_blockquote() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <blockquote>Famous quote here</blockquote>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -35,17 +35,15 @@ async fn test_aria_snapshot_blockquote() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Blockquote snapshot:\n{}", yaml);
+    println!("Blockquote snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("blockquote"),
-        "Snapshot should contain 'blockquote' role, got: {}",
-        yaml
+        "Snapshot should contain 'blockquote' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Famous quote here"),
-        "Snapshot should contain blockquote text content, got: {}",
-        yaml
+        "Snapshot should contain blockquote text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -70,17 +68,15 @@ async fn test_aria_snapshot_blockquote_with_citation() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Blockquote with citation snapshot:\n{}", yaml);
+    println!("Blockquote with citation snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("blockquote"),
-        "Snapshot should contain 'blockquote' role, got: {}",
-        yaml
+        "Snapshot should contain 'blockquote' role, got: {yaml}"
     );
     assert!(
         yaml.contains("To be or not to be"),
-        "Snapshot should contain blockquote text content, got: {}",
-        yaml
+        "Snapshot should contain blockquote text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -107,17 +103,15 @@ async fn test_aria_snapshot_code() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Code snapshot:\n{}", yaml);
+    println!("Code snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("code"),
-        "Snapshot should contain 'code' role, got: {}",
-        yaml
+        "Snapshot should contain 'code' role, got: {yaml}"
     );
     assert!(
         yaml.contains("console.log"),
-        "Snapshot should contain code text content, got: {}",
-        yaml
+        "Snapshot should contain code text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -128,11 +122,11 @@ async fn test_aria_snapshot_code_inline() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <p>Use the <code>npm install</code> command to install.</p>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -140,17 +134,15 @@ async fn test_aria_snapshot_code_inline() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Inline code snapshot:\n{}", yaml);
+    println!("Inline code snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("code"),
-        "Snapshot should contain 'code' role, got: {}",
-        yaml
+        "Snapshot should contain 'code' role, got: {yaml}"
     );
     assert!(
         yaml.contains("npm install"),
-        "Snapshot should contain inline code text, got: {}",
-        yaml
+        "Snapshot should contain inline code text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -165,11 +157,11 @@ async fn test_aria_snapshot_emphasis() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <em>Important text</em>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -177,17 +169,15 @@ async fn test_aria_snapshot_emphasis() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Emphasis snapshot:\n{}", yaml);
+    println!("Emphasis snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("emphasis"),
-        "Snapshot should contain 'emphasis' role, got: {}",
-        yaml
+        "Snapshot should contain 'emphasis' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Important text"),
-        "Snapshot should contain emphasis text content, got: {}",
-        yaml
+        "Snapshot should contain emphasis text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -202,11 +192,11 @@ async fn test_aria_snapshot_strong() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <strong>Bold statement</strong>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -214,17 +204,15 @@ async fn test_aria_snapshot_strong() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Strong snapshot:\n{}", yaml);
+    println!("Strong snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("strong"),
-        "Snapshot should contain 'strong' role, got: {}",
-        yaml
+        "Snapshot should contain 'strong' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Bold statement"),
-        "Snapshot should contain strong text content, got: {}",
-        yaml
+        "Snapshot should contain strong text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -239,11 +227,11 @@ async fn test_aria_snapshot_deletion() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <del>Removed text</del>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -251,17 +239,15 @@ async fn test_aria_snapshot_deletion() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Deletion snapshot:\n{}", yaml);
+    println!("Deletion snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("deletion"),
-        "Snapshot should contain 'deletion' role, got: {}",
-        yaml
+        "Snapshot should contain 'deletion' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Removed text"),
-        "Snapshot should contain deletion text content, got: {}",
-        yaml
+        "Snapshot should contain deletion text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -276,11 +262,11 @@ async fn test_aria_snapshot_insertion() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <ins>Added text</ins>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -288,17 +274,15 @@ async fn test_aria_snapshot_insertion() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Insertion snapshot:\n{}", yaml);
+    println!("Insertion snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("insertion"),
-        "Snapshot should contain 'insertion' role, got: {}",
-        yaml
+        "Snapshot should contain 'insertion' role, got: {yaml}"
     );
     assert!(
         yaml.contains("Added text"),
-        "Snapshot should contain insertion text content, got: {}",
-        yaml
+        "Snapshot should contain insertion text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -313,11 +297,11 @@ async fn test_aria_snapshot_subscript() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             H<sub>2</sub>O
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -325,17 +309,15 @@ async fn test_aria_snapshot_subscript() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Subscript snapshot:\n{}", yaml);
+    println!("Subscript snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("subscript"),
-        "Snapshot should contain 'subscript' role, got: {}",
-        yaml
+        "Snapshot should contain 'subscript' role, got: {yaml}"
     );
     assert!(
-        yaml.contains("2"),
-        "Snapshot should contain subscript text content, got: {}",
-        yaml
+        yaml.contains('2'),
+        "Snapshot should contain subscript text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -350,11 +332,11 @@ async fn test_aria_snapshot_superscript() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             E=mc<sup>2</sup>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -362,17 +344,15 @@ async fn test_aria_snapshot_superscript() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Superscript snapshot:\n{}", yaml);
+    println!("Superscript snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("superscript"),
-        "Snapshot should contain 'superscript' role, got: {}",
-        yaml
+        "Snapshot should contain 'superscript' role, got: {yaml}"
     );
     assert!(
-        yaml.contains("2"),
-        "Snapshot should contain superscript text content, got: {}",
-        yaml
+        yaml.contains('2'),
+        "Snapshot should contain superscript text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -387,11 +367,11 @@ async fn test_aria_snapshot_mark() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             Search results: <mark>highlighted term</mark>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -399,17 +379,15 @@ async fn test_aria_snapshot_mark() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Mark snapshot:\n{}", yaml);
+    println!("Mark snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("mark"),
-        "Snapshot should contain 'mark' role, got: {}",
-        yaml
+        "Snapshot should contain 'mark' role, got: {yaml}"
     );
     assert!(
         yaml.contains("highlighted term"),
-        "Snapshot should contain mark text content, got: {}",
-        yaml
+        "Snapshot should contain mark text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -424,13 +402,13 @@ async fn test_aria_snapshot_mixed_semantic_text() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <p>This is <strong>bold</strong> and <em>italic</em> text.</p>
             <blockquote>A famous quote with <code>code</code> inside.</blockquote>
             <p>Price was <del>$100</del> now <ins>$50</ins>!</p>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -438,7 +416,7 @@ async fn test_aria_snapshot_mixed_semantic_text() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Mixed semantic text snapshot:\n{}", yaml);
+    println!("Mixed semantic text snapshot:\n{yaml}");
 
     // Verify all semantic text elements are captured
     assert!(yaml.contains("strong"), "Should contain strong");

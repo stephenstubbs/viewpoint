@@ -9,10 +9,7 @@ mod common;
 
 use std::time::Duration;
 
-use viewpoint_core::{
-    Browser, ColorScheme, ForcedColors, ReducedMotion,
-    page::MediaType,
-};
+use viewpoint_core::{Browser, ColorScheme, ForcedColors, ReducedMotion, page::MediaType};
 use viewpoint_js::js;
 
 use common::init_tracing;
@@ -450,5 +447,3 @@ async fn test_media_clear() {
 
     browser.close().await.expect("Failed to close browser");
 }
-
-

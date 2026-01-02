@@ -51,7 +51,7 @@ async fn test_macro_page_fixture(page: Page) {
         .await
         .expect("should navigate");
 
-    expect_page(&page)
+    expect_page(page)
         .to_have_title("Example Domain")
         .await
         .expect("should have correct title");

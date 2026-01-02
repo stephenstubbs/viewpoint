@@ -209,7 +209,6 @@
 mod aria_snapshot;
 pub use aria_snapshot::SnapshotOptions;
 pub mod binding;
-mod ref_resolution;
 pub mod clock;
 mod clock_script;
 pub mod console;
@@ -236,6 +235,7 @@ mod navigation;
 pub mod page_error;
 mod pdf;
 pub mod popup;
+mod ref_resolution;
 mod routing_impl;
 mod screenshot;
 mod screenshot_element;
@@ -266,8 +266,8 @@ pub use emulation::{EmulateMediaBuilder, MediaType, VisionDeficiency};
 pub use evaluate::{JsHandle, Polling, WaitForFunctionBuilder};
 pub use events::PageEventManager;
 pub use file_chooser::{FileChooser, FilePayload};
-pub use frame::Frame;
 pub(crate) use frame::ExecutionContextRegistry;
+pub use frame::Frame;
 pub use frame_locator::{FrameElementLocator, FrameLocator, FrameRoleLocatorBuilder};
 pub use keyboard::Keyboard;
 pub use locator::{

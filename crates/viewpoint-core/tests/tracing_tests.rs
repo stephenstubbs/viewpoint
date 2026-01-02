@@ -346,8 +346,7 @@ async fn test_tracing_creates_valid_zip() {
 
     assert!(
         file_names.iter().any(|n| n.contains("trace")),
-        "Zip should contain trace data: {:?}",
-        file_names
+        "Zip should contain trace data: {file_names:?}"
     );
 
     browser.close().await.expect("Failed to close browser");

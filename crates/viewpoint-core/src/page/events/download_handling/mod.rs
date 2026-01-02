@@ -146,6 +146,30 @@ pub(super) async fn wait_for_download(
         .map_err(|_| PageError::EvaluationFailed("Download wait cancelled".to_string()))
 }
 
+/// Register a download waiter and return the receiver.
+/// This allows synchronous registration before an action that triggers a download.
+pub(super) async fn register_download_waiter(
+    wait_for_download_tx: &Mutex<Option<oneshot::Sender<Download>>>,
+) -> oneshot::Receiver<Download> {
+    let (tx, rx) = oneshot::channel();
+    {
+        let mut waiter = wait_for_download_tx.lock().await;
+        *waiter = Some(tx);
+    }
+    rx
+}
+
+/// Await a previously registered download waiter with timeout.
+pub(super) async fn await_download_waiter(
+    rx: oneshot::Receiver<Download>,
+    timeout: Duration,
+) -> Result<Download, PageError> {
+    tokio::time::timeout(timeout, rx)
+        .await
+        .map_err(|_| PageError::EvaluationFailed("Timeout waiting for download".to_string()))?
+        .map_err(|_| PageError::EvaluationFailed("Download wait cancelled".to_string()))
+}
+
 /// Wait for a file chooser to open.
 pub(super) async fn wait_for_file_chooser(
     wait_for_file_chooser_tx: &Mutex<Option<oneshot::Sender<FileChooser>>>,

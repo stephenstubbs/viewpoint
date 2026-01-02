@@ -77,12 +77,12 @@ fn test_valid_document_query() {
 
 #[test]
 fn test_valid_multiline() {
-    let js = r#"
+    let js = r"
         (() => {
             const items = document.querySelectorAll('li');
             return items.length;
         })()
-    "#;
+    ";
     assert!(validate_js(js).is_ok());
 }
 

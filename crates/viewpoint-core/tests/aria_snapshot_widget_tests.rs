@@ -29,12 +29,11 @@ async fn test_aria_snapshot_meter() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Meter snapshot:\n{}", yaml);
+    println!("Meter snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("meter"),
-        "Snapshot should contain 'meter' role, got: {}",
-        yaml
+        "Snapshot should contain 'meter' role, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -57,12 +56,11 @@ async fn test_aria_snapshot_meter_with_ranges() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Meter with ranges snapshot:\n{}", yaml);
+    println!("Meter with ranges snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("meter"),
-        "Snapshot should contain 'meter' role, got: {}",
-        yaml
+        "Snapshot should contain 'meter' role, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -93,18 +91,16 @@ async fn test_aria_snapshot_output() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Output snapshot:\n{}", yaml);
+    println!("Output snapshot:\n{yaml}");
 
     // output should have "status" role
     assert!(
         yaml.contains("status"),
-        "Snapshot should contain 'status' role for output, got: {}",
-        yaml
+        "Snapshot should contain 'status' role for output, got: {yaml}"
     );
     assert!(
         yaml.contains("100"),
-        "Snapshot should contain output text content, got: {}",
-        yaml
+        "Snapshot should contain output text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -115,11 +111,11 @@ async fn test_aria_snapshot_output_simple() {
     let (browser, _context, page) = launch_with_page().await;
 
     page.set_content(
-        r#"
+        r"
         <html><body>
             <output>42</output>
         </body></html>
-    "#,
+    ",
     )
     .set()
     .await
@@ -127,17 +123,15 @@ async fn test_aria_snapshot_output_simple() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Simple output snapshot:\n{}", yaml);
+    println!("Simple output snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("status"),
-        "Snapshot should contain 'status' role, got: {}",
-        yaml
+        "Snapshot should contain 'status' role, got: {yaml}"
     );
     assert!(
         yaml.contains("42"),
-        "Snapshot should contain output text, got: {}",
-        yaml
+        "Snapshot should contain output text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -164,17 +158,15 @@ async fn test_aria_snapshot_time() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Time snapshot:\n{}", yaml);
+    println!("Time snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("time"),
-        "Snapshot should contain 'time' role, got: {}",
-        yaml
+        "Snapshot should contain 'time' role, got: {yaml}"
     );
     assert!(
         yaml.contains("January 1st, 2024"),
-        "Snapshot should contain time text content, got: {}",
-        yaml
+        "Snapshot should contain time text content, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -197,17 +189,15 @@ async fn test_aria_snapshot_time_duration() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Time duration snapshot:\n{}", yaml);
+    println!("Time duration snapshot:\n{yaml}");
 
     assert!(
         yaml.contains("time"),
-        "Snapshot should contain 'time' role, got: {}",
-        yaml
+        "Snapshot should contain 'time' role, got: {yaml}"
     );
     assert!(
         yaml.contains("2 hours and 30 minutes"),
-        "Snapshot should contain duration text, got: {}",
-        yaml
+        "Snapshot should contain duration text, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -241,13 +231,12 @@ async fn test_aria_snapshot_datalist() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Datalist snapshot:\n{}", yaml);
+    println!("Datalist snapshot:\n{yaml}");
 
     // datalist should have "listbox" role
     assert!(
         yaml.contains("listbox"),
-        "Snapshot should contain 'listbox' role for datalist, got: {}",
-        yaml
+        "Snapshot should contain 'listbox' role for datalist, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -283,19 +272,17 @@ async fn test_aria_snapshot_optgroup() {
 
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
     let yaml = snapshot.to_yaml();
-    println!("Optgroup snapshot:\n{}", yaml);
+    println!("Optgroup snapshot:\n{yaml}");
 
     // optgroup should have "group" role
     assert!(
         yaml.contains("group"),
-        "Snapshot should contain 'group' role for optgroup, got: {}",
-        yaml
+        "Snapshot should contain 'group' role for optgroup, got: {yaml}"
     );
     // Options should still be captured
     assert!(
         yaml.contains("option"),
-        "Snapshot should contain options, got: {}",
-        yaml
+        "Snapshot should contain options, got: {yaml}"
     );
 
     browser.close().await.expect("Failed to close browser");

@@ -163,7 +163,11 @@ impl Frame {
             }
         }
         // Fall back to local data (for backwards compatibility)
-        self.data.read().execution_contexts.get(MAIN_WORLD_KEY).copied()
+        self.data
+            .read()
+            .execution_contexts
+            .get(MAIN_WORLD_KEY)
+            .copied()
     }
 
     /// Set an execution context for this frame.
@@ -182,7 +186,8 @@ impl Frame {
     pub(crate) fn remove_execution_context(&self, id: ExecutionContextId) -> bool {
         let mut data = self.data.write();
         let original_len = data.execution_contexts.len();
-        data.execution_contexts.retain(|_, &mut ctx_id| ctx_id != id);
+        data.execution_contexts
+            .retain(|_, &mut ctx_id| ctx_id != id);
         data.execution_contexts.len() < original_len
     }
 

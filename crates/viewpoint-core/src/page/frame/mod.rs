@@ -11,5 +11,5 @@ mod execution_context;
 mod navigation;
 mod tree;
 
-pub(crate) use execution_context::ExecutionContextRegistry;
 pub use core::Frame;
+pub(crate) use execution_context::ExecutionContextRegistry;

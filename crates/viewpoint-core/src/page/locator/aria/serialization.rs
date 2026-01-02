@@ -66,10 +66,8 @@ impl AriaSnapshot {
                 // Include frame name if available
                 if let Some(ref name) = self.frame_name {
                     if !name.is_empty() {
-                        output.push_str(&format!(
-                            " [frame-name=\"{}\"]",
-                            name.replace('"', "\\\"")
-                        ));
+                        output
+                            .push_str(&format!(" [frame-name=\"{}\"]", name.replace('"', "\\\"")));
                     }
                 }
             }

@@ -275,8 +275,20 @@ impl Scanner<'_> {
 
         matches!(
             ident,
-            "return" | "case" | "throw" | "in" | "of" | "typeof" | "void" | "delete" | "new"
-                | "instanceof" | "else" | "do" | "await" | "yield"
+            "return"
+                | "case"
+                | "throw"
+                | "in"
+                | "of"
+                | "typeof"
+                | "void"
+                | "delete"
+                | "new"
+                | "instanceof"
+                | "else"
+                | "do"
+                | "await"
+                | "yield"
         )
     }
 }

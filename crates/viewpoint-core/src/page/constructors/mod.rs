@@ -201,7 +201,11 @@ impl Page {
             frame_id: self.frame_id.clone(),
             closed: self.closed,
             route_registry: self.route_registry.clone(),
-            keyboard: Keyboard::new(self.connection.clone(), self.session_id.clone(), self.frame_id.clone()),
+            keyboard: Keyboard::new(
+                self.connection.clone(),
+                self.session_id.clone(),
+                self.frame_id.clone(),
+            ),
             mouse: Mouse::new(self.connection.clone(), self.session_id.clone()),
             touchscreen: Touchscreen::new(self.connection.clone(), self.session_id.clone()),
             event_manager: self.event_manager.clone(),

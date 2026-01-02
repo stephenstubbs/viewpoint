@@ -89,9 +89,7 @@ use viewpoint_cdp::protocol::target_domain::{
     CreateBrowserContextParams, CreateBrowserContextResult, GetBrowserContextsResult,
 };
 
-use crate::context::{
-    BrowserContext, ContextOptions, StorageState, StorageStateSource,
-};
+use crate::context::{BrowserContext, ContextOptions, StorageState, StorageStateSource};
 use crate::error::BrowserError;
 
 pub use connector::ConnectOverCdpBuilder;
@@ -492,7 +490,10 @@ impl Browser {
         for attempt in 1..=max_attempts {
             match child.try_wait() {
                 Ok(Some(status)) => {
-                    info!(?status, attempt, "Browser process reaped successfully in Drop");
+                    info!(
+                        ?status,
+                        attempt, "Browser process reaped successfully in Drop"
+                    );
                     return;
                 }
                 Ok(None) => {
@@ -533,8 +534,8 @@ impl Drop for Browser {
             if let Some(ref process) = self.process {
                 // We can't await in drop, so we try to kill synchronously
                 if let Ok(mut guard) = process.try_lock() {
-                    // Use the sync helper with 3 attempts and 1ms delay between attempts
-                    Self::kill_and_reap_sync(&mut guard, 3, Duration::from_millis(1));
+                    // Use the sync helper with 10 attempts and 10ms delay between attempts (100ms total)
+                    Self::kill_and_reap_sync(&mut guard, 10, Duration::from_millis(10));
                 }
             }
         }

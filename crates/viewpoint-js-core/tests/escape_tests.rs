@@ -93,7 +93,7 @@ fn test_css_attr_in_queryselector() {
     // This is the main use case: building a querySelector call
     let id = "submit-button";
     let attr_value = escape_for_css_attr(id);
-    let selector = format!(r#"document.querySelector('[data-testid={}]')"#, attr_value);
+    let selector = format!(r"document.querySelector('[data-testid={attr_value}]')");
     assert_eq!(
         selector,
         r#"document.querySelector('[data-testid=\"submit-button\"]')"#
@@ -104,10 +104,7 @@ fn test_css_attr_in_queryselector() {
 fn test_css_attr_in_queryselectorall() {
     let id = "my-test-id";
     let attr_value = escape_for_css_attr(id);
-    let selector = format!(
-        r#"document.querySelectorAll('[data-testid={}]')"#,
-        attr_value
-    );
+    let selector = format!(r"document.querySelectorAll('[data-testid={attr_value}]')");
     assert_eq!(
         selector,
         r#"document.querySelectorAll('[data-testid=\"my-test-id\"]')"#
@@ -118,7 +115,7 @@ fn test_css_attr_in_queryselectorall() {
 fn test_css_attr_custom_attribute() {
     let id = "test-value";
     let attr_value = escape_for_css_attr(id);
-    let selector = format!(r#"document.querySelectorAll('[data-cy={}]')"#, attr_value);
+    let selector = format!(r"document.querySelectorAll('[data-cy={attr_value}]')");
     assert_eq!(
         selector,
         r#"document.querySelectorAll('[data-cy=\"test-value\"]')"#
@@ -174,7 +171,7 @@ fn test_unsigned_integers() {
 
 #[test]
 fn test_floats() {
-    assert_eq!(3.14_f64.to_js_value(), "3.14");
+    assert_eq!(3.15_f64.to_js_value(), "3.15");
     assert_eq!(f64::NAN.to_js_value(), "NaN");
     assert_eq!(f64::INFINITY.to_js_value(), "Infinity");
     assert_eq!(f64::NEG_INFINITY.to_js_value(), "-Infinity");

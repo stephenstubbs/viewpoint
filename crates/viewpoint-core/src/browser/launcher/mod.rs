@@ -1,9 +1,12 @@
 //! Browser launching functionality.
 
+mod chromium_args;
+mod fs_utils;
+mod user_data;
+
 use std::env;
-use std::fs;
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
@@ -15,86 +18,13 @@ use viewpoint_cdp::CdpConnection;
 use super::Browser;
 use crate::error::BrowserError;
 
-/// User data directory configuration for browser profiles.
-///
-/// Controls how the browser manages user data (cookies, localStorage, settings).
-/// The default is [`UserDataDir::Temp`], which creates an isolated temporary
-/// directory that is automatically cleaned up when the browser closes.
-///
-/// # Breaking Change
-///
-/// Prior to this change, browsers used the system default profile (`~/.config/chromium/`)
-/// by default. To restore the old behavior, use [`UserDataDir::System`] explicitly:
-///
-/// ```no_run
-/// use viewpoint_core::Browser;
-///
-/// # async fn example() -> Result<(), viewpoint_core::CoreError> {
-/// let browser = Browser::launch()
-///     .user_data_dir_system()
-///     .launch()
-///     .await?;
-/// # Ok(())
-/// # }
-/// ```
-#[derive(Debug, Clone)]
-pub enum UserDataDir {
-    /// Create a unique temporary directory per session.
-    ///
-    /// This is the default mode. Each browser instance gets its own isolated
-    /// profile that is automatically deleted when the browser closes or is dropped.
-    /// This prevents conflicts when running multiple browser instances concurrently.
-    Temp,
+pub use user_data::UserDataDir;
 
-    /// Copy a template profile to a temporary directory.
-    ///
-    /// The template directory contents are copied to a new temporary directory.
-    /// The temporary directory is cleaned up when the browser closes.
-    /// The original template directory is unchanged.
-    ///
-    /// Use this when you need pre-configured settings, extensions, or cookies
-    /// as a starting point, but still want isolation between sessions.
-    TempFromTemplate(PathBuf),
-
-    /// Use a persistent directory for browser data.
-    ///
-    /// Browser state (cookies, localStorage, settings) persists in the specified
-    /// directory across browser restarts. The directory is NOT cleaned up when
-    /// the browser closes.
-    ///
-    /// Note: Using the same persistent directory for multiple concurrent browser
-    /// instances will cause profile lock conflicts.
-    Persist(PathBuf),
-
-    /// Use the system default profile.
-    ///
-    /// On Linux, this is typically `~/.config/chromium/`.
-    /// No `--user-data-dir` flag is passed to Chromium.
-    ///
-    /// **Warning**: This can cause conflicts if another Chromium instance is running,
-    /// or if a previous session crashed without proper cleanup. Prefer [`UserDataDir::Temp`]
-    /// for automation scenarios.
-    System,
-}
+use chromium_args::{CHROMIUM_PATHS, STABILITY_ARGS};
+use fs_utils::copy_dir_recursive;
 
 /// Default timeout for browser launch.
 const DEFAULT_LAUNCH_TIMEOUT: Duration = Duration::from_secs(30);
-
-/// Common Chromium paths on different platforms.
-const CHROMIUM_PATHS: &[&str] = &[
-    // Linux
-    "chromium",
-    "chromium-browser",
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
-    "/snap/bin/chromium",
-    // macOS
-    "/Applications/Chromium.app/Contents/MacOS/Chromium",
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    // Windows
-    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-];
 
 /// Builder for launching a browser.
 #[derive(Debug, Clone)]
@@ -305,32 +235,8 @@ impl BrowserBuilder {
         }
 
         // Add common stability flags
-        let stability_args = [
-            "--disable-background-networking",
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-breakpad",
-            "--disable-component-extensions-with-background-pages",
-            "--disable-component-update",
-            "--disable-default-apps",
-            "--disable-dev-shm-usage",
-            "--disable-extensions",
-            "--disable-features=TranslateUI",
-            "--disable-hang-monitor",
-            "--disable-ipc-flooding-protection",
-            "--disable-popup-blocking",
-            "--disable-prompt-on-repost",
-            "--disable-renderer-backgrounding",
-            "--disable-sync",
-            "--enable-features=NetworkService,NetworkServiceInProcess",
-            "--force-color-profile=srgb",
-            "--metrics-recording-only",
-            "--no-first-run",
-            "--password-store=basic",
-            "--use-mock-keychain",
-        ];
-        cmd.args(stability_args);
-        trace!(arg_count = stability_args.len(), "Added stability flags");
+        cmd.args(STABILITY_ARGS);
+        trace!(arg_count = STABILITY_ARGS.len(), "Added stability flags");
 
         // Add user data directory if we have one
         if let Some(ref user_data_dir) = user_data_path {
@@ -429,9 +335,7 @@ impl BrowserBuilder {
                     "Copying template profile to temporary directory"
                 );
                 copy_dir_recursive(template_path, &dest_path).map_err(|e| {
-                    BrowserError::LaunchFailed(format!(
-                        "Failed to copy template profile: {e}"
-                    ))
+                    BrowserError::LaunchFailed(format!("Failed to copy template profile: {e}"))
                 })?;
 
                 info!(
@@ -538,24 +442,4 @@ impl BrowserBuilder {
                 "failed to find WebSocket URL in browser output".into(),
             ))
     }
-}
-
-/// Recursively copy a directory and its contents.
-///
-/// This copies files and subdirectories from `src` to `dst`.
-/// The destination directory must already exist.
-fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let src_path = entry.path();
-        let dst_path = dst.join(entry.file_name());
-
-        if src_path.is_dir() {
-            fs::create_dir_all(&dst_path)?;
-            copy_dir_recursive(&src_path, &dst_path)?;
-        } else {
-            fs::copy(&src_path, &dst_path)?;
-        }
-    }
-    Ok(())
 }

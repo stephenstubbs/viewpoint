@@ -1,4 +1,5 @@
 #![cfg(feature = "integration")]
+#![allow(clippy::assertions_on_constants, clippy::float_cmp)]
 
 //! Device emulation context tests for viewpoint-core.
 //!

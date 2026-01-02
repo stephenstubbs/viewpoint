@@ -50,8 +50,7 @@ async fn test_click_auto_waits_for_navigation() {
     let url = page.url().await.expect("Failed to get URL");
     assert!(
         url.contains("example.com"),
-        "Expected to navigate to example.com, got: {}",
-        url
+        "Expected to navigate to example.com, got: {url}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -141,8 +140,7 @@ async fn test_click_non_navigating_returns_quickly() {
     // Should return within a reasonable time (detection window + small buffer)
     assert!(
         elapsed < std::time::Duration::from_millis(500),
-        "Click took too long: {:?}",
-        elapsed
+        "Click took too long: {elapsed:?}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -196,8 +194,7 @@ async fn test_press_enter_auto_waits_for_navigation() {
     let url = page.url().await.expect("Failed to get URL");
     assert!(
         url.contains("httpbin.org"),
-        "Expected to navigate to httpbin.org, got: {}",
-        url
+        "Expected to navigate to httpbin.org, got: {url}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -291,8 +288,7 @@ async fn test_dblclick_auto_waits_for_navigation() {
     let url = page.url().await.expect("Failed to get URL");
     assert!(
         url.contains("example.com"),
-        "Expected to navigate to example.com, got: {}",
-        url
+        "Expected to navigate to example.com, got: {url}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -342,8 +338,7 @@ async fn test_select_option_auto_waits_for_navigation() {
     let url = page.url().await.expect("Failed to get URL");
     assert!(
         url.contains("example.com"),
-        "Expected to navigate to example.com, got: {}",
-        url
+        "Expected to navigate to example.com, got: {url}"
     );
 
     browser.close().await.expect("Failed to close browser");
@@ -389,8 +384,7 @@ async fn test_check_auto_waits_for_navigation() {
     let url = page.url().await.expect("Failed to get URL");
     assert!(
         url.contains("example.com"),
-        "Expected to navigate to example.com, got: {}",
-        url
+        "Expected to navigate to example.com, got: {url}"
     );
 
     browser.close().await.expect("Failed to close browser");

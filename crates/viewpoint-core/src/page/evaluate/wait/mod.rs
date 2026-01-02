@@ -114,7 +114,11 @@ impl<'a> WaitForFunctionBuilder<'a> {
             if result.is_truthy {
                 debug!(
                     "Function returned truthy value (handle: {})",
-                    if result.handle.is_some() { "present" } else { "none (primitive)" }
+                    if result.handle.is_some() {
+                        "present"
+                    } else {
+                        "none (primitive)"
+                    }
                 );
                 return Ok(result.handle);
             }

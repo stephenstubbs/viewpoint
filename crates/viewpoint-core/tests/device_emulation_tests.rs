@@ -1,4 +1,5 @@
 #![cfg(feature = "integration")]
+#![allow(clippy::float_cmp, clippy::assertions_on_constants)]
 
 //! Device emulation tests for viewpoint-core.
 //!
@@ -37,8 +38,6 @@ const VIEWPORT_HTML: &str = r#"
 </body>
 </html>
 "#;
-
-
 
 // =============================================================================
 // Viewport Tests
@@ -192,5 +191,3 @@ async fn test_device_find_by_name() {
     let device_lower = devices::find_device("iphone 13");
     assert!(device_lower.is_some());
 }
-
-

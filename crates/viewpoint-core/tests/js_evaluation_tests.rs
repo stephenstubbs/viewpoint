@@ -60,10 +60,10 @@ async fn test_js_evaluate_primitives() {
 
     // Test float
     let float: f64 = page
-        .evaluate(js! { 3.14 * 2 })
+        .evaluate(js! { 3.15 * 2 })
         .await
         .expect("Failed to evaluate float");
-    assert!((float - 6.28).abs() < 0.01);
+    assert!((float - 6.30).abs() < 0.01);
 
     // Test boolean
     let boolean: bool = page
@@ -245,12 +245,12 @@ async fn test_js_interpolation_types() {
     assert_eq!(result, 84);
 
     // Test float interpolation
-    let pi = 3.14159;
+    let val = 1.23456;
     let result: f64 = page
-        .evaluate(&js! { Math.round(#{pi} * 100) / 100 })
+        .evaluate(&js! { Math.round(#{val} * 100) / 100 })
         .await
         .expect("Failed to evaluate");
-    assert!((result - 3.14).abs() < 0.01);
+    assert!((result - 1.23).abs() < 0.01);
 
     // Test string interpolation
     let name = "World";

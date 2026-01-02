@@ -8,10 +8,7 @@ mod common;
 
 use std::time::Duration;
 
-use viewpoint_core::{
-    Browser,
-    page::VisionDeficiency,
-};
+use viewpoint_core::{Browser, page::VisionDeficiency};
 
 use common::init_tracing;
 

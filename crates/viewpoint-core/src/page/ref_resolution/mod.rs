@@ -77,10 +77,12 @@
 //! ```
 
 use tracing::{debug, instrument};
-use viewpoint_cdp::protocol::dom::{BackendNodeId, DescribeNodeParams, DescribeNodeResult, ResolveNodeParams, ResolveNodeResult};
+use viewpoint_cdp::protocol::dom::{
+    BackendNodeId, DescribeNodeParams, DescribeNodeResult, ResolveNodeParams, ResolveNodeResult,
+};
 
-use super::locator::ElementHandle;
 use super::Page;
+use super::locator::ElementHandle;
 use crate::error::{LocatorError, PageError};
 
 /// Parse a ref string to extract the backend node ID.
@@ -144,7 +146,10 @@ impl Page {
         }
 
         let backend_node_id = parse_ref(ref_str)?;
-        debug!(backend_node_id = backend_node_id, "Resolving ref to element");
+        debug!(
+            backend_node_id = backend_node_id,
+            "Resolving ref to element"
+        );
 
         // Use DOM.resolveNode to get a RemoteObject from the backend node ID
         let result: ResolveNodeResult = self
@@ -210,7 +215,7 @@ impl Page {
     /// to handle invalid refs gracefully.
     pub fn locator_from_ref(&self, ref_str: &str) -> super::Locator<'_> {
         use super::locator::{Locator, Selector};
-        
+
         // Parse the ref to validate format
         let backend_node_id = parse_ref(ref_str)
             .expect("Invalid ref format. Refs must be in format 'e{backendNodeId}'");

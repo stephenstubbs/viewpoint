@@ -60,7 +60,7 @@ fn test_soft_assertion_error_display() {
         .with_expected("Hello")
         .with_actual("World");
 
-    let display = format!("{}", error);
+    let display = format!("{error}");
     assert!(display.contains("to_have_text"));
     assert!(display.contains("Text mismatch"));
     assert!(display.contains("Expected: Hello"));
