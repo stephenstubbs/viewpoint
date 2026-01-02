@@ -2,6 +2,96 @@
 //!
 //! This module contains JavaScript code for capturing ARIA accessibility
 //! snapshots with element references for backendNodeId resolution.
+//!
+//! # Supported HTML Elements
+//!
+//! The following HTML elements are mapped to their implicit ARIA roles:
+//!
+//! ## Links and Navigation
+//! - `<a href="...">` → link
+//! - `<area href="...">` → link
+//! - `<nav>` → navigation
+//!
+//! ## Document Structure
+//! - `<article>` → article
+//! - `<aside>` → complementary
+//! - `<footer>` → contentinfo
+//! - `<header>` → banner
+//! - `<main>` → main
+//! - `<section>` → region
+//! - `<search>` → search
+//! - `<h1>` through `<h6>` → heading (with level attribute)
+//!
+//! ## Semantic Text Elements
+//! - `<blockquote>` → blockquote
+//! - `<code>` → code
+//! - `<del>` → deletion
+//! - `<em>` → emphasis
+//! - `<ins>` → insertion
+//! - `<mark>` → mark
+//! - `<p>` → paragraph
+//! - `<strong>` → strong
+//! - `<sub>` → subscript
+//! - `<sup>` → superscript
+//!
+//! ## Definition List Elements
+//! - `<dd>` → definition
+//! - `<dfn>` → term
+//! - `<dt>` → term
+//!
+//! ## Document Structure Grouping
+//! - `<address>` → group
+//! - `<details>` → group
+//! - `<fieldset>` → group
+//! - `<figure>` → figure
+//! - `<hgroup>` → group
+//! - `<optgroup>` → group
+//!
+//! ## Lists
+//! - `<li>` → listitem
+//! - `<menu>` → list
+//! - `<ol>` → list
+//! - `<ul>` → list
+//!
+//! ## Tables
+//! - `<caption>` → caption
+//! - `<table>` → table
+//! - `<tbody>` → rowgroup
+//! - `<td>` → cell
+//! - `<tfoot>` → rowgroup
+//! - `<th>` → columnheader
+//! - `<thead>` → rowgroup
+//! - `<tr>` → row
+//!
+//! ## Forms and Inputs
+//! - `<button>` → button
+//! - `<datalist>` → listbox
+//! - `<dialog>` → dialog
+//! - `<form>` → form
+//! - `<input>` → various (textbox, checkbox, radio, etc.)
+//! - `<meter>` → meter
+//! - `<option>` → option
+//! - `<output>` → status
+//! - `<progress>` → progressbar
+//! - `<select>` → combobox
+//! - `<textarea>` → textbox
+//!
+//! ## Media Elements
+//! - `<img>` → img
+//! - `<svg>` → img
+//!
+//! ## Other Semantic Elements
+//! - `<hr>` → separator
+//! - `<math>` → math
+//! - `<time>` → time
+//!
+//! # Playwright Parity
+//!
+//! This implementation follows Playwright's `roleUtils.ts` for implicit role mappings.
+//! Some roles capture text content as accessible names even though W3C ARIA 1.2 spec
+//! marks them as "name prohibited". This deviation is intentional to support practical
+//! test automation and MCP agent use cases where visible text content should be
+//! available in accessibility snapshots.
 
 use viewpoint_js::js;
 
@@ -162,34 +252,86 @@ pub fn aria_snapshot_with_refs_js() -> &'static str {
                 const tag = el.tagName.toLowerCase();
 
                 const roleMap = {
+                    // Links and navigation
                     "a": el.hasAttribute("href") ? "link" : null,
+                    "area": el.hasAttribute("href") ? "link" : null,
+                    "nav": "navigation",
+
+                    // Document structure
                     "article": "article",
                     "aside": "complementary",
-                    "button": "button",
-                    "dialog": "dialog",
                     "footer": "contentinfo",
-                    "form": "form",
+                    "header": "banner",
+                    "main": "main",
+                    "section": "region",
+                    "search": "search",
+
+                    // Headings
                     "h1": "heading", "h2": "heading", "h3": "heading",
                     "h4": "heading", "h5": "heading", "h6": "heading",
-                    "header": "banner",
-                    "img": "img",
-                    "input": getInputRole(el),
-                    "li": "listitem",
-                    "main": "main",
-                    "nav": "navigation",
-                    "ol": "list",
-                    "option": "option",
+
+                    // Semantic text elements
+                    "blockquote": "blockquote",
+                    "code": "code",
+                    "del": "deletion",
+                    "em": "emphasis",
+                    "ins": "insertion",
+                    "mark": "mark",
                     "p": "paragraph",
-                    "progress": "progressbar",
-                    "section": "region",
-                    "select": "combobox",
+                    "strong": "strong",
+                    "sub": "subscript",
+                    "sup": "superscript",
+
+                    // Definition list elements
+                    "dd": "definition",
+                    "dfn": "term",
+                    "dt": "term",
+
+                    // Document structure grouping
+                    "address": "group",
+                    "details": "group",
+                    "fieldset": "group",
+                    "figure": "figure",
+                    "hgroup": "group",
+                    "optgroup": "group",
+
+                    // Lists
+                    "li": "listitem",
+                    "menu": "list",
+                    "ol": "list",
+                    "ul": "list",
+
+                    // Tables
+                    "caption": "caption",
                     "table": "table",
                     "tbody": "rowgroup",
                     "td": "cell",
-                    "textarea": "textbox",
+                    "tfoot": "rowgroup",
                     "th": "columnheader",
+                    "thead": "rowgroup",
                     "tr": "row",
-                    "ul": "list"
+
+                    // Forms and inputs
+                    "button": "button",
+                    "datalist": "listbox",
+                    "dialog": "dialog",
+                    "form": "form",
+                    "input": getInputRole(el),
+                    "meter": "meter",
+                    "option": "option",
+                    "output": "status",
+                    "progress": "progressbar",
+                    "select": "combobox",
+                    "textarea": "textbox",
+
+                    // Media elements
+                    "img": "img",
+                    "svg": "img",
+
+                    // Other semantic elements
+                    "hr": "separator",
+                    "math": "math",
+                    "time": "time"
                 };
 
                 return roleMap[tag] || null;
@@ -215,14 +357,33 @@ pub fn aria_snapshot_with_refs_js() -> &'static str {
 
             // Roles that support "name from content" per W3C ARIA 1.2 spec
             // https://www.w3.org/TR/wai-aria-1.2/#namefromcontent
-            // Note: "paragraph" is added for automation purposes even though W3C spec
-            // marks it as "name prohibited". This ensures paragraph text content
-            // appears in snapshots for testing/automation use cases.
+            //
+            // Standard roles that always support name from content:
+            //   button, cell, checkbox, columnheader, gridcell, heading, link,
+            //   menuitem, menuitemcheckbox, menuitemradio, option, radio, row,
+            //   rowheader, sectionhead, switch, tab, tooltip, treeitem
+            //
+            // Additional roles added for automation purposes (following Playwright's
+            // allowsNameFromContent logic for descendant traversal):
+            //   paragraph, blockquote, code, emphasis, strong, deletion, insertion,
+            //   subscript, superscript, term, time, definition, mark, figure, caption,
+            //   status, separator, listitem
+            //
+            // These deviations from strict W3C spec ensure text content appears in
+            // snapshots for practical test automation and MCP agent use cases.
             const nameFromContentRoles = [
+                // Standard W3C name-from-content roles
                 "button", "cell", "checkbox", "columnheader", "gridcell",
                 "heading", "link", "menuitem", "menuitemcheckbox", "menuitemradio",
-                "option", "paragraph", "radio", "row", "rowheader", "sectionhead",
-                "switch", "tab", "tooltip", "treeitem", "listitem"
+                "option", "radio", "row", "rowheader", "sectionhead",
+                "switch", "tab", "tooltip", "treeitem",
+                // List-related
+                "listitem",
+                // Text content roles (automation deviation)
+                "blockquote", "caption", "code", "definition", "deletion",
+                "emphasis", "figure", "insertion", "mark", "paragraph",
+                "separator", "status", "strong", "subscript", "superscript",
+                "term", "time"
             ];
 
             function getAccessibleName(el, role) {
