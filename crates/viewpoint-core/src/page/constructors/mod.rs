@@ -160,12 +160,31 @@ impl Page {
         context_routes: Arc<crate::context::routing::ContextRouteRegistry>,
         http_credentials: Option<crate::network::auth::HttpCredentials>,
     ) -> Self {
+        self.with_context_routes_and_proxy(context_routes, http_credentials, None)
+            .await
+    }
+
+    /// Set context-level routes for this page with optional proxy credentials.
+    ///
+    /// Context routes are checked as a fallback when no page-level route matches.
+    /// If `http_credentials` is provided, they will be used for HTTP authentication.
+    /// If `proxy_credentials` is provided, they will be used for proxy authentication.
+    ///
+    /// This method also registers the page's route registry with the context
+    /// so that future `context.route()` calls can synchronously enable Fetch on this page.
+    pub(crate) async fn with_context_routes_and_proxy(
+        self,
+        context_routes: Arc<crate::context::routing::ContextRouteRegistry>,
+        http_credentials: Option<crate::network::auth::HttpCredentials>,
+        proxy_credentials: Option<crate::network::auth::ProxyCredentials>,
+    ) -> Self {
         // Create a new registry with context routes and optional credentials
-        let new_registry = Arc::new(RouteHandlerRegistry::with_context_routes(
+        let new_registry = Arc::new(RouteHandlerRegistry::with_context_routes_and_proxy(
             self.connection.clone(),
             self.session_id.clone(),
             context_routes.clone(),
             http_credentials,
+            proxy_credentials,
         ));
         // Start the fetch event listener for route handling and authentication
         new_registry.start_fetch_listener();

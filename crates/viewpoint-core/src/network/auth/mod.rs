@@ -1,17 +1,38 @@
-//! HTTP authentication handling.
+//! HTTP and proxy authentication handling.
 //!
 //! This module provides support for handling HTTP Basic and Digest authentication
-//! challenges via the Fetch.authRequired CDP event.
+//! challenges via the Fetch.authRequired CDP event. It also handles proxy
+//! authentication challenges.
 
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::fetch::{
-    AuthChallenge, AuthChallengeResponse, AuthRequiredEvent, ContinueWithAuthParams,
+    AuthChallenge, AuthChallengeResponse, AuthChallengeSource, AuthRequiredEvent,
+    ContinueWithAuthParams,
 };
 
 use crate::error::NetworkError;
+
+/// Proxy credentials for authentication.
+#[derive(Debug, Clone)]
+pub struct ProxyCredentials {
+    /// Username for proxy authentication.
+    pub username: String,
+    /// Password for proxy authentication.
+    pub password: String,
+}
+
+impl ProxyCredentials {
+    /// Create new proxy credentials.
+    pub fn new(username: impl Into<String>, password: impl Into<String>) -> Self {
+        Self {
+            username: username.into(),
+            password: password.into(),
+        }
+    }
+}
 
 /// HTTP credentials for authentication.
 #[derive(Debug, Clone)]
@@ -60,15 +81,17 @@ impl HttpCredentials {
     }
 }
 
-/// Handler for HTTP authentication challenges.
+/// Handler for HTTP and proxy authentication challenges.
 #[derive(Debug)]
 pub struct AuthHandler {
     /// CDP connection.
     connection: Arc<CdpConnection>,
     /// Session ID for CDP commands.
     session_id: String,
-    /// Stored credentials.
+    /// Stored HTTP credentials.
     credentials: RwLock<Option<HttpCredentials>>,
+    /// Stored proxy credentials.
+    proxy_credentials: RwLock<Option<ProxyCredentials>>,
     /// How many times to retry with credentials before canceling.
     max_retries: u32,
     /// Current retry count per origin.
@@ -82,6 +105,7 @@ impl AuthHandler {
             connection,
             session_id,
             credentials: RwLock::new(None),
+            proxy_credentials: RwLock::new(None),
             max_retries: 3,
             retry_counts: RwLock::new(std::collections::HashMap::new()),
         }
@@ -97,6 +121,40 @@ impl AuthHandler {
             connection,
             session_id,
             credentials: RwLock::new(Some(credentials)),
+            proxy_credentials: RwLock::new(None),
+            max_retries: 3,
+            retry_counts: RwLock::new(std::collections::HashMap::new()),
+        }
+    }
+
+    /// Create an auth handler with pre-configured proxy credentials.
+    pub fn with_proxy_credentials(
+        connection: Arc<CdpConnection>,
+        session_id: String,
+        proxy_credentials: ProxyCredentials,
+    ) -> Self {
+        Self {
+            connection,
+            session_id,
+            credentials: RwLock::new(None),
+            proxy_credentials: RwLock::new(Some(proxy_credentials)),
+            max_retries: 3,
+            retry_counts: RwLock::new(std::collections::HashMap::new()),
+        }
+    }
+
+    /// Create an auth handler with both HTTP and proxy credentials.
+    pub fn with_all_credentials(
+        connection: Arc<CdpConnection>,
+        session_id: String,
+        http_credentials: Option<HttpCredentials>,
+        proxy_credentials: Option<ProxyCredentials>,
+    ) -> Self {
+        Self {
+            connection,
+            session_id,
+            credentials: RwLock::new(http_credentials),
+            proxy_credentials: RwLock::new(proxy_credentials),
             max_retries: 3,
             retry_counts: RwLock::new(std::collections::HashMap::new()),
         }
@@ -125,6 +183,27 @@ impl AuthHandler {
         *creds = None;
     }
 
+    /// Set proxy credentials.
+    pub async fn set_proxy_credentials(&self, credentials: ProxyCredentials) {
+        let mut creds = self.proxy_credentials.write().await;
+        *creds = Some(credentials);
+    }
+
+    /// Set proxy credentials synchronously (for use during construction).
+    ///
+    /// This uses `try_write` which should only be called from non-async contexts.
+    pub fn set_proxy_credentials_sync(&self, credentials: ProxyCredentials) {
+        if let Ok(mut creds) = self.proxy_credentials.try_write() {
+            *creds = Some(credentials);
+        }
+    }
+
+    /// Clear proxy credentials.
+    pub async fn clear_proxy_credentials(&self) {
+        let mut creds = self.proxy_credentials.write().await;
+        *creds = None;
+    }
+
     /// Handle an authentication challenge.
     ///
     /// Returns true if the challenge was handled, false if no credentials available.
@@ -137,6 +216,12 @@ impl AuthHandler {
         &self,
         event: &AuthRequiredEvent,
     ) -> Result<bool, NetworkError> {
+        // Check if this is a proxy authentication challenge
+        if event.auth_challenge.source == AuthChallengeSource::Proxy {
+            return self.handle_proxy_auth(event).await;
+        }
+
+        // Handle HTTP authentication challenge
         let creds = self.credentials.read().await;
 
         if let Some(credentials) = &*creds {
@@ -185,6 +270,57 @@ impl AuthHandler {
                 "No credentials available, deferring to default"
             );
             // No credentials - let browser handle it (show dialog or fail)
+            self.default_auth(&event.request_id).await?;
+            Ok(false)
+        }
+    }
+
+    /// Handle a proxy authentication challenge.
+    async fn handle_proxy_auth(&self, event: &AuthRequiredEvent) -> Result<bool, NetworkError> {
+        let proxy_creds = self.proxy_credentials.read().await;
+
+        if let Some(credentials) = &*proxy_creds {
+            // Check retry count for proxy (use "proxy" as key)
+            let retry_key = format!("proxy:{}", event.auth_challenge.origin);
+            {
+                let mut counts = self.retry_counts.write().await;
+                let count = counts.entry(retry_key.clone()).or_insert(0);
+
+                if *count >= self.max_retries {
+                    tracing::warn!(
+                        origin = %event.auth_challenge.origin,
+                        retries = self.max_retries,
+                        "Max proxy auth retries exceeded, canceling"
+                    );
+                    return self.cancel_auth(&event.request_id).await.map(|()| false);
+                }
+
+                *count += 1;
+            }
+
+            tracing::debug!(
+                origin = %event.auth_challenge.origin,
+                scheme = %event.auth_challenge.scheme,
+                "Providing proxy credentials"
+            );
+
+            // Provide proxy credentials
+            self.provide_credentials(
+                &event.request_id,
+                &event.auth_challenge,
+                &credentials.username,
+                &credentials.password,
+            )
+            .await?;
+
+            Ok(true)
+        } else {
+            tracing::debug!(
+                origin = %event.auth_challenge.origin,
+                scheme = %event.auth_challenge.scheme,
+                "No proxy credentials available, deferring to default"
+            );
+            // No proxy credentials - let browser handle it
             self.default_auth(&event.request_id).await?;
             Ok(false)
         }

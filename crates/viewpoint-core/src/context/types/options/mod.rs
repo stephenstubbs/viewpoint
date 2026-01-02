@@ -8,8 +8,8 @@ use crate::devices::DeviceDescriptor;
 
 use super::storage::StorageState;
 use super::{
-    ColorScheme, ForcedColors, Geolocation, HttpCredentials, Permission, ReducedMotion,
-    ViewportSize,
+    ColorScheme, ForcedColors, Geolocation, HttpCredentials, Permission, ProxyConfig,
+    ReducedMotion, ViewportSize,
 };
 
 /// Options for creating a browser context.
@@ -53,6 +53,8 @@ pub struct ContextOptions {
     pub forced_colors: Option<ForcedColors>,
     /// Video recording options.
     pub record_video: Option<crate::page::VideoOptions>,
+    /// Proxy configuration for network requests.
+    pub proxy: Option<ProxyConfig>,
 }
 
 /// Source for storage state.
@@ -294,6 +296,47 @@ impl ContextOptionsBuilder {
     #[must_use]
     pub fn record_video(mut self, options: crate::page::VideoOptions) -> Self {
         self.options.record_video = Some(options);
+        self
+    }
+
+    /// Set proxy configuration.
+    ///
+    /// Configure a proxy server for all network requests in this context.
+    /// Supports HTTP, HTTPS, and SOCKS5 proxies with optional authentication.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::{Browser, context::ProxyConfig};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    ///
+    /// // Simple proxy without authentication
+    /// let context = browser.new_context_builder()
+    ///     .proxy(ProxyConfig::new("http://proxy.example.com:8080"))
+    ///     .build()
+    ///     .await?;
+    ///
+    /// // SOCKS5 proxy with authentication
+    /// let context = browser.new_context_builder()
+    ///     .proxy(ProxyConfig::new("socks5://proxy.example.com:1080")
+    ///         .credentials("user", "password"))
+    ///     .build()
+    ///     .await?;
+    ///
+    /// // Proxy with bypass list
+    /// let context = browser.new_context_builder()
+    ///     .proxy(ProxyConfig::new("http://proxy.example.com:8080")
+    ///         .bypass("localhost,127.0.0.1,.internal.example.com"))
+    ///     .build()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn proxy(mut self, proxy: ProxyConfig) -> Self {
+        self.options.proxy = Some(proxy);
         self
     }
 

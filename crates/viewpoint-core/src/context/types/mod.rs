@@ -2,6 +2,7 @@
 
 mod cookies;
 mod options;
+mod proxy;
 mod storage;
 
 use serde::{Deserialize, Serialize};
@@ -9,6 +10,7 @@ use serde::{Deserialize, Serialize};
 // Re-export all types
 pub use cookies::{Cookie, SameSite};
 pub use options::{ContextOptions, ContextOptionsBuilder, StorageStateSource};
+pub use proxy::ProxyConfig;
 pub use storage::{
     IndexedDbDatabase, IndexedDbEntry, IndexedDbIndex, IndexedDbObjectStore, LocalStorageEntry,
     StorageOrigin, StorageState,

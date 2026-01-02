@@ -389,11 +389,21 @@ impl Browser {
             None => None,
         };
 
+        // Build CDP params with proxy configuration if specified
+        let create_params = match &options.proxy {
+            Some(proxy) => CreateBrowserContextParams {
+                dispose_on_detach: None,
+                proxy_server: Some(proxy.server.clone()),
+                proxy_bypass_list: proxy.bypass.clone(),
+            },
+            None => CreateBrowserContextParams::default(),
+        };
+
         let result: CreateBrowserContextResult = self
             .connection
             .send_command(
                 "Target.createBrowserContext",
-                Some(CreateBrowserContextParams::default()),
+                Some(create_params),
                 None,
             )
             .await?;

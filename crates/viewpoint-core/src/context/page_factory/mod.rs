@@ -283,6 +283,21 @@ pub(crate) fn convert_http_credentials(
     })
 }
 
+/// Convert context proxy credentials to network auth proxy credentials.
+pub(crate) fn convert_proxy_credentials(
+    options: &ContextOptions,
+) -> Option<crate::network::auth::ProxyCredentials> {
+    options.proxy.as_ref().and_then(|proxy| {
+        match (&proxy.username, &proxy.password) {
+            (Some(username), Some(password)) => Some(crate::network::auth::ProxyCredentials::new(
+                username.clone(),
+                password.clone(),
+            )),
+            _ => None,
+        }
+    })
+}
+
 /// Create the page instance with optional video recording.
 pub(crate) async fn create_page_instance(
     connection: Arc<CdpConnection>,
@@ -293,6 +308,7 @@ pub(crate) async fn create_page_instance(
     test_id_attr: String,
     route_registry: Arc<routing::ContextRouteRegistry>,
     http_credentials: Option<crate::network::auth::HttpCredentials>,
+    proxy_credentials: Option<crate::network::auth::ProxyCredentials>,
 ) -> Page {
     if let Some(ref video_options) = options.record_video {
         let page = Page::with_video(
@@ -303,7 +319,7 @@ pub(crate) async fn create_page_instance(
             video_options.clone(),
         )
         .with_test_id_attribute(test_id_attr)
-        .with_context_routes(route_registry, http_credentials.clone())
+        .with_context_routes_and_proxy(route_registry, http_credentials.clone(), proxy_credentials)
         .await;
 
         // Start video recording immediately
@@ -319,7 +335,7 @@ pub(crate) async fn create_page_instance(
             frame_id,
         )
         .with_test_id_attribute(test_id_attr)
-        .with_context_routes(route_registry, http_credentials)
+        .with_context_routes_and_proxy(route_registry, http_credentials, proxy_credentials)
         .await
     }
 }

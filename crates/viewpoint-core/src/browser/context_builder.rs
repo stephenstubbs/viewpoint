@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use crate::BrowserContext;
 use crate::context::{
-    ColorScheme, ContextOptionsBuilder, ForcedColors, Permission, ReducedMotion, StorageState,
+    ColorScheme, ContextOptionsBuilder, ForcedColors, Permission, ProxyConfig, ReducedMotion,
+    StorageState,
 };
 use crate::devices::DeviceDescriptor;
 use crate::error::BrowserError;
@@ -235,6 +236,40 @@ impl<'a> NewContextBuilder<'a> {
     #[must_use]
     pub fn record_video(mut self, options: VideoOptions) -> Self {
         self.builder = self.builder.record_video(options);
+        self
+    }
+
+    /// Set proxy configuration.
+    ///
+    /// Configure a proxy server for all network requests in this context.
+    /// Supports HTTP, HTTPS, and SOCKS5 proxies with optional authentication.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::{Browser, context::ProxyConfig};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    ///
+    /// // Simple proxy without authentication
+    /// let context = browser.new_context_builder()
+    ///     .proxy(ProxyConfig::new("http://proxy.example.com:8080"))
+    ///     .build()
+    ///     .await?;
+    ///
+    /// // SOCKS5 proxy with authentication
+    /// let context = browser.new_context_builder()
+    ///     .proxy(ProxyConfig::new("socks5://proxy.example.com:1080")
+    ///         .credentials("user", "password"))
+    ///     .build()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn proxy(mut self, proxy: ProxyConfig) -> Self {
+        self.builder = self.builder.proxy(proxy);
         self
     }
 

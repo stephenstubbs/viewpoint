@@ -200,8 +200,8 @@ pub use trace::{Tracing, TracingOptions};
 pub use types::{
     ColorScheme, ContextOptions, ContextOptionsBuilder, Cookie, ForcedColors, Geolocation,
     HttpCredentials, IndexedDbDatabase, IndexedDbEntry, IndexedDbIndex, IndexedDbObjectStore,
-    LocalStorageEntry, Permission, ReducedMotion, SameSite, StorageOrigin, StorageState,
-    StorageStateSource, ViewportSize,
+    LocalStorageEntry, Permission, ProxyConfig, ReducedMotion, SameSite, StorageOrigin,
+    StorageState, StorageStateSource, ViewportSize,
 };
 pub use weberror::WebErrorHandler;
 // Re-export WebError for context-level usage
