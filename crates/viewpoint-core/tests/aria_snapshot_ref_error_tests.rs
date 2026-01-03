@@ -59,10 +59,7 @@ async fn test_invalid_ref_handling() {
 
     // Try to resolve a valid format ref that doesn't exist in ref_map
     let result = page.element_from_ref("c0p0f0e999999").await;
-    assert!(
-        result.is_err(),
-        "Should fail for non-existent ref"
-    );
+    assert!(result.is_err(), "Should fail for non-existent ref");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");

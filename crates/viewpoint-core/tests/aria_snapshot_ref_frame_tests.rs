@@ -87,7 +87,7 @@ async fn test_frame_aria_snapshot_refs_not_resolvable_via_page() {
     }
 
     let button_ref = find_button_ref(&frame_snapshot).expect("Should find button ref");
-    
+
     // IMPORTANT: Frame-captured refs are NOT resolvable via page.element_from_ref()
     // This is expected behavior - use page.aria_snapshot() for resolvable refs
     let result = page.element_from_ref(&button_ref).await;

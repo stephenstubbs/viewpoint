@@ -287,15 +287,16 @@ pub(crate) fn convert_http_credentials(
 pub(crate) fn convert_proxy_credentials(
     options: &ContextOptions,
 ) -> Option<crate::network::auth::ProxyCredentials> {
-    options.proxy.as_ref().and_then(|proxy| {
-        match (&proxy.username, &proxy.password) {
+    options
+        .proxy
+        .as_ref()
+        .and_then(|proxy| match (&proxy.username, &proxy.password) {
             (Some(username), Some(password)) => Some(crate::network::auth::ProxyCredentials::new(
                 username.clone(),
                 password.clone(),
             )),
             _ => None,
-        }
-    })
+        })
 }
 
 /// Create the page instance with optional video recording.

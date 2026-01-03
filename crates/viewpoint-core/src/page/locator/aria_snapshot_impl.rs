@@ -4,9 +4,9 @@ use serde::Deserialize;
 use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
 use viewpoint_js::js;
 
-use super::aria::{aria_snapshot_js, AriaSnapshot};
 use super::Locator;
 use super::Selector;
+use super::aria::{AriaSnapshot, aria_snapshot_js};
 use crate::error::LocatorError;
 
 impl Locator<'_> {
@@ -144,6 +144,16 @@ impl Locator<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
+        let js_fn = js! {
+            (function() {
+                const element = this;
+                const getSnapshot = @{snapshot_fn};
+                return getSnapshot(element);
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let call_result: CallResult = self
             .page
             .connection()
@@ -151,11 +161,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": format!(r#"function() {{
-                        const element = this;
-                        const getSnapshot = {snapshot_fn};
-                        return getSnapshot(element);
-                    }}"#),
+                    "functionDeclaration": js_fn,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),

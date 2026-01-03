@@ -338,7 +338,11 @@ pub struct Page {
     /// Ref map for element ref resolution.
     /// Maps ref strings (e.g., `c0p0e1`) to their backendNodeIds.
     /// Updated on each `aria_snapshot()` call.
-    ref_map: std::sync::Arc<parking_lot::RwLock<std::collections::HashMap<String, viewpoint_cdp::protocol::dom::BackendNodeId>>>,
+    ref_map: std::sync::Arc<
+        parking_lot::RwLock<
+            std::collections::HashMap<String, viewpoint_cdp::protocol::dom::BackendNodeId>,
+        >,
+    >,
 }
 
 // Manual Debug implementation since some fields don't implement Debug

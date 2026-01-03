@@ -13,6 +13,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, trace, warn};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::runtime::{AddBindingParams, BindingCalledEvent};
+use viewpoint_js::js;
 
 use crate::error::PageError;
 
@@ -90,28 +91,26 @@ impl BindingManager {
             .await?;
 
         // Create a wrapper script that sets up the JavaScript function
-        let wrapper_script = format!(
-            r"
-            (function() {{
-                const bindingName = {name_json};
+        let name_json = serde_json::to_string(name).unwrap();
+        let wrapper_script = js! {
+            (function() {
+                const bindingName = @{name_json};
                 const bindingFn = window[bindingName];
                 if (!bindingFn) return;
-                
+
                 // Replace the binding with a proper async function
-                window[bindingName] = async function(...args) {{
+                window[bindingName] = async function(...args) {
                     const seq = (window.__viewpoint_seq = (window.__viewpoint_seq || 0) + 1);
-                    const payload = JSON.stringify({{ seq, args }});
-                    
-                    return new Promise((resolve, reject) => {{
-                        window.__viewpoint_callbacks = window.__viewpoint_callbacks || {{}};
-                        window.__viewpoint_callbacks[seq] = {{ resolve, reject }};
+                    const payload = JSON.stringify({ seq, args });
+
+                    return new Promise((resolve, reject) => {
+                        window.__viewpoint_callbacks = window.__viewpoint_callbacks || {};
+                        window.__viewpoint_callbacks[seq] = { resolve, reject };
                         bindingFn(payload);
-                    }});
-                }};
-            }})();
-            ",
-            name_json = serde_json::to_string(name).unwrap()
-        );
+                    });
+                };
+            })()
+        };
 
         // Inject the wrapper script
         self.connection
@@ -212,37 +211,36 @@ impl BindingManager {
                                     drop(bindings_guard);
 
                                     // Send the result back to JavaScript
+                                    let seq = payload.seq.to_string();
                                     let resolve_script = match result {
-                                        Ok(value) => format!(
-                                            r"
-                                            (function() {{
-                                                const callbacks = window.__viewpoint_callbacks;
-                                                if (callbacks && callbacks[{seq}]) {{
-                                                    callbacks[{seq}].resolve({value});
-                                                    delete callbacks[{seq}];
-                                                }}
-                                            }})();
-                                            ",
-                                            seq = payload.seq,
-                                            value = serde_json::to_string(&value)
-                                                .unwrap_or_else(|_| "null".to_string())
-                                        ),
-                                        Err(error) => format!(
-                                            r"
-                                            (function() {{
-                                                const callbacks = window.__viewpoint_callbacks;
-                                                if (callbacks && callbacks[{seq}]) {{
-                                                    callbacks[{seq}].reject(new Error({error}));
-                                                    delete callbacks[{seq}];
-                                                }}
-                                            }})();
-                                            ",
-                                            seq = payload.seq,
-                                            error =
-                                                serde_json::to_string(&error).unwrap_or_else(
-                                                    |_| "\"Unknown error\"".to_string()
-                                                )
-                                        ),
+                                        Ok(value) => {
+                                            let value_json = serde_json::to_string(&value)
+                                                .unwrap_or_else(|_| "null".to_string());
+                                            js! {
+                                                (function() {
+                                                    const callbacks = window.__viewpoint_callbacks;
+                                                    if (callbacks && callbacks[@{seq}]) {
+                                                        callbacks[@{seq}].resolve(@{value_json});
+                                                        delete callbacks[@{seq}];
+                                                    }
+                                                })()
+                                            }
+                                        }
+                                        Err(error) => {
+                                            let error_json = serde_json::to_string(&error)
+                                                .unwrap_or_else(|_| {
+                                                    "\"Unknown error\"".to_string()
+                                                });
+                                            js! {
+                                                (function() {
+                                                    const callbacks = window.__viewpoint_callbacks;
+                                                    if (callbacks && callbacks[@{seq}]) {
+                                                        callbacks[@{seq}].reject(new Error(@{error_json}));
+                                                        delete callbacks[@{seq}];
+                                                    }
+                                                })()
+                                            }
+                                        }
                                     };
 
                                     let _ = connection
@@ -285,28 +283,26 @@ impl BindingManager {
 
         for name in names {
             // Re-inject the wrapper script
-            let wrapper_script = format!(
-                r"
-                (function() {{
-                    const bindingName = {name_json};
+            let name_json = serde_json::to_string(&name).unwrap();
+            let wrapper_script = js! {
+                (function() {
+                    const bindingName = @{name_json};
                     const bindingFn = window[bindingName];
                     if (!bindingFn) return;
-                    
+
                     // Replace the binding with a proper async function
-                    window[bindingName] = async function(...args) {{
+                    window[bindingName] = async function(...args) {
                         const seq = (window.__viewpoint_seq = (window.__viewpoint_seq || 0) + 1);
-                        const payload = JSON.stringify({{ seq, args }});
-                        
-                        return new Promise((resolve, reject) => {{
-                            window.__viewpoint_callbacks = window.__viewpoint_callbacks || {{}};
-                            window.__viewpoint_callbacks[seq] = {{ resolve, reject }};
+                        const payload = JSON.stringify({ seq, args });
+
+                        return new Promise((resolve, reject) => {
+                            window.__viewpoint_callbacks = window.__viewpoint_callbacks || {};
+                            window.__viewpoint_callbacks[seq] = { resolve, reject };
                             bindingFn(payload);
-                        }});
-                    }};
-                }})();
-                ",
-                name_json = serde_json::to_string(&name).unwrap()
-            );
+                        });
+                    };
+                })()
+            };
 
             self.connection
                 .send_command::<_, serde_json::Value>(

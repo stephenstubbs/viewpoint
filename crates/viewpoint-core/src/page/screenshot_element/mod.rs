@@ -5,6 +5,7 @@ use std::path::Path;
 use serde::Deserialize;
 use tracing::{info, instrument};
 use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
+use viewpoint_js::js;
 
 use super::locator::Selector;
 use super::screenshot::{Animations, ScreenshotBuilder, ScreenshotFormat};
@@ -126,12 +127,16 @@ impl<'a, 'b> ElementScreenshotBuilder<'a, 'b> {
         // Handle Ref selector - lookup in ref map and resolve via CDP
         if let Selector::Ref(ref_str) = selector {
             let backend_node_id = page.get_backend_node_id_for_ref(ref_str)?;
-            return self.get_element_bounding_box_by_backend_id(backend_node_id).await;
+            return self
+                .get_element_bounding_box_by_backend_id(backend_node_id)
+                .await;
         }
 
         // Handle BackendNodeId selector
         if let Selector::BackendNodeId(backend_node_id) = selector {
-            return self.get_element_bounding_box_by_backend_id(*backend_node_id).await;
+            return self
+                .get_element_bounding_box_by_backend_id(*backend_node_id)
+                .await;
         }
 
         let js_selector = selector.to_js_expression();
@@ -234,21 +239,27 @@ impl<'a, 'b> ElementScreenshotBuilder<'a, 'b> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
+        let js_fn = js! {
+            (function() {
+                const rect = this.getBoundingClientRect();
+                return {
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height
+                };
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let call_result: CallResult = page
             .connection()
             .send_command(
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": r#"function() {
-                        const rect = this.getBoundingClientRect();
-                        return {
-                            x: rect.x,
-                            y: rect.y,
-                            width: rect.width,
-                            height: rect.height
-                        };
-                    }"#,
+                    "functionDeclaration": js_fn,
                     "returnByValue": true
                 })),
                 Some(page.session_id()),

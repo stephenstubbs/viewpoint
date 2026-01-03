@@ -28,7 +28,9 @@ impl Page {
         session_id: String,
         frame_id: String,
     ) -> Self {
-        Self::build_page(connection, target_id, session_id, frame_id, 0, 0, None, None)
+        Self::build_page(
+            connection, target_id, session_id, frame_id, 0, 0, None, None,
+        )
     }
 
     /// Create a new page with context and page indices.
@@ -190,7 +192,9 @@ impl Page {
             binding_manager,
             test_id_attribute: DEFAULT_TEST_ID_ATTRIBUTE.to_string(),
             context_registry,
-            ref_map: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
+            ref_map: std::sync::Arc::new(
+                parking_lot::RwLock::new(std::collections::HashMap::new()),
+            ),
         }
     }
 

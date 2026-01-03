@@ -4,6 +4,7 @@
 
 use serde::Deserialize;
 use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
+use viewpoint_js::js;
 
 use super::Locator;
 use super::Selector;
@@ -45,12 +46,16 @@ impl Locator<'_> {
         // Handle Ref selector - lookup in ref map and resolve via CDP
         if let Selector::Ref(ref_str) = &self.selector {
             let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
-            return self.select_option_by_backend_id(backend_node_id, option).await;
+            return self
+                .select_option_by_backend_id(backend_node_id, option)
+                .await;
         }
 
         // Handle BackendNodeId selector
         if let Selector::BackendNodeId(backend_node_id) = &self.selector {
-            return self.select_option_by_backend_id(*backend_node_id, option).await;
+            return self
+                .select_option_by_backend_id(*backend_node_id, option)
+                .await;
         }
 
         let js = build_select_option_js(&self.selector.to_js_expression(), option);
@@ -67,12 +72,16 @@ impl Locator<'_> {
         // Handle Ref selector - lookup in ref map and resolve via CDP
         if let Selector::Ref(ref_str) = &self.selector {
             let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
-            return self.select_options_by_backend_id(backend_node_id, options).await;
+            return self
+                .select_options_by_backend_id(backend_node_id, options)
+                .await;
         }
 
         // Handle BackendNodeId selector
         if let Selector::BackendNodeId(backend_node_id) = &self.selector {
-            return self.select_options_by_backend_id(*backend_node_id, options).await;
+            return self
+                .select_options_by_backend_id(*backend_node_id, options)
+                .await;
         }
 
         let js = build_select_options_js(&self.selector.to_js_expression(), options);
@@ -122,7 +131,42 @@ impl Locator<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
-        let option_escaped = js_string_literal(option);
+        // Build function declaration for CDP callFunctionOn
+        // Wrapping in parens makes it a valid expression for js! macro parsing
+        let js_fn = js! {
+            (function() {
+                const select = this;
+                if (select.tagName.toLowerCase() !== "select") {
+                    return { success: false, error: "Element is not a select" };
+                }
+
+                const optionValue = #{option};
+
+                // Try to find by value first
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === optionValue) {
+                        select.selectedIndex = i;
+                        select.dispatchEvent(new Event("change", { bubbles: true }));
+                        return { success: true, selectedIndex: i, selectedValue: select.options[i].value };
+                    }
+                }
+
+                // Try to find by text content
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].text === optionValue ||
+                        select.options[i].textContent.trim() === optionValue) {
+                        select.selectedIndex = i;
+                        select.dispatchEvent(new Event("change", { bubbles: true }));
+                        return { success: true, selectedIndex: i, selectedValue: select.options[i].value };
+                    }
+                }
+
+                return { success: false, error: "Option not found: " + optionValue };
+            })
+        };
+        // Strip outer parentheses for CDP (it expects function declaration syntax)
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let call_result: CallResult = self
             .page
             .connection()
@@ -130,35 +174,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": format!(r#"function() {{
-                        const select = this;
-                        if (select.tagName.toLowerCase() !== 'select') {{
-                            return {{ success: false, error: 'Element is not a select' }};
-                        }}
-                        
-                        const optionValue = {option_escaped};
-                        
-                        // Try to find by value first
-                        for (let i = 0; i < select.options.length; i++) {{
-                            if (select.options[i].value === optionValue) {{
-                                select.selectedIndex = i;
-                                select.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                                return {{ success: true, selectedIndex: i, selectedValue: select.options[i].value }};
-                            }}
-                        }}
-                        
-                        // Try to find by text content
-                        for (let i = 0; i < select.options.length; i++) {{
-                            if (select.options[i].text === optionValue || 
-                                select.options[i].textContent.trim() === optionValue) {{
-                                select.selectedIndex = i;
-                                select.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                                return {{ success: true, selectedIndex: i, selectedValue: select.options[i].value }};
-                            }}
-                        }}
-                        
-                        return {{ success: false, error: 'Option not found: ' + optionValue }};
-                    }}"#),
+                    "functionDeclaration": js_fn,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),
@@ -221,9 +237,8 @@ impl Locator<'_> {
             ))
         })?;
 
-        // Build options array
-        let options_js: Vec<String> = options.iter().map(|o| js_string_literal(o)).collect();
-        let options_array = format!("[{}]", options_js.join(", "));
+        // Build options array as JSON
+        let options_json = serde_json::to_string(options).unwrap_or_else(|_| "[]".to_string());
 
         // Call select options function on the resolved element
         #[derive(Debug, Deserialize)]
@@ -233,6 +248,66 @@ impl Locator<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
+        // Build function declaration for CDP callFunctionOn
+        // Wrapping in parens makes it a valid expression for js! macro parsing
+        let js_fn = js! {
+            (function() {
+                const select = this;
+                if (select.tagName.toLowerCase() !== "select") {
+                    return { success: false, error: "Element is not a select" };
+                }
+
+                const optionValues = @{options_json};
+                const selectedIndices = [];
+
+                if (!select.multiple) {
+                    return { success: false, error: "select_options requires a <select multiple>" };
+                }
+
+                // Deselect all first
+                for (let i = 0; i < select.options.length; i++) {
+                    select.options[i].selected = false;
+                }
+
+                // Select each requested option
+                for (const optionValue of optionValues) {
+                    let found = false;
+
+                    // Try to find by value
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === optionValue) {
+                            select.options[i].selected = true;
+                            selectedIndices.push(i);
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    // Try to find by text if not found by value
+                    if (!found) {
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].text === optionValue ||
+                                select.options[i].textContent.trim() === optionValue) {
+                                select.options[i].selected = true;
+                                selectedIndices.push(i);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        return { success: false, error: "Option not found: " + optionValue };
+                    }
+                }
+
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                return { success: true, selectedIndices: selectedIndices };
+            })
+        };
+        // Strip outer parentheses for CDP (it expects function declaration syntax)
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let call_result: CallResult = self
             .page
             .connection()
@@ -240,59 +315,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": format!(r#"function() {{
-                        const select = this;
-                        if (select.tagName.toLowerCase() !== 'select') {{
-                            return {{ success: false, error: 'Element is not a select' }};
-                        }}
-                        
-                        const optionValues = {options_array};
-                        const selectedIndices = [];
-                        
-                        if (!select.multiple) {{
-                            return {{ success: false, error: 'select_options requires a <select multiple>' }};
-                        }}
-                        
-                        // Deselect all first
-                        for (let i = 0; i < select.options.length; i++) {{
-                            select.options[i].selected = false;
-                        }}
-                        
-                        // Select each requested option
-                        for (const optionValue of optionValues) {{
-                            let found = false;
-                            
-                            // Try to find by value
-                            for (let i = 0; i < select.options.length; i++) {{
-                                if (select.options[i].value === optionValue) {{
-                                    select.options[i].selected = true;
-                                    selectedIndices.push(i);
-                                    found = true;
-                                    break;
-                                }}
-                            }}
-                            
-                            // Try to find by text if not found by value
-                            if (!found) {{
-                                for (let i = 0; i < select.options.length; i++) {{
-                                    if (select.options[i].text === optionValue || 
-                                        select.options[i].textContent.trim() === optionValue) {{
-                                        select.options[i].selected = true;
-                                        selectedIndices.push(i);
-                                        found = true;
-                                        break;
-                                    }}
-                                }}
-                            }}
-                            
-                            if (!found) {{
-                                return {{ success: false, error: 'Option not found: ' + optionValue }};
-                            }}
-                        }}
-                        
-                        select.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                        return {{ success: true, selectedIndices: selectedIndices }};
-                    }}"#),
+                    "functionDeclaration": js_fn,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),

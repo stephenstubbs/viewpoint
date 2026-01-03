@@ -401,11 +401,7 @@ impl Browser {
 
         let result: CreateBrowserContextResult = self
             .connection
-            .send_command(
-                "Target.createBrowserContext",
-                Some(create_params),
-                None,
-            )
+            .send_command("Target.createBrowserContext", Some(create_params), None)
             .await?;
 
         let context = BrowserContext::with_options(

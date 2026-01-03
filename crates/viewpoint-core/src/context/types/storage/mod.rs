@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use viewpoint_js::js;
 
 use super::cookies::Cookie;
 
@@ -104,23 +105,23 @@ impl StorageState {
         }
 
         // Generate JavaScript that restores localStorage for the current origin
-        format!(
-            r"(function() {{
-    const storageData = new Map([{}]);
-    const currentOrigin = window.location.origin;
-    const entries = storageData.get(currentOrigin);
-    if (entries) {{
-        for (const [key, value] of entries) {{
-            try {{
-                localStorage.setItem(key, value);
-            }} catch (e) {{
-                console.warn('Failed to restore localStorage item:', key, e);
-            }}
-        }}
-    }}
-}})()",
-            origin_data.join(",")
-        )
+        let storage_data = origin_data.join(",");
+        js! {
+            (function() {
+                const storageData = new Map([@{storage_data}]);
+                const currentOrigin = window.location.origin;
+                const entries = storageData.get(currentOrigin);
+                if (entries) {
+                    for (const [key, value] of entries) {
+                        try {
+                            localStorage.setItem(key, value);
+                        } catch (e) {
+                            console.warn("Failed to restore localStorage item:", key, e);
+                        }
+                    }
+                }
+            })()
+        }
     }
 
     /// Generate a JavaScript init script to restore `IndexedDB` for all origins.
@@ -216,52 +217,52 @@ impl StorageState {
         }
 
         // Generate JavaScript that restores IndexedDB for the current origin
-        format!(
-            r"(function() {{
-    const idbData = new Map([{}]);
-    const currentOrigin = window.location.origin;
-    const databases = idbData.get(currentOrigin);
-    if (!databases) return;
-    
-    for (const db of databases) {{
-        const request = indexedDB.open(db.n, db.v);
-        request.onupgradeneeded = (event) => {{
-            const idb = event.target.result;
-            for (const store of db.s) {{
-                const options = {{}};
-                if (store.kp !== null) options.keyPath = store.kp;
-                if (store.ai) options.autoIncrement = true;
-                
-                const objectStore = idb.createObjectStore(store.n, options);
-                
-                for (const idx of store.i) {{
-                    objectStore.createIndex(idx.n, idx.kp, {{
-                        unique: idx.u,
-                        multiEntry: idx.me
-                    }});
-                }}
-            }}
-        }};
-        request.onsuccess = (event) => {{
-            const idb = event.target.result;
-            for (const store of db.s) {{
-                if (store.e.length === 0) continue;
-                try {{
-                    const tx = idb.transaction(store.n, 'readwrite');
-                    const objectStore = tx.objectStore(store.n);
-                    for (const entry of store.e) {{
-                        objectStore.put(entry.v, entry.k);
-                    }}
-                }} catch (e) {{
-                    console.warn('Failed to restore IndexedDB store:', store.n, e);
-                }}
-            }}
-            idb.close();
-        }};
-    }}
-}})()",
-            origin_data.join(",")
-        )
+        let idb_data = origin_data.join(",");
+        js! {
+            (function() {
+                const idbData = new Map([@{idb_data}]);
+                const currentOrigin = window.location.origin;
+                const databases = idbData.get(currentOrigin);
+                if (!databases) return;
+
+                for (const db of databases) {
+                    const request = indexedDB.open(db.n, db.v);
+                    request.onupgradeneeded = (event) => {
+                        const idb = event.target.result;
+                        for (const store of db.s) {
+                            const options = {};
+                            if (store.kp !== null) options.keyPath = store.kp;
+                            if (store.ai) options.autoIncrement = true;
+
+                            const objectStore = idb.createObjectStore(store.n, options);
+
+                            for (const idx of store.i) {
+                                objectStore.createIndex(idx.n, idx.kp, {
+                                    unique: idx.u,
+                                    multiEntry: idx.me
+                                });
+                            }
+                        }
+                    };
+                    request.onsuccess = (event) => {
+                        const idb = event.target.result;
+                        for (const store of db.s) {
+                            if (store.e.length === 0) continue;
+                            try {
+                                const tx = idb.transaction(store.n, "readwrite");
+                                const objectStore = tx.objectStore(store.n);
+                                for (const entry of store.e) {
+                                    objectStore.put(entry.v, entry.k);
+                                }
+                            } catch (e) {
+                                console.warn("Failed to restore IndexedDB store:", store.n, e);
+                            }
+                        }
+                        idb.close();
+                    };
+                }
+            })()
+        }
     }
 }
 

@@ -310,13 +310,19 @@ impl Frame {
             result: viewpoint_cdp::protocol::runtime::RemoteObject,
         }
 
+        let js_fn = js! {
+            (function() { return this[#{property}]; })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let function_declaration = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let result: CallResult = self
             .connection
             .send_command(
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": format!("function() {{ return this.{}; }}", property),
+                    "functionDeclaration": function_declaration,
                     "returnByValue": true
                 })),
                 Some(&self.session_id),
@@ -337,13 +343,19 @@ impl Frame {
             result: viewpoint_cdp::protocol::runtime::RemoteObject,
         }
 
+        let js_fn = js! {
+            (function() { return this[#{property}]; })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let function_declaration = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let result: CallResult = self
             .connection
             .send_command(
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": format!("function() {{ return this.{}; }}", property),
+                    "functionDeclaration": function_declaration,
                     "returnByValue": false
                 })),
                 Some(&self.session_id),

@@ -145,6 +145,22 @@ The framework SHALL support selecting options in dropdowns.
 - **THEN** the option SHALL be selected
 - **AND** the method SHALL return immediately without waiting for navigation
 
+#### Scenario: Select option via ref from aria snapshot
+- **GIVEN** an aria snapshot containing a select element with ref `c0p0f0e5`
+- **WHEN** `page.locator_from_ref("c0p0f0e5").select_option().value("option1").await` is called
+- **THEN** the option with value "option1" SHALL be selected
+
+#### Scenario: Select option via ref by label
+- **GIVEN** an aria snapshot containing a select element with ref `c0p0f0e5`
+- **AND** the select has an option with text "Blue"
+- **WHEN** `page.locator_from_ref("c0p0f0e5").select_option().label("Blue").await` is called
+- **THEN** the "Blue" option SHALL be selected
+
+#### Scenario: Select multiple options via ref
+- **GIVEN** an aria snapshot containing a multi-select element with ref `c0p0f0e5`
+- **WHEN** `page.locator_from_ref("c0p0f0e5").select_option().values(&["a", "b"]).await` is called
+- **THEN** options "a" and "b" SHALL be selected
+
 ### Requirement: Check/Uncheck Action
 
 The framework SHALL support checking and unchecking checkboxes and radio buttons.

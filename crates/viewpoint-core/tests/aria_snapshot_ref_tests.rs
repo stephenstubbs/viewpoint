@@ -50,9 +50,7 @@ async fn test_ref_rejected_on_wrong_context() {
     let page1 = context1.new_page().await.expect("Failed to create page 1");
 
     page1
-        .set_content(
-            r#"<html><body><button id="btn1">Button in Context 1</button></body></html>"#,
-        )
+        .set_content(r#"<html><body><button id="btn1">Button in Context 1</button></body></html>"#)
         .set()
         .await
         .expect("Failed to set content");
@@ -75,7 +73,8 @@ async fn test_ref_rejected_on_wrong_context() {
         None
     }
 
-    let context1_button_ref = find_button_ref(&snapshot1).expect("Should find button ref in context 1");
+    let context1_button_ref =
+        find_button_ref(&snapshot1).expect("Should find button ref in context 1");
     println!("Context 1 button ref: {context1_button_ref}");
 
     // Verify the ref works on context 1's page
@@ -96,21 +95,19 @@ async fn test_ref_rejected_on_wrong_context() {
     let page2 = context2.new_page().await.expect("Failed to create page 2");
 
     page2
-        .set_content(
-            r#"<html><body><button id="btn2">Button in Context 2</button></body></html>"#,
-        )
+        .set_content(r#"<html><body><button id="btn2">Button in Context 2</button></body></html>"#)
         .set()
         .await
         .expect("Failed to set content");
 
     // Try to resolve context 1's ref on context 2's page - should fail
     let result = page2.element_from_ref(&context1_button_ref).await;
-    
+
     assert!(
         result.is_err(),
         "Ref from context 1 should NOT be resolvable on context 2"
     );
-    
+
     // Verify the error message mentions context mismatch
     let err_msg = result.unwrap_err().to_string();
     println!("Error message: {err_msg}");
@@ -188,12 +185,26 @@ async fn test_refs_from_different_contexts_have_different_prefixes() {
 
     // Set same content on both pages
     let html = "<html><body><button>Test Button</button></body></html>";
-    page1.set_content(html).set().await.expect("Failed to set content");
-    page2.set_content(html).set().await.expect("Failed to set content");
+    page1
+        .set_content(html)
+        .set()
+        .await
+        .expect("Failed to set content");
+    page2
+        .set_content(html)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Capture snapshots
-    let snapshot1 = page1.aria_snapshot().await.expect("Failed to get snapshot 1");
-    let snapshot2 = page2.aria_snapshot().await.expect("Failed to get snapshot 2");
+    let snapshot1 = page1
+        .aria_snapshot()
+        .await
+        .expect("Failed to get snapshot 1");
+    let snapshot2 = page2
+        .aria_snapshot()
+        .await
+        .expect("Failed to get snapshot 2");
 
     // Find button refs
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
@@ -215,7 +226,10 @@ async fn test_refs_from_different_contexts_have_different_prefixes() {
     println!("Ref from context 2: {ref2}");
 
     // Refs should have different context prefixes
-    assert_ne!(ref1, ref2, "Refs from different contexts should be different");
+    assert_ne!(
+        ref1, ref2,
+        "Refs from different contexts should be different"
+    );
 
     // Extract context index from refs (format: c{ctx}p{page}f{frame}e{counter})
     let ctx1_idx: usize = ref1[1..ref1.find('p').unwrap()].parse().unwrap();
@@ -281,12 +295,26 @@ async fn test_refs_from_different_pages_have_different_prefixes() {
 
     // Set same content on both pages
     let html = "<html><body><button>Test Button</button></body></html>";
-    page1.set_content(html).set().await.expect("Failed to set content");
-    page2.set_content(html).set().await.expect("Failed to set content");
+    page1
+        .set_content(html)
+        .set()
+        .await
+        .expect("Failed to set content");
+    page2
+        .set_content(html)
+        .set()
+        .await
+        .expect("Failed to set content");
 
     // Capture snapshots
-    let snapshot1 = page1.aria_snapshot().await.expect("Failed to get snapshot 1");
-    let snapshot2 = page2.aria_snapshot().await.expect("Failed to get snapshot 2");
+    let snapshot1 = page1
+        .aria_snapshot()
+        .await
+        .expect("Failed to get snapshot 1");
+    let snapshot2 = page2
+        .aria_snapshot()
+        .await
+        .expect("Failed to get snapshot 2");
 
     // Find button refs
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
@@ -345,24 +373,20 @@ async fn test_ref_rejected_on_wrong_page() {
         .new_context()
         .await
         .expect("Failed to create context");
-    
+
     let page1 = context.new_page().await.expect("Failed to create page 1");
     let page2 = context.new_page().await.expect("Failed to create page 2");
 
     // Set content on page 1
     page1
-        .set_content(
-            r#"<html><body><button id="btn1">Button on Page 1</button></body></html>"#,
-        )
+        .set_content(r#"<html><body><button id="btn1">Button on Page 1</button></body></html>"#)
         .set()
         .await
         .expect("Failed to set content on page 1");
 
     // Set content on page 2
     page2
-        .set_content(
-            r#"<html><body><button id="btn2">Button on Page 2</button></body></html>"#,
-        )
+        .set_content(r#"<html><body><button id="btn2">Button on Page 2</button></body></html>"#)
         .set()
         .await
         .expect("Failed to set content on page 2");
@@ -401,12 +425,12 @@ async fn test_ref_rejected_on_wrong_page() {
 
     // Try to resolve page 1's ref on page 2 - should fail
     let result = page2.element_from_ref(&page1_button_ref).await;
-    
+
     assert!(
         result.is_err(),
         "Ref from page 1 should NOT be resolvable on page 2"
     );
-    
+
     // Verify the error message mentions page mismatch
     let err_msg = result.unwrap_err().to_string();
     println!("Error message: {err_msg}");

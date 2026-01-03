@@ -37,6 +37,18 @@ The system SHALL allow setting files on file input elements.
 - **WHEN** `locator.set_input_files(vec![file1, file2]).await` is called with FilePayload objects
 - **THEN** both files are uploaded from memory
 
+#### Scenario: Set file via ref from aria snapshot
+
+- **GIVEN** an aria snapshot containing a file input element with ref `c0p0e5`
+- **WHEN** `page.locator_from_ref("c0p0e5").set_input_files(&["file.txt"]).await` is called
+- **THEN** the file is set on the input
+
+#### Scenario: Set file buffer via ref from aria snapshot
+
+- **GIVEN** an aria snapshot containing a file input element with ref `c0p0e5`
+- **WHEN** `page.locator_from_ref("c0p0e5").set_input_files_from_buffer(&[payload]).await` is called
+- **THEN** the file is uploaded from memory
+
 ### Requirement: File Chooser Events
 
 The system SHALL emit events for file chooser dialogs.

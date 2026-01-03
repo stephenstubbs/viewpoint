@@ -39,10 +39,7 @@ async fn test_context_with_proxy_credentials() {
     // Create context with proxy configuration including credentials
     let context = browser
         .new_context_builder()
-        .proxy(
-            ProxyConfig::new("http://proxy.example.com:8080")
-                .credentials("user", "password"),
-        )
+        .proxy(ProxyConfig::new("http://proxy.example.com:8080").credentials("user", "password"))
         .build()
         .await
         .expect("Failed to create context with proxy credentials");

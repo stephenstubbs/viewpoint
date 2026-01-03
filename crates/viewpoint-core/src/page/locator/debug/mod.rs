@@ -61,12 +61,16 @@ impl Locator<'_> {
         // Handle Ref selector - lookup in ref map and resolve via CDP
         if let Selector::Ref(ref_str) = &self.selector {
             let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
-            return self.highlight_by_backend_id(backend_node_id, duration).await;
+            return self
+                .highlight_by_backend_id(backend_node_id, duration)
+                .await;
         }
 
         // Handle BackendNodeId selector
         if let Selector::BackendNodeId(backend_node_id) = &self.selector {
-            return self.highlight_by_backend_id(*backend_node_id, duration).await;
+            return self
+                .highlight_by_backend_id(*backend_node_id, duration)
+                .await;
         }
 
         // Add highlight style
@@ -171,6 +175,29 @@ impl Locator<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
+        let js_highlight = js! {
+            (function() {
+                const el = this;
+                const originalOutline = el.style.outline;
+                const originalOutlineOffset = el.style.outlineOffset;
+                const originalTransition = el.style.transition;
+
+                // Apply highlight with animation
+                el.style.transition = "outline 0.2s ease-in-out";
+                el.style.outline = "3px solid #ff00ff";
+                el.style.outlineOffset = "2px";
+
+                // Store original styles for restoration
+                el.__viewpoint_original_outline = originalOutline;
+                el.__viewpoint_original_outline_offset = originalOutlineOffset;
+                el.__viewpoint_original_transition = originalTransition;
+
+                return { found: true };
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_highlight = js_highlight.trim_start_matches('(').trim_end_matches(')');
+
         let call_result: CallResult = self
             .page
             .connection()
@@ -178,24 +205,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": r#"function() {
-                        const el = this;
-                        const originalOutline = el.style.outline;
-                        const originalOutlineOffset = el.style.outlineOffset;
-                        const originalTransition = el.style.transition;
-
-                        // Apply highlight with animation
-                        el.style.transition = "outline 0.2s ease-in-out";
-                        el.style.outline = "3px solid #ff00ff";
-                        el.style.outlineOffset = "2px";
-
-                        // Store original styles for restoration
-                        el.__viewpoint_original_outline = originalOutline;
-                        el.__viewpoint_original_outline_offset = originalOutlineOffset;
-                        el.__viewpoint_original_transition = originalTransition;
-
-                        return { found: true };
-                    }"#,
+                    "functionDeclaration": js_highlight,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),
@@ -219,6 +229,23 @@ impl Locator<'_> {
         tokio::time::sleep(duration).await;
 
         // Remove highlight
+        let js_remove_highlight = js! {
+            (function() {
+                const el = this;
+                el.style.outline = el.__viewpoint_original_outline || "";
+                el.style.outlineOffset = el.__viewpoint_original_outline_offset || "";
+                el.style.transition = el.__viewpoint_original_transition || "";
+
+                delete el.__viewpoint_original_outline;
+                delete el.__viewpoint_original_outline_offset;
+                delete el.__viewpoint_original_transition;
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_remove_highlight = js_remove_highlight
+            .trim_start_matches('(')
+            .trim_end_matches(')');
+
         let _ = self
             .page
             .connection()
@@ -226,16 +253,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": r#"function() {
-                        const el = this;
-                        el.style.outline = el.__viewpoint_original_outline || "";
-                        el.style.outlineOffset = el.__viewpoint_original_outline_offset || "";
-                        el.style.transition = el.__viewpoint_original_transition || "";
-
-                        delete el.__viewpoint_original_outline;
-                        delete el.__viewpoint_original_outline_offset;
-                        delete el.__viewpoint_original_transition;
-                    }"#,
+                    "functionDeclaration": js_remove_highlight,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),

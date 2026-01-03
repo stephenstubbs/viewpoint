@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use viewpoint_cdp::CdpConnection;
 
-use crate::network::auth::{AuthHandler, HttpCredentials, ProxyCredentials};
 use super::RouteHandlerRegistry;
+use crate::network::auth::{AuthHandler, HttpCredentials, ProxyCredentials};
 
 impl RouteHandlerRegistry {
     /// Create a new route handler registry.

@@ -175,7 +175,7 @@ impl Frame {
             frame_index,
         }
     }
-    
+
     /// Get the frame index (0 = main frame, 1+ = child frames).
     pub fn frame_index(&self) -> usize {
         self.frame_index

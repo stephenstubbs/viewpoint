@@ -75,10 +75,9 @@ async fn test_select_option_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the select's ref (combobox role)
-    let select_ref = find_ref_by_role(&snapshot, "combobox", None)
-        .expect("Should find select ref");
+    let select_ref = find_ref_by_role(&snapshot, "combobox", None).expect("Should find select ref");
 
     // Select option using ref
     let locator = page.locator_from_ref(&select_ref);
@@ -129,10 +128,10 @@ async fn test_evaluate_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the button's ref
-    let button_ref = find_ref_by_role(&snapshot, "button", Some("Click me"))
-        .expect("Should find button ref");
+    let button_ref =
+        find_ref_by_role(&snapshot, "button", Some("Click me")).expect("Should find button ref");
 
     // Evaluate on element using ref
     let locator = page.locator_from_ref(&button_ref);
@@ -140,7 +139,7 @@ async fn test_evaluate_via_ref() {
         .evaluate("element.tagName.toLowerCase()")
         .await
         .expect("Failed to evaluate via ref");
-    
+
     assert_eq!(tag_name, "button", "Should get correct tag name");
 
     // Also test getting a custom attribute
@@ -148,7 +147,7 @@ async fn test_evaluate_via_ref() {
         .evaluate("element.dataset.custom")
         .await
         .expect("Failed to evaluate dataset");
-    
+
     assert_eq!(custom_attr, "test-value", "Should get custom attribute");
 
     browser.close().await.expect("Failed to close browser");
@@ -185,10 +184,9 @@ async fn test_element_handle_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the article element ref
-    let target_ref = find_ref_by_role(&snapshot, "article", None)
-        .expect("Should find article ref");
+    let target_ref = find_ref_by_role(&snapshot, "article", None).expect("Should find article ref");
 
     // Get element handle using ref
     let locator = page.locator_from_ref(&target_ref);
@@ -196,8 +194,11 @@ async fn test_element_handle_via_ref() {
         .element_handle()
         .await
         .expect("Failed to get element handle via ref");
-    
-    assert!(handle.is_attached().await.unwrap(), "Element should be attached");
+
+    assert!(
+        handle.is_attached().await.unwrap(),
+        "Element should be attached"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -233,7 +234,7 @@ async fn test_scroll_into_view_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the button's ref
     let button_ref = find_ref_by_role(&snapshot, "button", Some("Bottom Button"))
         .expect("Should find button ref");
@@ -246,7 +247,10 @@ async fn test_scroll_into_view_via_ref() {
         .expect("Failed to scroll into view via ref");
 
     // Verify the button is now visible (in viewport)
-    let is_visible = locator.is_visible().await.expect("Failed to check visibility");
+    let is_visible = locator
+        .is_visible()
+        .await
+        .expect("Failed to check visibility");
     assert!(is_visible, "Button should be visible after scrolling");
 
     browser.close().await.expect("Failed to close browser");
@@ -284,12 +288,15 @@ async fn test_query_methods_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Test is_checked via ref (find checkbox)
-    let checkbox_ref = find_ref_by_role(&snapshot, "checkbox", None)
-        .expect("Should find checkbox ref");
+    let checkbox_ref =
+        find_ref_by_role(&snapshot, "checkbox", None).expect("Should find checkbox ref");
     let checkbox_locator = page.locator_from_ref(&checkbox_ref);
-    let is_checked = checkbox_locator.is_checked().await.expect("Failed to check is_checked via ref");
+    let is_checked = checkbox_locator
+        .is_checked()
+        .await
+        .expect("Failed to check is_checked via ref");
     assert!(is_checked, "Checkbox should be checked");
 
     // Test inner_text via ref (find paragraph)
@@ -306,7 +313,10 @@ async fn test_query_methods_via_ref() {
     }
     let para_ref = find_paragraph_ref(&snapshot).expect("Should find paragraph ref");
     let para_locator = page.locator_from_ref(&para_ref);
-    let inner_text = para_locator.inner_text().await.expect("Failed to get inner_text via ref");
+    let inner_text = para_locator
+        .inner_text()
+        .await
+        .expect("Failed to get inner_text via ref");
     assert_eq!(inner_text, "Hello World", "Should get correct inner text");
 
     // Test get_attribute via ref
@@ -314,13 +324,19 @@ async fn test_query_methods_via_ref() {
         .get_attribute("data-info")
         .await
         .expect("Failed to get_attribute via ref");
-    assert_eq!(attr.as_deref(), Some("test-info"), "Should get correct attribute");
+    assert_eq!(
+        attr.as_deref(),
+        Some("test-info"),
+        "Should get correct attribute"
+    );
 
     // Test input_value via ref (find textbox)
-    let input_ref = find_ref_by_role(&snapshot, "textbox", None)
-        .expect("Should find input ref");
+    let input_ref = find_ref_by_role(&snapshot, "textbox", None).expect("Should find input ref");
     let input_locator = page.locator_from_ref(&input_ref);
-    let value = input_locator.input_value().await.expect("Failed to get input_value via ref");
+    let value = input_locator
+        .input_value()
+        .await
+        .expect("Failed to get input_value via ref");
     assert_eq!(value, "initial value", "Should get correct input value");
 
     browser.close().await.expect("Failed to close browser");
@@ -359,10 +375,10 @@ async fn test_aria_snapshot_on_locator_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the navigation's ref
-    let nav_ref = find_ref_by_role(&snapshot, "navigation", None)
-        .expect("Should find navigation ref");
+    let nav_ref =
+        find_ref_by_role(&snapshot, "navigation", None).expect("Should find navigation ref");
 
     // Get aria_snapshot of the navigation element via ref
     let locator = page.locator_from_ref(&nav_ref);
@@ -418,10 +434,10 @@ async fn test_select_multiple_options_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the select's ref (still combobox role for <select> elements)
-    let select_ref = find_ref_by_role(&snapshot, "combobox", None)
-        .expect("Should find multi-select ref");
+    let select_ref =
+        find_ref_by_role(&snapshot, "combobox", None).expect("Should find multi-select ref");
 
     // Select multiple options using ref
     let locator = page.locator_from_ref(&select_ref);
@@ -433,16 +449,27 @@ async fn test_select_multiple_options_via_ref() {
 
     // Verify the selections via JavaScript
     let selected: Vec<String> = page
-        .evaluate(r#"
+        .evaluate(
+            r#"
             Array.from(document.getElementById('colors').selectedOptions)
                 .map(opt => opt.value)
-        "#)
+        "#,
+        )
         .await
         .expect("Failed to get selected values");
-    
-    assert!(selected.contains(&"red".to_string()), "Should have selected 'red'");
-    assert!(selected.contains(&"blue".to_string()), "Should have selected 'blue'");
-    assert!(!selected.contains(&"green".to_string()), "Should not have selected 'green'");
+
+    assert!(
+        selected.contains(&"red".to_string()),
+        "Should have selected 'red'"
+    );
+    assert!(
+        selected.contains(&"blue".to_string()),
+        "Should have selected 'blue'"
+    );
+    assert!(
+        !selected.contains(&"green".to_string()),
+        "Should not have selected 'green'"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -477,7 +504,7 @@ async fn test_highlight_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the button's ref
     let button_ref = find_ref_by_role(&snapshot, "button", Some("Highlight Me"))
         .expect("Should find button ref");
@@ -528,10 +555,9 @@ async fn test_element_screenshot_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the section element ref (has "region" role)
-    let target_ref = find_ref_by_role(&snapshot, "region", None)
-        .expect("Should find section ref");
+    let target_ref = find_ref_by_role(&snapshot, "region", None).expect("Should find section ref");
 
     // Take screenshot using ref
     let locator = page.locator_from_ref(&target_ref);
@@ -542,9 +568,16 @@ async fn test_element_screenshot_via_ref() {
         .expect("Failed to take screenshot via ref");
 
     // Verify we got some PNG data
-    assert!(!screenshot_bytes.is_empty(), "Screenshot should not be empty");
+    assert!(
+        !screenshot_bytes.is_empty(),
+        "Screenshot should not be empty"
+    );
     // PNG files start with specific magic bytes
-    assert_eq!(&screenshot_bytes[0..4], &[0x89, 0x50, 0x4E, 0x47], "Should be valid PNG");
+    assert_eq!(
+        &screenshot_bytes[0..4],
+        &[0x89, 0x50, 0x4E, 0x47],
+        "Should be valid PNG"
+    );
 
     browser.close().await.expect("Failed to close browser");
 }
@@ -587,12 +620,17 @@ async fn test_set_input_files_via_ref() {
     // File inputs may appear as textbox or button depending on browser
     // Let's use a CSS selector to get the file input's backend node ID instead
     // Actually, let's test set_input_files_from_buffer which doesn't require actual files
-    
+
     // Find any ref that might be the file input (could be textbox or generic)
     fn find_file_input_ref(snapshot: &AriaSnapshot) -> Option<String> {
         // File inputs in Chrome often show as a button
-        if snapshot.role.as_deref() == Some("button") && 
-           snapshot.name.as_deref().map(|n| n.contains("file") || n.contains("Choose") || n.contains("Browse")).unwrap_or(false) {
+        if snapshot.role.as_deref() == Some("button")
+            && snapshot
+                .name
+                .as_deref()
+                .map(|n| n.contains("file") || n.contains("Choose") || n.contains("Browse"))
+                .unwrap_or(false)
+        {
             return snapshot.node_ref.clone();
         }
         for child in &snapshot.children {
@@ -606,7 +644,7 @@ async fn test_set_input_files_via_ref() {
     // If we can't find it via ARIA, test using a regular locator first to ensure the functionality works
     // Then we know the ref-based version would work too
     let file_payload = viewpoint_core::FilePayload::from_text("test.txt", "Hello from ref test!");
-    
+
     // Test with regular locator first
     page.locator("#fileupload")
         .set_input_files_from_buffer(&[file_payload.clone()])
@@ -669,10 +707,10 @@ async fn test_all_texts_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find a list item ref
-    let listitem_ref = find_ref_by_role(&snapshot, "listitem", None)
-        .expect("Should find listitem ref");
+    let listitem_ref =
+        find_ref_by_role(&snapshot, "listitem", None).expect("Should find listitem ref");
 
     // Test all_inner_texts via ref (single element returns array with one item)
     let locator = page.locator_from_ref(&listitem_ref);
@@ -680,7 +718,7 @@ async fn test_all_texts_via_ref() {
         .all_inner_texts()
         .await
         .expect("Failed to get all_inner_texts via ref");
-    
+
     assert_eq!(inner_texts.len(), 1, "Should have 1 text (single element)");
     assert!(inner_texts[0].contains("Item"), "Should contain 'Item'");
 
@@ -689,7 +727,7 @@ async fn test_all_texts_via_ref() {
         .all_text_contents()
         .await
         .expect("Failed to get all_text_contents via ref");
-    
+
     assert_eq!(text_contents.len(), 1, "Should have 1 text content");
     assert!(text_contents[0].contains("Item"), "Should contain 'Item'");
 
@@ -726,7 +764,7 @@ async fn test_bounding_box_via_ref() {
 
     // Capture snapshot with refs
     let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    
+
     // Find the button's ref
     let button_ref = find_ref_by_role(&snapshot, "button", Some("Sized Button"))
         .expect("Should find button ref");
@@ -737,10 +775,18 @@ async fn test_bounding_box_via_ref() {
         .bounding_box()
         .await
         .expect("Failed to get bounding_box via ref");
-    
+
     let bbox = bbox.expect("Should have bounding box");
-    assert!(bbox.width >= 150.0, "Width should be at least 150px, got {}", bbox.width);
-    assert!(bbox.height >= 50.0, "Height should be at least 50px, got {}", bbox.height);
+    assert!(
+        bbox.width >= 150.0,
+        "Width should be at least 150px, got {}",
+        bbox.width
+    );
+    assert!(
+        bbox.height >= 50.0,
+        "Height should be at least 50px, got {}",
+        bbox.height
+    );
 
     browser.close().await.expect("Failed to close browser");
 }

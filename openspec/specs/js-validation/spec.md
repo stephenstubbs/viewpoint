@@ -165,15 +165,39 @@ The system SHALL work seamlessly with existing `page.evaluate()` and similar met
 
 #### Scenario: Internal locator queries use validated JS
 
-- **GIVEN** internal locator helper methods (query_element_info, focus_element, etc.)
+- **GIVEN** internal locator helper methods (query_element_info, focus_element, is_checked, get_attribute, etc.)
 - **WHEN** these methods construct JavaScript for evaluation
-- **THEN** the JavaScript is constructed using the `js!` macro with compile-time validation
+- **THEN** the JavaScript is constructed using the `js!` macro with `@{expr}` raw interpolation for selector expressions
 
 #### Scenario: Internal frame locator queries use validated JS
 
 - **GIVEN** internal frame locator helper methods
 - **WHEN** these methods construct JavaScript for evaluation
 - **THEN** the JavaScript is constructed using the `js!` macro with compile-time validation
+
+#### Scenario: Internal select option methods use validated JS
+
+- **GIVEN** internal select option methods (select_option_internal, select_options_internal)
+- **WHEN** these methods construct JavaScript for evaluation
+- **THEN** the JavaScript is constructed using the `js!` macro with `#{expr}` value interpolation
+
+#### Scenario: Internal file input methods use validated JS
+
+- **GIVEN** internal file input methods (set_input_files, set_input_files_from_buffer)
+- **WHEN** these methods construct JavaScript for evaluation
+- **THEN** the JavaScript is constructed using the `js!` macro with `@{expr}` raw interpolation
+
+#### Scenario: Internal storage state methods use validated JS
+
+- **GIVEN** internal storage state methods (save_storage_state, restore_storage_state)
+- **WHEN** these methods construct JavaScript for evaluation
+- **THEN** the JavaScript is constructed using the `js!` macro with compile-time validation
+
+#### Scenario: Internal assertion helpers use validated JS
+
+- **GIVEN** internal assertion helper functions in viewpoint-test (get_input_value, is_enabled, get_attribute)
+- **WHEN** these functions construct JavaScript for evaluation
+- **THEN** the JavaScript is constructed using the `js!` macro with `@{expr}` raw interpolation for selector expressions
 
 ### Requirement: Raw Expression Interpolation
 

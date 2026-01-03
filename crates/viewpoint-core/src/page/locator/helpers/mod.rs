@@ -157,6 +157,32 @@ impl Locator<'_> {
             exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
         }
 
+        let js_fn = js! {
+            (function() {
+                const el = this;
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                const visible = rect.width > 0 && rect.height > 0 &&
+                    style.visibility !== "hidden" &&
+                    style.display !== "none" &&
+                    parseFloat(style.opacity) > 0;
+                return {
+                    found: true,
+                    count: 1,
+                    visible: visible,
+                    enabled: !el.disabled,
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                    text: el.textContent,
+                    tagName: el.tagName.toLowerCase()
+                };
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
         let result: CallResult = self
             .page
             .connection()
@@ -164,27 +190,7 @@ impl Locator<'_> {
                 "Runtime.callFunctionOn",
                 Some(serde_json::json!({
                     "objectId": object_id,
-                    "functionDeclaration": r#"function() {
-                        const el = this;
-                        const rect = el.getBoundingClientRect();
-                        const style = window.getComputedStyle(el);
-                        const visible = rect.width > 0 && rect.height > 0 &&
-                            style.visibility !== "hidden" &&
-                            style.display !== "none" &&
-                            parseFloat(style.opacity) > 0;
-                        return {
-                            found: true,
-                            count: 1,
-                            visible: visible,
-                            enabled: !el.disabled,
-                            x: rect.x,
-                            y: rect.y,
-                            width: rect.width,
-                            height: rect.height,
-                            text: el.textContent,
-                            tagName: el.tagName.toLowerCase()
-                        };
-                    }"#,
+                    "functionDeclaration": js_fn,
                     "returnByValue": true
                 })),
                 Some(self.page.session_id()),

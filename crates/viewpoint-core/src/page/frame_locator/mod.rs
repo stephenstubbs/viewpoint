@@ -9,6 +9,8 @@ use std::time::Duration;
 
 use super::locator::{AriaRole, LocatorOptions, Selector};
 use crate::Page;
+use viewpoint_js::js;
+use viewpoint_js_core::escape_js_string_single;
 
 /// Default timeout for frame locator operations.
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -200,6 +202,10 @@ impl<'a> FrameLocator<'a> {
     }
 
     /// Build the JavaScript expression to access the frame's content document.
+    ///
+    /// Note: This function builds JavaScript dynamically at runtime because it processes
+    /// a variable number of parent frame selectors. It uses `viewpoint_js_core` escaping
+    /// utilities to ensure proper string escaping.
     pub(crate) fn to_js_frame_access(&self) -> String {
         let mut js = String::new();
 
@@ -209,19 +215,19 @@ impl<'a> FrameLocator<'a> {
 
         // Navigate through parent frames
         for parent_selector in &self.parent_selectors {
-            js.push_str(&format!(
-                "  const parent = doc.querySelector({});\n",
-                super::locator::selector::js_string_literal(parent_selector)
-            ));
+            let escaped_selector = escape_js_string_single(parent_selector);
+            js.push_str("  const parent = doc.querySelector(");
+            js.push_str(&escaped_selector);
+            js.push_str(");\n");
             js.push_str("  if (!parent || !parent.contentDocument) return null;\n");
             js.push_str("  doc = parent.contentDocument;\n");
         }
 
         // Access the final frame
-        js.push_str(&format!(
-            "  const frame = doc.querySelector({});\n",
-            super::locator::selector::js_string_literal(&self.frame_selector)
-        ));
+        let escaped_frame_selector = escape_js_string_single(&self.frame_selector);
+        js.push_str("  const frame = doc.querySelector(");
+        js.push_str(&escaped_frame_selector);
+        js.push_str(");\n");
         js.push_str("  if (!frame || !frame.contentDocument) return null;\n");
         js.push_str("  return frame.contentDocument;\n");
         js.push_str("})()");
@@ -332,25 +338,25 @@ impl<'a> FrameElementLocator<'a> {
         let frame_access = self.frame_locator.to_js_frame_access();
         let element_selector = self.selector.to_js_expression();
 
-        format!(
-            r"(function() {{
-                const frameDoc = {frame_access};
-                if (!frameDoc) return {{ found: false, count: 0, error: 'Frame not found or not accessible' }};
-                
+        js! {
+            (function() {
+                const frameDoc = @{frame_access};
+                if (!frameDoc) return { found: false, count: 0, error: "Frame not found or not accessible" };
+
                 // Override document for the selector expression
                 const originalDocument = document;
-                try {{
+                try {
                     // Create a modified expression that uses frameDoc instead of document
-                    const elements = (function() {{
+                    const elements = (function() {
                         const document = frameDoc;
-                        return Array.from({element_selector});
-                    }})();
+                        return Array.from(@{element_selector});
+                    })();
                     return elements;
-                }} catch (e) {{
+                } catch (e) {
                     return [];
-                }}
-            }})()"
-        )
+                }
+            })()
+        }
     }
 }
 

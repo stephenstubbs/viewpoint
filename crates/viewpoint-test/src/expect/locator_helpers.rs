@@ -5,19 +5,9 @@ use std::time::Duration;
 
 use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
 use viewpoint_core::Selector;
+use viewpoint_js::js;
 
 use crate::error::AssertionError;
-
-/// Escape strings for JavaScript string literals.
-pub fn js_string_literal(s: &str) -> String {
-    let escaped = s
-        .replace('\\', "\\\\")
-        .replace('\'', "\\'")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-        .replace('\t', "\\t");
-    format!("'{escaped}'")
-}
 
 /// Evaluate JavaScript on a page.
 pub async fn evaluate_js(
@@ -74,7 +64,8 @@ pub async fn get_input_value(
 
     // Handle Ref selector - lookup in ref map and resolve via CDP
     if let Selector::Ref(ref_str) = selector {
-        let backend_node_id = page.get_backend_node_id_for_ref(ref_str)
+        let backend_node_id = page
+            .get_backend_node_id_for_ref(ref_str)
             .map_err(|e| AssertionError::new("Ref not found", "ref to exist", e.to_string()))?;
         return get_input_value_by_backend_id(page, backend_node_id).await;
     }
@@ -84,15 +75,15 @@ pub async fn get_input_value(
         return get_input_value_by_backend_id(page, *backend_node_id).await;
     }
 
-    let js = format!(
-        r"(function() {{
-            const elements = {};
-            if (elements.length === 0) return {{ found: false }};
+    let js_selector = selector.to_js_expression();
+    let js = js! {
+        (function() {
+            const elements = @{js_selector};
+            if (elements.length === 0) return { found: false };
             const el = elements[0];
-            return {{ found: true, value: el.value || '' }};
-        }})()",
-        selector.to_js_expression()
-    );
+            return { found: true, value: el.value || "" };
+        })()
+    };
 
     let result = evaluate_js(page, &js).await?;
 
@@ -120,13 +111,15 @@ async fn get_input_value_by_backend_id(
     page: &viewpoint_core::Page,
     backend_node_id: BackendNodeId,
 ) -> Result<String, AssertionError> {
-    let result = call_function_on_backend_id(
-        page,
-        backend_node_id,
-        r#"function() {
-            return { value: this.value || '' };
-        }"#,
-    ).await?;
+    let js_fn = js! {
+        (function() {
+            return { value: this.value || "" };
+        })
+    };
+    // Strip outer parentheses for CDP functionDeclaration
+    let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
+    let result = call_function_on_backend_id(page, backend_node_id, js_fn).await?;
 
     Ok(result
         .get("value")
@@ -144,7 +137,8 @@ pub async fn get_selected_values(
 
     // Handle Ref selector - lookup in ref map and resolve via CDP
     if let Selector::Ref(ref_str) = selector {
-        let backend_node_id = page.get_backend_node_id_for_ref(ref_str)
+        let backend_node_id = page
+            .get_backend_node_id_for_ref(ref_str)
             .map_err(|e| AssertionError::new("Ref not found", "ref to exist", e.to_string()))?;
         return get_selected_values_by_backend_id(page, backend_node_id).await;
     }
@@ -154,22 +148,22 @@ pub async fn get_selected_values(
         return get_selected_values_by_backend_id(page, *backend_node_id).await;
     }
 
-    let js = format!(
-        r"(function() {{
-            const elements = {};
-            if (elements.length === 0) return {{ found: false }};
+    let js_selector = selector.to_js_expression();
+    let js = js! {
+        (function() {
+            const elements = @{js_selector};
+            if (elements.length === 0) return { found: false };
             const el = elements[0];
-            if (el.tagName.toLowerCase() !== 'select') {{
-                return {{ found: true, values: [el.value || ''] }};
-            }}
+            if (el.tagName.toLowerCase() !== "select") {
+                return { found: true, values: [el.value || ""] };
+            }
             const values = [];
-            for (const opt of el.selectedOptions) {{
+            for (const opt of el.selectedOptions) {
                 values.push(opt.value);
-            }}
-            return {{ found: true, values: values }};
-        }})()",
-        selector.to_js_expression()
-    );
+            }
+            return { found: true, values: values };
+        })()
+    };
 
     let result = evaluate_js(page, &js).await?;
 
@@ -202,21 +196,23 @@ async fn get_selected_values_by_backend_id(
     page: &viewpoint_core::Page,
     backend_node_id: BackendNodeId,
 ) -> Result<Vec<String>, AssertionError> {
-    let result = call_function_on_backend_id(
-        page,
-        backend_node_id,
-        r#"function() {
+    let js_fn = js! {
+        (function() {
             const el = this;
-            if (el.tagName.toLowerCase() !== 'select') {
-                return { values: [el.value || ''] };
+            if (el.tagName.toLowerCase() !== "select") {
+                return { values: [el.value || ""] };
             }
             const values = [];
             for (const opt of el.selectedOptions) {
                 values.push(opt.value);
             }
             return { values: values };
-        }"#,
-    ).await?;
+        })
+    };
+    // Strip outer parentheses for CDP functionDeclaration
+    let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
+    let result = call_function_on_backend_id(page, backend_node_id, js_fn).await?;
 
     Ok(result
         .get("values")
@@ -240,7 +236,8 @@ pub async fn get_attribute(
 
     // Handle Ref selector - lookup in ref map and resolve via CDP
     if let Selector::Ref(ref_str) = selector {
-        let backend_node_id = page.get_backend_node_id_for_ref(ref_str)
+        let backend_node_id = page
+            .get_backend_node_id_for_ref(ref_str)
             .map_err(|e| AssertionError::new("Ref not found", "ref to exist", e.to_string()))?;
         return get_attribute_by_backend_id(page, backend_node_id, name).await;
     }
@@ -250,17 +247,16 @@ pub async fn get_attribute(
         return get_attribute_by_backend_id(page, *backend_node_id, name).await;
     }
 
-    let js = format!(
-        r"(function() {{
-            const elements = {};
-            if (elements.length === 0) return {{ found: false }};
+    let js_selector = selector.to_js_expression();
+    let js = js! {
+        (function() {
+            const elements = @{js_selector};
+            if (elements.length === 0) return { found: false };
             const el = elements[0];
-            const value = el.getAttribute({});
-            return {{ found: true, value: value }};
-        }})()",
-        selector.to_js_expression(),
-        js_string_literal(name)
-    );
+            const value = el.getAttribute(#{name});
+            return { found: true, value: value };
+        })()
+    };
 
     let result = evaluate_js(page, &js).await?;
 
@@ -284,15 +280,16 @@ async fn get_attribute_by_backend_id(
     backend_node_id: BackendNodeId,
     name: &str,
 ) -> Result<Option<String>, AssertionError> {
-    let name_escaped = js_string_literal(name);
-    let result = call_function_on_backend_id_with_fn(
-        page,
-        backend_node_id,
-        &format!(r#"function() {{
-            const value = this.getAttribute({name_escaped});
-            return {{ value: value }};
-        }}"#),
-    ).await?;
+    let js_fn = js! {
+        (function() {
+            const value = this.getAttribute(#{name});
+            return { value: value };
+        })
+    };
+    // Strip outer parentheses for CDP functionDeclaration
+    let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
+    let result = call_function_on_backend_id_with_fn(page, backend_node_id, js_fn).await?;
 
     Ok(result
         .get("value")
@@ -307,7 +304,8 @@ pub async fn is_enabled(locator: &viewpoint_core::Locator<'_>) -> Result<bool, A
 
     // Handle Ref selector - lookup in ref map and resolve via CDP
     if let Selector::Ref(ref_str) = selector {
-        let backend_node_id = page.get_backend_node_id_for_ref(ref_str)
+        let backend_node_id = page
+            .get_backend_node_id_for_ref(ref_str)
             .map_err(|e| AssertionError::new("Ref not found", "ref to exist", e.to_string()))?;
         return is_enabled_by_backend_id(page, backend_node_id).await;
     }
@@ -317,15 +315,15 @@ pub async fn is_enabled(locator: &viewpoint_core::Locator<'_>) -> Result<bool, A
         return is_enabled_by_backend_id(page, *backend_node_id).await;
     }
 
-    let js = format!(
-        r"(function() {{
-            const elements = {};
-            if (elements.length === 0) return {{ found: false }};
+    let js_selector = selector.to_js_expression();
+    let js = js! {
+        (function() {
+            const elements = @{js_selector};
+            if (elements.length === 0) return { found: false };
             const el = elements[0];
-            return {{ found: true, enabled: !el.disabled }};
-        }})()",
-        selector.to_js_expression()
-    );
+            return { found: true, enabled: !el.disabled };
+        })()
+    };
 
     let result = evaluate_js(page, &js).await?;
 
@@ -352,13 +350,15 @@ async fn is_enabled_by_backend_id(
     page: &viewpoint_core::Page,
     backend_node_id: BackendNodeId,
 ) -> Result<bool, AssertionError> {
-    let result = call_function_on_backend_id(
-        page,
-        backend_node_id,
-        r#"function() {
+    let js_fn = js! {
+        (function() {
             return { enabled: !this.disabled };
-        }"#,
-    ).await?;
+        })
+    };
+    // Strip outer parentheses for CDP functionDeclaration
+    let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
+    let result = call_function_on_backend_id(page, backend_node_id, js_fn).await?;
 
     Ok(result
         .get("enabled")
@@ -461,13 +461,7 @@ async fn call_function_on_backend_id_with_fn(
             Some(page.session_id()),
         )
         .await
-        .map_err(|e| {
-            AssertionError::new(
-                "Failed to call function",
-                "success",
-                e.to_string(),
-            )
-        })?;
+        .map_err(|e| AssertionError::new("Failed to call function", "success", e.to_string()))?;
 
     // Release the object
     let _ = page
@@ -487,11 +481,8 @@ async fn call_function_on_backend_id_with_fn(
         ));
     }
 
-    call_result.result.value.ok_or_else(|| {
-        AssertionError::new(
-            "No result from query",
-            "a value",
-            "null/undefined",
-        )
-    })
+    call_result
+        .result
+        .value
+        .ok_or_else(|| AssertionError::new("No result from query", "a value", "null/undefined"))
 }

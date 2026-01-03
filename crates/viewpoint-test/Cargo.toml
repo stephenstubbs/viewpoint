@@ -21,6 +21,8 @@ integration = []
 [dependencies]
 viewpoint-cdp.workspace = true
 viewpoint-core.workspace = true
+viewpoint-js.workspace = true
+viewpoint-js-core.workspace = true
 viewpoint-test-macros.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

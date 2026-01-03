@@ -70,16 +70,22 @@ fn tokens_to_js_string(tokens: &TokenStream2) -> String {
             proc_macro2::TokenTree::Punct(punct) => {
                 let ch = punct.as_char();
                 // Handle # and @ specially for interpolation
+                // They still need space before them if previous token was an identifier
                 if ch == '#' || ch == '@' {
+                    if prev_needs_space {
+                        result.push(' ');
+                    }
                     result.push(ch);
+                    // After # or @, we don't need a space before the following {
+                    prev_needs_space = false;
                 } else {
                     // Some punctuation needs spacing
                     if needs_space_before_punct(ch) && prev_needs_space {
                         result.push(' ');
                     }
                     result.push(ch);
+                    prev_needs_space = needs_space_after_punct(ch);
                 }
-                prev_needs_space = needs_space_after_punct(ch);
             }
             proc_macro2::TokenTree::Literal(lit) => {
                 if prev_needs_space {

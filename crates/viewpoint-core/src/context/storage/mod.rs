@@ -307,98 +307,96 @@ impl<'a> StorageStateBuilder<'a> {
         &self,
         session_id: &str,
     ) -> Result<Vec<IndexedDbDatabase>, ContextError> {
-        let max_entries = self.options.indexed_db_max_entries;
+        let max_entries = self.options.indexed_db_max_entries.to_string();
 
         // JavaScript to collect IndexedDB data
-        let js = format!(
-            r"
-            (async function() {{
-                const maxEntries = {max_entries};
+        let js_code = js! {
+            (async function() {
+                const maxEntries = @{max_entries};
                 const databases = [];
-                
-                if (!window.indexedDB || !window.indexedDB.databases) {{
+
+                if (!window.indexedDB || !window.indexedDB.databases) {
                     return databases;
-                }}
-                
+                }
+
                 const dbList = await window.indexedDB.databases();
-                
-                for (const dbInfo of dbList) {{
+
+                for (const dbInfo of dbList) {
                     if (!dbInfo.name) continue;
-                    
-                    try {{
-                        const db = await new Promise((resolve, reject) => {{
+
+                    try {
+                        const db = await new Promise((resolve, reject) => {
                             const request = indexedDB.open(dbInfo.name, dbInfo.version);
                             request.onerror = () => reject(request.error);
                             request.onsuccess = () => resolve(request.result);
-                        }});
-                        
-                        const dbData = {{
+                        });
+
+                        const dbData = {
                             name: dbInfo.name,
                             version: db.version,
                             stores: []
-                        }};
-                        
-                        for (const storeName of db.objectStoreNames) {{
-                            const tx = db.transaction(storeName, 'readonly');
+                        };
+
+                        for (const storeName of db.objectStoreNames) {
+                            const tx = db.transaction(storeName, "readonly");
                             const store = tx.objectStore(storeName);
-                            
-                            const storeData = {{
+
+                            const storeData = {
                                 name: storeName,
-                                keyPath: store.keyPath ? (typeof store.keyPath === 'string' ? store.keyPath : store.keyPath.join(',')) : null,
+                                keyPath: store.keyPath ? (typeof store.keyPath === "string" ? store.keyPath : store.keyPath.join(",")) : null,
                                 autoIncrement: store.autoIncrement,
                                 entries: [],
                                 indexes: []
-                            }};
-                            
+                            };
+
                             // Collect index definitions
-                            for (const indexName of store.indexNames) {{
+                            for (const indexName of store.indexNames) {
                                 const index = store.index(indexName);
-                                storeData.indexes.push({{
+                                storeData.indexes.push({
                                     name: index.name,
-                                    keyPath: typeof index.keyPath === 'string' ? index.keyPath : index.keyPath.join(','),
+                                    keyPath: typeof index.keyPath === "string" ? index.keyPath : index.keyPath.join(","),
                                     unique: index.unique,
                                     multiEntry: index.multiEntry
-                                }});
-                            }}
-                            
+                                });
+                            }
+
                             // Collect entries (limited)
-                            const entries = await new Promise((resolve, reject) => {{
+                            const entries = await new Promise((resolve, reject) => {
                                 const entries = [];
                                 const request = store.openCursor();
                                 request.onerror = () => reject(request.error);
-                                request.onsuccess = (event) => {{
+                                request.onsuccess = (event) => {
                                     const cursor = event.target.result;
-                                    if (cursor && (maxEntries === 0 || entries.length < maxEntries)) {{
-                                        entries.push({{ key: cursor.key, value: cursor.value }});
+                                    if (cursor && (maxEntries === 0 || entries.length < maxEntries)) {
+                                        entries.push({ key: cursor.key, value: cursor.value });
                                         cursor.continue();
-                                    }} else {{
+                                    } else {
                                         resolve(entries);
-                                    }}
-                                }};
-                            }});
-                            
+                                    }
+                                };
+                            });
+
                             storeData.entries = entries;
                             dbData.stores.push(storeData);
-                        }}
-                        
+                        }
+
                         db.close();
                         databases.push(dbData);
-                    }} catch (e) {{
-                        console.warn('Failed to read IndexedDB:', dbInfo.name, e);
-                    }}
-                }}
-                
+                    } catch (e) {
+                        console.warn("Failed to read IndexedDB:", dbInfo.name, e);
+                    }
+                }
+
                 return databases;
-            }})()
-        "
-        );
+            })()
+        };
 
         let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
             .connection
             .send_command(
                 "Runtime.evaluate",
                 Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: js,
+                    expression: js_code,
                     object_group: None,
                     include_command_line_api: None,
                     silent: Some(true),

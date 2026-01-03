@@ -107,7 +107,12 @@ pub struct ParsedRef {
 
 impl ParsedRef {
     /// Create a new parsed ref.
-    pub fn new(context_index: usize, page_index: usize, frame_index: usize, element_counter: usize) -> Self {
+    pub fn new(
+        context_index: usize,
+        page_index: usize,
+        frame_index: usize,
+        element_counter: usize,
+    ) -> Self {
         Self {
             context_index,
             page_index,
@@ -138,19 +143,27 @@ pub fn parse_ref(ref_str: &str) -> Result<ParsedRef, LocatorError> {
 fn parse_ref_format(ref_str: &str) -> Result<ParsedRef, LocatorError> {
     // Format: c0p0f0e1
     let without_c = ref_str.strip_prefix('c').ok_or_else(|| {
-        LocatorError::EvaluationError(format!("Invalid ref format: expected 'c' prefix in '{ref_str}'"))
+        LocatorError::EvaluationError(format!(
+            "Invalid ref format: expected 'c' prefix in '{ref_str}'"
+        ))
     })?;
 
     let (context_part, rest) = without_c.split_once('p').ok_or_else(|| {
-        LocatorError::EvaluationError(format!("Invalid ref format: expected 'p' separator in '{ref_str}'"))
+        LocatorError::EvaluationError(format!(
+            "Invalid ref format: expected 'p' separator in '{ref_str}'"
+        ))
     })?;
 
     let (page_part, rest) = rest.split_once('f').ok_or_else(|| {
-        LocatorError::EvaluationError(format!("Invalid ref format: expected 'f' separator in '{ref_str}'"))
+        LocatorError::EvaluationError(format!(
+            "Invalid ref format: expected 'f' separator in '{ref_str}'"
+        ))
     })?;
 
     let (frame_part, element_part) = rest.split_once('e').ok_or_else(|| {
-        LocatorError::EvaluationError(format!("Invalid ref format: expected 'e' separator in '{ref_str}'"))
+        LocatorError::EvaluationError(format!(
+            "Invalid ref format: expected 'e' separator in '{ref_str}'"
+        ))
     })?;
 
     let context_index = context_part.parse::<usize>().map_err(|e| {
@@ -169,13 +182,23 @@ fn parse_ref_format(ref_str: &str) -> Result<ParsedRef, LocatorError> {
         LocatorError::EvaluationError(format!("Invalid element counter in ref '{ref_str}': {e}"))
     })?;
 
-    Ok(ParsedRef::new(context_index, page_index, frame_index, element_counter))
+    Ok(ParsedRef::new(
+        context_index,
+        page_index,
+        frame_index,
+        element_counter,
+    ))
 }
 
 /// Format a ref string from context, page, frame, and element indices.
 ///
 /// Produces the format `c{contextIndex}p{pageIndex}f{frameIndex}e{counter}`.
-pub fn format_ref(context_index: usize, page_index: usize, frame_index: usize, element_counter: usize) -> String {
+pub fn format_ref(
+    context_index: usize,
+    page_index: usize,
+    frame_index: usize,
+    element_counter: usize,
+) -> String {
     format!("c{context_index}p{page_index}f{frame_index}e{element_counter}")
 }
 
@@ -217,7 +240,7 @@ impl Page {
         }
 
         let parsed = parse_ref(ref_str)?;
-        
+
         // Validate context index
         if parsed.context_index != self.context_index {
             return Err(LocatorError::EvaluationError(format!(
@@ -225,7 +248,7 @@ impl Page {
                 parsed.context_index, self.context_index
             )));
         }
-        
+
         // Validate page index
         if parsed.page_index != self.page_index {
             return Err(LocatorError::EvaluationError(format!(
@@ -260,9 +283,7 @@ impl Page {
             )
             .await
             .map_err(|e| {
-                LocatorError::NotFound(format!(
-                    "Ref not found. Capture a new snapshot. Error: {e}"
-                ))
+                LocatorError::NotFound(format!("Ref not found. Capture a new snapshot. Error: {e}"))
             })?;
 
         let object_id = result.object.object_id.ok_or_else(|| {
@@ -311,7 +332,7 @@ impl Page {
         // Parse the ref to validate format and indices
         let parsed = parse_ref(ref_str)
             .expect("Invalid ref format. Refs must be in format 'c{ctx}p{page}f{frame}e{counter}'");
-        
+
         // Validate indices match this page
         assert!(
             parsed.context_index == self.context_index,
@@ -319,7 +340,7 @@ impl Page {
             parsed.context_index,
             self.context_index
         );
-        
+
         assert!(
             parsed.page_index == self.page_index,
             "Page index mismatch: ref is for page {}, but this is page {}",
@@ -369,15 +390,9 @@ impl Page {
         &self,
         ref_str: &str,
     ) -> Result<BackendNodeId, LocatorError> {
-        self.ref_map
-            .read()
-            .get(ref_str)
-            .copied()
-            .ok_or_else(|| {
-                LocatorError::NotFound(
-                    "Ref not found. Capture a new snapshot.".to_string()
-                )
-            })
+        self.ref_map.read().get(ref_str).copied().ok_or_else(|| {
+            LocatorError::NotFound("Ref not found. Capture a new snapshot.".to_string())
+        })
     }
 
     /// Store a ref mapping in the page's ref map.
@@ -398,92 +413,4 @@ impl Page {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_ref_new_format() {
-        let parsed = parse_ref("c0p0f0e1").unwrap();
-        assert_eq!(parsed.context_index, 0);
-        assert_eq!(parsed.page_index, 0);
-        assert_eq!(parsed.frame_index, 0);
-        assert_eq!(parsed.element_counter, 1);
-    }
-
-    #[test]
-    fn test_parse_ref_new_format_larger_indices() {
-        let parsed = parse_ref("c12p34f56e789").unwrap();
-        assert_eq!(parsed.context_index, 12);
-        assert_eq!(parsed.page_index, 34);
-        assert_eq!(parsed.frame_index, 56);
-        assert_eq!(parsed.element_counter, 789);
-    }
-
-    #[test]
-    fn test_parse_ref_child_frame() {
-        let parsed = parse_ref("c0p0f1e5").unwrap();
-        assert_eq!(parsed.context_index, 0);
-        assert_eq!(parsed.page_index, 0);
-        assert_eq!(parsed.frame_index, 1);
-        assert_eq!(parsed.element_counter, 5);
-    }
-
-    #[test]
-    fn test_parse_ref_invalid_format() {
-        assert!(parse_ref("invalid").is_err());
-        assert!(parse_ref("x0p0f0e1").is_err());
-        assert!(parse_ref("c0p0e1").is_err()); // missing frame
-        assert!(parse_ref("c0f0e1").is_err()); // missing page
-        assert!(parse_ref("").is_err());
-    }
-
-    #[test]
-    fn test_parse_ref_legacy_format_rejected() {
-        // Legacy e{id} format is no longer supported
-        assert!(parse_ref("e12345").is_err());
-        assert!(parse_ref("e1").is_err());
-    }
-
-    #[test]
-    fn test_parse_ref_invalid_numbers() {
-        assert!(parse_ref("cXp0f0e1").is_err());
-        assert!(parse_ref("c0pXf0e1").is_err());
-        assert!(parse_ref("c0p0fXe1").is_err());
-        assert!(parse_ref("c0p0f0eX").is_err());
-    }
-
-    #[test]
-    fn test_format_ref() {
-        assert_eq!(format_ref(0, 0, 0, 1), "c0p0f0e1");
-        assert_eq!(format_ref(1, 2, 3, 4), "c1p2f3e4");
-        assert_eq!(format_ref(12, 34, 56, 789), "c12p34f56e789");
-    }
-
-    #[test]
-    fn test_format_and_parse_roundtrip() {
-        let original = format_ref(5, 10, 2, 100);
-        let parsed = parse_ref(&original).unwrap();
-        assert_eq!(parsed.context_index, 5);
-        assert_eq!(parsed.page_index, 10);
-        assert_eq!(parsed.frame_index, 2);
-        assert_eq!(parsed.element_counter, 100);
-    }
-
-    #[test]
-    fn test_parsed_ref_new() {
-        let parsed = ParsedRef::new(1, 2, 3, 4);
-        assert_eq!(parsed.context_index, 1);
-        assert_eq!(parsed.page_index, 2);
-        assert_eq!(parsed.frame_index, 3);
-        assert_eq!(parsed.element_counter, 4);
-    }
-
-    #[test]
-    fn test_parsed_ref_equality() {
-        let a = ParsedRef::new(1, 2, 3, 4);
-        let b = ParsedRef::new(1, 2, 3, 4);
-        let c = ParsedRef::new(1, 2, 3, 5);
-        assert_eq!(a, b);
-        assert_ne!(a, c);
-    }
-}
+mod tests;
