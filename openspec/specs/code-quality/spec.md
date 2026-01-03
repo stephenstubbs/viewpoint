@@ -69,6 +69,11 @@ The codebase SHALL produce zero warnings when running `cargo clippy` with pedant
 - **THEN** the closure SHALL be replaced with a method reference where possible
 - **AND** the `redundant_closure_for_method_calls` clippy lint SHALL be satisfied
 
+#### Scenario: Single character patterns
+- **WHEN** a string method like `contains()` or `split()` receives a single-character string
+- **THEN** a char literal SHALL be used instead of a string literal
+- **AND** the `single_char_pattern` clippy lint SHALL be satisfied
+
 ### Requirement: Maintainable File Sizes
 
 Source files SHALL be kept to a maintainable size to enable effective code review and comprehension.
@@ -204,6 +209,12 @@ Clippy lint suppressions SHALL only be used when there is a clear, documented re
 - **WHEN** dead code warnings appear
 - **THEN** the code SHALL be either used, removed, or gated with `#[cfg(...)]`
 - **AND** `#[allow(dead_code)]` SHALL NOT be used to hide incomplete features
+
+#### Scenario: Float comparison in tests
+- **WHEN** tests compare floating point values for equality
+- **THEN** the specific test function MAY use `#[allow(clippy::float_cmp)]`
+- **AND** the suppression SHALL include a comment: `// Testing exact float values`
+- **AND** crate-level `#![allow(clippy::float_cmp)]` SHALL NOT be used
 
 ### Requirement: Test Reliability
 

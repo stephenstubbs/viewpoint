@@ -75,15 +75,15 @@
 mod connector;
 mod context_builder;
 mod launcher;
+mod process;
 
 use std::process::Child;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 
 use tempfile::TempDir;
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::info;
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::target_domain::{
     CreateBrowserContextParams, CreateBrowserContextResult, GetBrowserContextsResult,
@@ -449,81 +449,12 @@ impl Browser {
     /// Returns an error if closing fails.
     pub async fn close(&self) -> Result<(), BrowserError> {
         // If we own the process, terminate it and reap it
-        if let Some(ref process) = self.process {
-            let mut child = process.lock().await;
-            Self::kill_and_reap_async(&mut child).await;
+        if let Some(ref process_mutex) = self.process {
+            let mut child = process_mutex.lock().await;
+            process::kill_and_reap_async(&mut child).await;
         }
 
         Ok(())
-    }
-
-    /// Kill and reap a child process asynchronously.
-    ///
-    /// This method:
-    /// 1. Sends SIGKILL to the process (if still running)
-    /// 2. Waits for the process to exit and reaps it
-    ///
-    /// This prevents zombie processes by ensuring `wait()` is called.
-    async fn kill_and_reap_async(child: &mut Child) {
-        // Kill the process (ignore errors if already dead)
-        let _ = child.kill();
-
-        // Wait for the process to exit and reap it
-        // This is the critical step to prevent zombie processes
-        match child.wait() {
-            Ok(status) => {
-                info!(?status, "Browser process reaped successfully");
-            }
-            Err(e) => {
-                warn!(error = %e, "Failed to reap browser process");
-            }
-        }
-    }
-
-    /// Kill and reap a child process synchronously (for use in Drop).
-    ///
-    /// This method uses `try_wait()` (non-blocking) with retries since
-    /// `Drop` cannot be async. It attempts to reap the process a few times
-    /// with small delays to handle the case where the process hasn't exited
-    /// immediately after `kill()`.
-    ///
-    /// # Arguments
-    ///
-    /// * `child` - The child process to kill and reap
-    /// * `max_attempts` - Maximum number of try_wait attempts
-    /// * `retry_delay` - Delay between retry attempts
-    fn kill_and_reap_sync(child: &mut Child, max_attempts: u32, retry_delay: Duration) {
-        // Kill the process (ignore errors if already dead)
-        let _ = child.kill();
-
-        // Try to reap the process with retries
-        for attempt in 1..=max_attempts {
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    info!(
-                        ?status,
-                        attempt, "Browser process reaped successfully in Drop"
-                    );
-                    return;
-                }
-                Ok(None) => {
-                    // Process still running, wait a bit and retry
-                    if attempt < max_attempts {
-                        thread::sleep(retry_delay);
-                    }
-                }
-                Err(e) => {
-                    warn!(error = %e, "Failed to check browser process status in Drop");
-                    return;
-                }
-            }
-        }
-
-        // If we get here, the process is still running after all attempts
-        warn!(
-            max_attempts,
-            "Browser process still running after kill, will become zombie until parent exits"
-        );
     }
 
     /// Get a reference to the CDP connection.
@@ -541,11 +472,11 @@ impl Drop for Browser {
     fn drop(&mut self) {
         // Try to kill and reap the process if we own it
         if self.owned {
-            if let Some(ref process) = self.process {
+            if let Some(ref process_mutex) = self.process {
                 // We can't await in drop, so we try to kill synchronously
-                if let Ok(mut guard) = process.try_lock() {
+                if let Ok(mut guard) = process_mutex.try_lock() {
                     // Use the sync helper with 10 attempts and 10ms delay between attempts (100ms total)
-                    Self::kill_and_reap_sync(&mut guard, 10, Duration::from_millis(10));
+                    process::kill_and_reap_sync(&mut guard, 10, Duration::from_millis(10));
                 }
             }
         }

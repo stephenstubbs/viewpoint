@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 use super::*;
 
 #[test]
@@ -54,18 +52,15 @@ fn test_aria_snapshot_frame_boundary_to_yaml() {
     let yaml = snapshot.to_yaml();
     assert!(
         yaml.contains("[frame-boundary]"),
-        "YAML should contain [frame-boundary], got: {}",
-        yaml
+        "YAML should contain [frame-boundary], got: {yaml}"
     );
     assert!(
         yaml.contains("[frame-url=\"https://payment.example.com/widget\"]"),
-        "YAML should contain frame URL, got: {}",
-        yaml
+        "YAML should contain frame URL, got: {yaml}"
     );
     assert!(
         yaml.contains("[frame-name=\"payment-frame\"]"),
-        "YAML should contain frame name, got: {}",
-        yaml
+        "YAML should contain frame name, got: {yaml}"
     );
 }
 
@@ -78,18 +73,15 @@ fn test_aria_snapshot_frame_boundary_to_yaml_minimal() {
     let yaml = snapshot.to_yaml();
     assert!(
         yaml.contains("[frame-boundary]"),
-        "YAML should contain [frame-boundary], got: {}",
-        yaml
+        "YAML should contain [frame-boundary], got: {yaml}"
     );
     assert!(
         !yaml.contains("[frame-url"),
-        "YAML should not contain frame-url when not set, got: {}",
-        yaml
+        "YAML should not contain frame-url when not set, got: {yaml}"
     );
     assert!(
         !yaml.contains("[frame-name"),
-        "YAML should not contain frame-name when not set, got: {}",
-        yaml
+        "YAML should not contain frame-name when not set, got: {yaml}"
     );
 }
 
@@ -206,8 +198,7 @@ fn test_aria_snapshot_frame_name_with_quotes() {
     // Quotes should be escaped
     assert!(
         yaml.contains(r#"[frame-name="my \"special\" frame"]"#),
-        "Quotes in frame name should be escaped, got: {}",
-        yaml
+        "Quotes in frame name should be escaped, got: {yaml}"
     );
 }
 
@@ -224,8 +215,7 @@ fn test_aria_snapshot_ref_to_yaml() {
     let yaml = snapshot.to_yaml();
     assert!(
         yaml.contains("[ref=e12345]"),
-        "YAML should contain [ref=e12345], got: {}",
-        yaml
+        "YAML should contain [ref=e12345], got: {yaml}"
     );
 }
 
@@ -236,8 +226,7 @@ fn test_aria_snapshot_ref_to_yaml_no_ref() {
     let yaml = snapshot.to_yaml();
     assert!(
         !yaml.contains("[ref="),
-        "YAML should not contain [ref=] when node_ref is None, got: {}",
-        yaml
+        "YAML should not contain [ref=] when node_ref is None, got: {yaml}"
     );
 }
 
@@ -285,8 +274,7 @@ fn test_aria_snapshot_ref_serialization() {
     let json = serde_json::to_string(&snapshot).expect("Should serialize");
     assert!(
         json.contains(r#""ref":"e42""#),
-        "JSON should contain ref field, got: {}",
-        json
+        "JSON should contain ref field, got: {json}"
     );
 
     // And deserialize
@@ -320,13 +308,11 @@ fn test_aria_snapshot_ref_with_children() {
     let yaml = button.to_yaml();
     assert!(
         yaml.contains("[ref=e100]"),
-        "Parent should have ref, got: {}",
-        yaml
+        "Parent should have ref, got: {yaml}"
     );
     assert!(
         yaml.contains("[ref=e101]"),
-        "Child should have ref, got: {}",
-        yaml
+        "Child should have ref, got: {yaml}"
     );
 }
 
@@ -342,18 +328,15 @@ fn test_aria_snapshot_ref_with_other_attributes() {
     // All attributes should be present
     assert!(
         yaml.contains("[checked]"),
-        "Should have [checked], got: {}",
-        yaml
+        "Should have [checked], got: {yaml}"
     );
     assert!(
         yaml.contains("[disabled]"),
-        "Should have [disabled], got: {}",
-        yaml
+        "Should have [disabled], got: {yaml}"
     );
     assert!(
         yaml.contains("[ref=e999]"),
-        "Should have [ref=e999], got: {}",
-        yaml
+        "Should have [ref=e999], got: {yaml}"
     );
 }
 
@@ -368,12 +351,10 @@ fn test_aria_snapshot_ref_with_frame_boundary() {
     let yaml = snapshot.to_yaml();
     assert!(
         yaml.contains("[frame-boundary]"),
-        "Should have [frame-boundary], got: {}",
-        yaml
+        "Should have [frame-boundary], got: {yaml}"
     );
     assert!(
         yaml.contains("[ref=e555]"),
-        "Should have [ref=e555], got: {}",
-        yaml
+        "Should have [ref=e555], got: {yaml}"
     );
 }

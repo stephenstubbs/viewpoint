@@ -1,5 +1,4 @@
 #![cfg(feature = "integration")]
-#![allow(clippy::float_cmp, clippy::assertions_on_constants)]
 
 //! Device emulation tests for viewpoint-core.
 //!
@@ -135,6 +134,7 @@ async fn test_viewport_size_mobile() {
 
 /// Test iPhone device descriptor availability.
 #[tokio::test]
+#[allow(clippy::assertions_on_constants)] // Testing constant device descriptor properties
 async fn test_device_iphone_available() {
     init_tracing();
 
@@ -147,6 +147,7 @@ async fn test_device_iphone_available() {
 
 /// Test Pixel device descriptor availability.
 #[tokio::test]
+#[allow(clippy::assertions_on_constants)] // Testing constant device descriptor properties
 async fn test_device_pixel_available() {
     init_tracing();
 

@@ -14,10 +14,17 @@ use crate::error::ContextError;
 
 use super::{BrowserContext, ContextEventManager};
 
+/// Global context index counter.
+///
+/// Used to assign unique indices to contexts for generating scoped element refs.
+static CONTEXT_INDEX_COUNTER: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
 impl BrowserContext {
     /// Create a new browser context.
     pub(crate) fn new(connection: Arc<CdpConnection>, context_id: String) -> Self {
-        debug!(context_id = %context_id, "Created BrowserContext");
+        let context_index = CONTEXT_INDEX_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        debug!(context_id = %context_id, context_index = context_index, "Created BrowserContext");
         let route_registry = Arc::new(routing::ContextRouteRegistry::new(
             connection.clone(),
             context_id.clone(),
@@ -26,9 +33,11 @@ impl BrowserContext {
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
+            context_index,
             closed: false,
             owned: true, // We created this context
             pages: Arc::new(RwLock::new(Vec::new())),
+            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
             default_timeout: Duration::from_secs(30),
             default_navigation_timeout: Duration::from_secs(30),
             options: ContextOptions::default(),
@@ -51,7 +60,8 @@ impl BrowserContext {
         context_id: String,
         options: ContextOptions,
     ) -> Self {
-        debug!(context_id = %context_id, "Created BrowserContext with options");
+        let context_index = CONTEXT_INDEX_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        debug!(context_id = %context_id, context_index = context_index, "Created BrowserContext with options");
         let route_registry = Arc::new(routing::ContextRouteRegistry::new(
             connection.clone(),
             context_id.clone(),
@@ -60,9 +70,11 @@ impl BrowserContext {
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
+            context_index,
             closed: false,
             owned: true, // We created this context
             pages: Arc::new(RwLock::new(Vec::new())),
+            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
             default_timeout: options.default_timeout.unwrap_or(Duration::from_secs(30)),
             default_navigation_timeout: options
                 .default_navigation_timeout
@@ -87,8 +99,9 @@ impl BrowserContext {
     /// contexts that existed before our connection. External contexts are
     /// not disposed when closed - only our connection to them is closed.
     pub(crate) fn from_existing(connection: Arc<CdpConnection>, context_id: String) -> Self {
+        let context_index = CONTEXT_INDEX_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let is_default = context_id.is_empty();
-        debug!(context_id = %context_id, is_default = is_default, "Wrapping existing BrowserContext");
+        debug!(context_id = %context_id, context_index = context_index, is_default = is_default, "Wrapping existing BrowserContext");
         let route_registry = Arc::new(routing::ContextRouteRegistry::new(
             connection.clone(),
             context_id.clone(),
@@ -97,9 +110,11 @@ impl BrowserContext {
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
+            context_index,
             closed: false,
             owned: false, // We didn't create this context
             pages: Arc::new(RwLock::new(Vec::new())),
+            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
             default_timeout: Duration::from_secs(30),
             default_navigation_timeout: Duration::from_secs(30),
             options: ContextOptions::default(),

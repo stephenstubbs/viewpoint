@@ -1,5 +1,3 @@
-#![allow(clippy::float_cmp)]
-
 use super::*;
 
 #[test]
@@ -32,10 +30,18 @@ fn test_cookie_serialization() {
 #[test]
 fn test_geolocation() {
     let geo = Geolocation::new(40.7128, -74.0060);
-    assert_eq!(geo.latitude, 40.7128);
-    assert_eq!(geo.longitude, -74.0060);
-    assert_eq!(geo.accuracy, 0.0);
+    // Testing exact float values from geolocation constructor
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(geo.latitude, 40.7128);
+        assert_eq!(geo.longitude, -74.0060);
+        assert_eq!(geo.accuracy, 0.0);
+    }
 
     let geo_accurate = Geolocation::with_accuracy(40.7128, -74.0060, 100.0);
-    assert_eq!(geo_accurate.accuracy, 100.0);
+    // Testing exact float value for accuracy
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(geo_accurate.accuracy, 100.0);
+    }
 }

@@ -206,6 +206,7 @@
 //! # }
 //! ```
 
+mod accessors;
 mod aria_snapshot;
 pub use aria_snapshot::SnapshotOptions;
 pub mod binding;
@@ -226,6 +227,7 @@ mod frame_locator_actions;
 mod frame_page_methods;
 mod input_devices;
 pub mod keyboard;
+mod lifecycle;
 pub mod locator;
 mod locator_factory;
 pub mod locator_handler;
@@ -233,6 +235,7 @@ mod mouse;
 mod mouse_drag;
 mod navigation;
 pub mod page_error;
+mod page_info;
 mod pdf;
 pub mod popup;
 mod ref_resolution;
@@ -247,15 +250,10 @@ mod video_io;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tracing::{debug, info, instrument, trace, warn};
 use viewpoint_cdp::CdpConnection;
-use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
-use viewpoint_cdp::protocol::target_domain::CloseTargetParams;
-use viewpoint_js::js;
 
-use crate::error::{NavigationError, PageError};
+use crate::error::NavigationError;
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
-use crate::wait::{DocumentLoadState, LoadStateWaiter};
 
 pub use clock::{Clock, TimeValue};
 pub use console::{ConsoleMessage, ConsoleMessageLocation, ConsoleMessageType, JsArg};
@@ -303,6 +301,12 @@ pub struct Page {
     session_id: String,
     /// Main frame ID.
     frame_id: String,
+    /// Context index for element ref generation.
+    /// Used to generate scoped element refs in the format `c{contextIndex}p{pageIndex}e{counter}`.
+    context_index: usize,
+    /// Page index within the context for element ref generation.
+    /// Used to generate scoped element refs in the format `c{contextIndex}p{pageIndex}e{counter}`.
+    page_index: usize,
     /// Whether the page has been closed.
     closed: bool,
     /// Route handler registry.
@@ -331,6 +335,10 @@ pub struct Page {
     test_id_attribute: String,
     /// Execution context registry for tracking frame contexts.
     context_registry: Arc<ExecutionContextRegistry>,
+    /// Ref map for element ref resolution.
+    /// Maps ref strings (e.g., `c0p0e1`) to their backendNodeIds.
+    /// Updated on each `aria_snapshot()` call.
+    ref_map: std::sync::Arc<parking_lot::RwLock<std::collections::HashMap<String, viewpoint_cdp::protocol::dom::BackendNodeId>>>,
 }
 
 // Manual Debug implementation since some fields don't implement Debug
@@ -340,6 +348,8 @@ impl std::fmt::Debug for Page {
             .field("target_id", &self.target_id)
             .field("session_id", &self.session_id)
             .field("frame_id", &self.frame_id)
+            .field("context_index", &self.context_index)
+            .field("page_index", &self.page_index)
             .field("closed", &self.closed)
             .finish_non_exhaustive()
     }
@@ -386,151 +396,6 @@ impl Page {
     /// - The wait times out
     pub async fn goto_url(&self, url: &str) -> Result<NavigationResponse, NavigationError> {
         self.goto(url).goto().await
-    }
-
-    /// Navigate to a URL with the given options.
-    #[instrument(level = "info", skip(self), fields(target_id = %self.target_id, url = %url, wait_until = ?wait_until, timeout_ms = timeout.as_millis()))]
-    pub(crate) async fn navigate_internal(
-        &self,
-        url: &str,
-        wait_until: DocumentLoadState,
-        timeout: Duration,
-        referer: Option<&str>,
-    ) -> Result<NavigationResponse, NavigationError> {
-        if self.closed {
-            warn!("Attempted navigation on closed page");
-            return Err(NavigationError::Cancelled);
-        }
-
-        info!("Starting navigation");
-
-        // Create a load state waiter
-        let event_rx = self.connection.subscribe_events();
-        let mut waiter =
-            LoadStateWaiter::new(event_rx, self.session_id.clone(), self.frame_id.clone());
-        trace!("Created load state waiter");
-
-        // Send the navigation command
-        debug!("Sending Page.navigate command");
-        let result: NavigateResult = self
-            .connection
-            .send_command(
-                "Page.navigate",
-                Some(NavigateParams {
-                    url: url.to_string(),
-                    referrer: referer.map(ToString::to_string),
-                    transition_type: None,
-                    frame_id: None,
-                }),
-                Some(&self.session_id),
-            )
-            .await?;
-
-        debug!(frame_id = %result.frame_id, loader_id = ?result.loader_id, "Page.navigate completed");
-
-        // Check for navigation errors
-        // Note: Chrome reports HTTP error status codes (4xx, 5xx) as errors with
-        // "net::ERR_HTTP_RESPONSE_CODE_FAILURE" or "net::ERR_INVALID_AUTH_CREDENTIALS".
-        // Following Playwright's behavior, we treat these as successful navigations
-        // that return a response with the appropriate status code.
-        if let Some(ref error_text) = result.error_text {
-            let is_http_error = error_text == "net::ERR_HTTP_RESPONSE_CODE_FAILURE"
-                || error_text == "net::ERR_INVALID_AUTH_CREDENTIALS";
-
-            if !is_http_error {
-                warn!(error = %error_text, "Navigation failed with error");
-                return Err(NavigationError::NetworkError(error_text.clone()));
-            }
-            debug!(error = %error_text, "HTTP error response - continuing to capture status");
-        }
-
-        // Mark commit as received
-        trace!("Setting commit received");
-        waiter.set_commit_received().await;
-
-        // Wait for the target load state
-        debug!(wait_until = ?wait_until, "Waiting for load state");
-        waiter
-            .wait_for_load_state_with_timeout(wait_until, timeout)
-            .await?;
-
-        // Get response data captured during navigation
-        let response_data = waiter.response_data().await;
-
-        info!(frame_id = %result.frame_id, "Navigation completed successfully");
-
-        // Use the final URL from response data if available (handles redirects)
-        let final_url = response_data.url.unwrap_or_else(|| url.to_string());
-
-        // Build the response with captured data
-        if let Some(status) = response_data.status {
-            Ok(NavigationResponse::with_response(
-                final_url,
-                result.frame_id,
-                status,
-                response_data.headers,
-            ))
-        } else {
-            Ok(NavigationResponse::new(final_url, result.frame_id))
-        }
-    }
-
-    /// Close this page.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if closing fails.
-    #[instrument(level = "info", skip(self), fields(target_id = %self.target_id))]
-    pub async fn close(&mut self) -> Result<(), PageError> {
-        if self.closed {
-            debug!("Page already closed");
-            return Ok(());
-        }
-
-        info!("Closing page");
-
-        // Clean up route handlers
-        self.route_registry.unroute_all().await;
-        debug!("Route handlers cleaned up");
-
-        self.connection
-            .send_command::<_, serde_json::Value>(
-                "Target.closeTarget",
-                Some(CloseTargetParams {
-                    target_id: self.target_id.clone(),
-                }),
-                None,
-            )
-            .await?;
-
-        self.closed = true;
-        info!("Page closed");
-        Ok(())
-    }
-
-    /// Get the target ID.
-    pub fn target_id(&self) -> &str {
-        &self.target_id
-    }
-
-    /// Get the session ID.
-    pub fn session_id(&self) -> &str {
-        &self.session_id
-    }
-
-    /// Get the main frame ID.
-    pub fn frame_id(&self) -> &str {
-        &self.frame_id
-    }
-
-    /// Check if this page has been closed.
-    pub fn is_closed(&self) -> bool {
-        self.closed
-    }
-
-    /// Get a reference to the CDP connection.
-    pub fn connection(&self) -> &Arc<CdpConnection> {
-        &self.connection
     }
 
     // =========================================================================
@@ -597,82 +462,4 @@ impl Page {
     pub fn pdf(&self) -> pdf::PdfBuilder<'_> {
         pdf::PdfBuilder::new(self)
     }
-
-    /// Get the current page URL.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the page is closed or the evaluation fails.
-    pub async fn url(&self) -> Result<String, PageError> {
-        if self.closed {
-            return Err(PageError::Closed);
-        }
-
-        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
-            .connection
-            .send_command(
-                "Runtime.evaluate",
-                Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: js! { window.location.href }.to_string(),
-                    object_group: None,
-                    include_command_line_api: None,
-                    silent: Some(true),
-                    context_id: None,
-                    return_by_value: Some(true),
-                    await_promise: Some(false),
-                }),
-                Some(&self.session_id),
-            )
-            .await?;
-
-        result
-            .result
-            .value
-            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
-            .ok_or_else(|| PageError::EvaluationFailed("Failed to get URL".to_string()))
-    }
-
-    /// Get the current page title.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the page is closed or the evaluation fails.
-    pub async fn title(&self) -> Result<String, PageError> {
-        if self.closed {
-            return Err(PageError::Closed);
-        }
-
-        let result: viewpoint_cdp::protocol::runtime::EvaluateResult = self
-            .connection
-            .send_command(
-                "Runtime.evaluate",
-                Some(viewpoint_cdp::protocol::runtime::EvaluateParams {
-                    expression: "document.title".to_string(),
-                    object_group: None,
-                    include_command_line_api: None,
-                    silent: Some(true),
-                    context_id: None,
-                    return_by_value: Some(true),
-                    await_promise: Some(false),
-                }),
-                Some(&self.session_id),
-            )
-            .await?;
-
-        result
-            .result
-            .value
-            .and_then(|v| v.as_str().map(std::string::ToString::to_string))
-            .ok_or_else(|| PageError::EvaluationFailed("Failed to get title".to_string()))
-    }
 }
-
-// Additional Page methods are defined in:
-// - scripts.rs: add_init_script, add_init_script_path
-// - locator_handler.rs: add_locator_handler, add_locator_handler_with_options, remove_locator_handler
-// - video.rs: video, start_video_recording, stop_video_recording
-// - binding.rs: expose_function, remove_exposed_function
-// - input_devices.rs: keyboard, mouse, touchscreen, clock, drag_and_drop
-// - locator_factory.rs: locator, get_by_*, set_test_id_attribute
-// - DragAndDropBuilder is defined in mouse.rs
-// - RoleLocatorBuilder is defined in locator/mod.rs

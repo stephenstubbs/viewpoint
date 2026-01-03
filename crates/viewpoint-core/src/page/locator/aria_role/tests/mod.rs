@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 use super::*;
 
 #[test]
@@ -29,8 +27,7 @@ fn test_aria_role_all_variants_have_lowercase_str() {
         assert_eq!(
             s,
             s.to_lowercase(),
-            "AriaRole::{:?} should be lowercase",
-            role
+            "AriaRole::{role:?} should be lowercase"
         );
     }
 }

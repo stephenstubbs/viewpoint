@@ -70,11 +70,11 @@ async fn test_large_dom_snapshot_performance() {
     println!("Large DOM snapshot captured in {duration:?}");
     println!("Snapshot has {} children at root", snapshot.children.len());
 
-    // Verify the snapshot contains our buttons (check for refs)
+    // Verify the snapshot contains our buttons (check for refs in new format)
     let yaml = snapshot.to_yaml();
     assert!(
-        yaml.contains("[ref=e"),
-        "Snapshot should contain element refs"
+        yaml.contains("[ref=c") && yaml.contains('p') && yaml.contains('e'),
+        "Snapshot should contain element refs in format c{{ctx}}p{{page}}e{{counter}}"
     );
 
     // Performance expectation: should complete in under 5 seconds
@@ -140,8 +140,8 @@ async fn test_snapshot_without_refs_performance() {
     let _yaml_without = snapshot_without_refs.to_yaml();
 
     assert!(
-        yaml_with.contains("[ref=e"),
-        "Snapshot with refs should contain refs"
+        yaml_with.contains("[ref=c") && yaml_with.contains('p') && yaml_with.contains('e'),
+        "Snapshot with refs should contain refs in format c{{ctx}}p{{page}}e{{counter}}"
     );
     // Without refs, the snapshot should not have refs
     // (The node_ref field will be None for all nodes)

@@ -43,6 +43,12 @@ pub struct Frame {
     pub(super) data: RwLock<FrameData>,
     /// Execution context registry for looking up context IDs.
     pub(super) context_registry: Option<Arc<ExecutionContextRegistry>>,
+    /// Context index for element ref generation (inherited from parent Page).
+    pub(super) context_index: usize,
+    /// Page index for element ref generation (inherited from parent Page).
+    pub(super) page_index: usize,
+    /// Frame index for element ref generation (0 = main frame, 1+ = child frames).
+    pub(super) frame_index: usize,
 }
 
 impl Frame {
@@ -69,6 +75,41 @@ impl Frame {
                 execution_contexts: HashMap::new(),
             }),
             context_registry: None,
+            context_index: 0,
+            page_index: 0,
+            frame_index: 0,
+        }
+    }
+
+    /// Create a new frame with indices for ref generation.
+    pub(crate) fn new_with_indices(
+        connection: Arc<CdpConnection>,
+        session_id: String,
+        id: String,
+        parent_id: Option<String>,
+        loader_id: String,
+        url: String,
+        name: String,
+        context_index: usize,
+        page_index: usize,
+        frame_index: usize,
+    ) -> Self {
+        Self {
+            connection,
+            session_id,
+            id,
+            parent_id,
+            loader_id,
+            data: RwLock::new(FrameData {
+                url,
+                name,
+                detached: false,
+                execution_contexts: HashMap::new(),
+            }),
+            context_registry: None,
+            context_index,
+            page_index,
+            frame_index,
         }
     }
 
@@ -96,7 +137,48 @@ impl Frame {
                 execution_contexts: HashMap::new(),
             }),
             context_registry: Some(context_registry),
+            context_index: 0,
+            page_index: 0,
+            frame_index: 0,
         }
+    }
+
+    /// Create a new frame with context registry and indices.
+    pub(crate) fn with_context_registry_and_indices(
+        connection: Arc<CdpConnection>,
+        session_id: String,
+        id: String,
+        parent_id: Option<String>,
+        loader_id: String,
+        url: String,
+        name: String,
+        context_registry: Arc<ExecutionContextRegistry>,
+        context_index: usize,
+        page_index: usize,
+        frame_index: usize,
+    ) -> Self {
+        Self {
+            connection,
+            session_id,
+            id,
+            parent_id,
+            loader_id,
+            data: RwLock::new(FrameData {
+                url,
+                name,
+                detached: false,
+                execution_contexts: HashMap::new(),
+            }),
+            context_registry: Some(context_registry),
+            context_index,
+            page_index,
+            frame_index,
+        }
+    }
+    
+    /// Get the frame index (0 = main frame, 1+ = child frames).
+    pub fn frame_index(&self) -> usize {
+        self.frame_index
     }
 
     /// Get the unique frame identifier.

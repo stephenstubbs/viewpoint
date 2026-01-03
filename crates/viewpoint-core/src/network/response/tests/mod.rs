@@ -1,5 +1,3 @@
-#![allow(clippy::float_cmp, clippy::unreadable_literal)]
-
 use super::*;
 
 #[test]
@@ -23,8 +21,8 @@ fn test_security_details_from_cdp() {
         subject_name: "*.example.com".to_string(),
         san_list: vec!["example.com".to_string(), "*.example.com".to_string()],
         issuer: "DigiCert SHA2 Extended Validation Server CA".to_string(),
-        valid_from: 1609459200.0, // 2021-01-01
-        valid_to: 1640995200.0,   // 2022-01-01
+        valid_from: 1_609_459_200.0, // 2021-01-01
+        valid_to: 1_640_995_200.0,   // 2022-01-01
     };
 
     let details = SecurityDetails::from(cdp_details);
@@ -35,8 +33,12 @@ fn test_security_details_from_cdp() {
         details.issuer,
         "DigiCert SHA2 Extended Validation Server CA"
     );
-    assert_eq!(details.valid_from, 1609459200.0);
-    assert_eq!(details.valid_to, 1640995200.0);
+    // Testing exact float values from CDP protocol
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(details.valid_from, 1_609_459_200.0);
+        assert_eq!(details.valid_to, 1_640_995_200.0);
+    }
     assert_eq!(details.san_list.len(), 2);
     assert!(details.san_list.contains(&"example.com".to_string()));
     assert!(details.san_list.contains(&"*.example.com".to_string()));
@@ -70,8 +72,8 @@ fn test_security_details_clone() {
         protocol: "TLS 1.3".to_string(),
         subject_name: "example.com".to_string(),
         issuer: "Test CA".to_string(),
-        valid_from: 1000.0,
-        valid_to: 2000.0,
+        valid_from: 1_000.0,
+        valid_to: 2_000.0,
         san_list: vec!["example.com".to_string()],
     };
 

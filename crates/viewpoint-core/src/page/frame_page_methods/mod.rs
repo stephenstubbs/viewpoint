@@ -77,7 +77,7 @@ impl Page {
 
         let frame_info = result.frame_tree.frame;
 
-        Ok(Frame::with_context_registry(
+        Ok(Frame::with_context_registry_and_indices(
             self.connection.clone(),
             self.session_id.clone(),
             frame_info.id,
@@ -86,6 +86,9 @@ impl Page {
             frame_info.url,
             frame_info.name.unwrap_or_default(),
             self.context_registry.clone(),
+            self.context_index,
+            self.page_index,
+            0, // main frame always has frame_index 0
         ))
     }
 
@@ -120,7 +123,8 @@ impl Page {
             .await?;
 
         let mut frames = Vec::new();
-        self.collect_frames(&result.frame_tree, &mut frames);
+        let mut frame_index_counter = 0usize;
+        self.collect_frames(&result.frame_tree, &mut frames, &mut frame_index_counter);
 
         Ok(frames)
     }
@@ -130,10 +134,13 @@ impl Page {
         &self,
         tree: &viewpoint_cdp::protocol::page::FrameTree,
         frames: &mut Vec<Frame>,
+        frame_index_counter: &mut usize,
     ) {
         let frame_info = &tree.frame;
+        let frame_index = *frame_index_counter;
+        *frame_index_counter += 1;
 
-        frames.push(Frame::with_context_registry(
+        frames.push(Frame::with_context_registry_and_indices(
             self.connection.clone(),
             self.session_id.clone(),
             frame_info.id.clone(),
@@ -142,11 +149,14 @@ impl Page {
             frame_info.url.clone(),
             frame_info.name.clone().unwrap_or_default(),
             self.context_registry.clone(),
+            self.context_index,
+            self.page_index,
+            frame_index,
         ));
 
         if let Some(children) = &tree.child_frames {
             for child in children {
-                self.collect_frames(child, frames);
+                self.collect_frames(child, frames, frame_index_counter);
             }
         }
     }

@@ -62,6 +62,12 @@ pub enum Selector {
     /// This selector targets a specific element by its CDP backend node ID,
     /// which is extracted from ARIA snapshot refs (format: `e{backendNodeId}`).
     BackendNodeId(BackendNodeId),
+    /// Ref selector (from ARIA snapshot refs).
+    ///
+    /// This selector targets a specific element by its ref string in the format
+    /// `c{contextIndex}p{pageIndex}f{frameIndex}e{counter}`. The ref is looked up
+    /// in the Page's ref map to find the corresponding backendNodeId.
+    Ref(String),
 }
 
 impl std::fmt::Display for Selector {
@@ -123,6 +129,7 @@ impl std::fmt::Display for Selector {
                 }
             }
             Selector::BackendNodeId(id) => write!(f, "ref=e{id}"),
+            Selector::Ref(ref_str) => write!(f, "ref={ref_str}"),
         }
     }
 }
@@ -368,6 +375,19 @@ impl Selector {
                         // Backend node ID selector (resolved via CDP DOM.resolveNode)
                         // ID: {id}
                         throw new Error('BackendNodeId selectors must be resolved via CDP');
+                    }})()"
+                )
+            }
+
+            Selector::Ref(ref_str) => {
+                // Ref selectors are resolved via the Page's ref map, not JS
+                // This JS expression is a placeholder that will be replaced
+                // by the actual element resolution in the Rust code
+                format!(
+                    r"(function() {{
+                        // Ref selector (resolved via Page ref map)
+                        // Ref: {ref_str}
+                        throw new Error('Ref selectors must be resolved via Page ref map');
                     }})()"
                 )
             }

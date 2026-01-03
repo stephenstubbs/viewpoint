@@ -1,5 +1,4 @@
 #![cfg(feature = "integration")]
-#![allow(clippy::float_cmp)]
 
 //! Tests for HAR (HTTP Archive) format support.
 
@@ -76,7 +75,11 @@ fn test_har_timings() {
         comment: None,
     };
 
-    assert_eq!(timings.total(), 215.0);
+    // Testing exact float values for HAR timing calculations
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(timings.total(), 215.0);
+    }
 }
 
 #[test]
@@ -93,7 +96,11 @@ fn test_har_timings_negative_values() {
     };
 
     // Only positive values are summed
-    assert_eq!(timings.total(), 135.0);
+    // Testing exact float values for HAR timing calculations
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(timings.total(), 135.0);
+    }
 }
 
 #[test]
@@ -110,11 +117,15 @@ fn test_har_timings_from_resource_timing() {
         155.0, // receive_headers_end
     );
 
-    assert_eq!(timings.dns, 10.0);
-    assert_eq!(timings.connect, 10.0); // ssl_start - connect_start when SSL exists
-    assert_eq!(timings.ssl, 20.0);
-    assert_eq!(timings.send, 5.0);
-    assert_eq!(timings.wait, 100.0);
+    // Testing exact float values for HAR timing calculations
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(timings.dns, 10.0);
+        assert_eq!(timings.connect, 10.0); // ssl_start - connect_start when SSL exists
+        assert_eq!(timings.ssl, 20.0);
+        assert_eq!(timings.send, 5.0);
+        assert_eq!(timings.wait, 100.0);
+    }
 }
 
 // =========================================================================
@@ -232,7 +243,11 @@ fn test_har_response_redirect() {
 fn test_har_entry_new() {
     let entry = HarEntry::new("2024-01-01T12:00:00.000Z");
     assert_eq!(entry.started_date_time, "2024-01-01T12:00:00.000Z");
-    assert_eq!(entry.time, 0.0);
+    // Testing exact float value for default timing
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(entry.time, 0.0);
+    }
 }
 
 #[test]
@@ -250,7 +265,11 @@ fn test_har_entry_timings() {
     };
 
     entry.set_timings(timings);
-    assert_eq!(entry.time, 215.0);
+    // Testing exact float value for HAR timing calculations
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(entry.time, 215.0);
+    }
 }
 
 #[test]
@@ -275,8 +294,12 @@ fn test_har_page_new() {
 #[test]
 fn test_har_page_timings() {
     let mut page = HarPage::new("page_1", "Home", "2024-01-01T00:00:00Z");
-    page.set_timings(Some(500.0), Some(1000.0));
+    page.set_timings(Some(500.0), Some(1_000.0));
 
-    assert_eq!(page.page_timings.on_content_load, Some(500.0));
-    assert_eq!(page.page_timings.on_load, Some(1000.0));
+    // Testing exact float values for HAR timing calculations
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(page.page_timings.on_content_load, Some(500.0));
+        assert_eq!(page.page_timings.on_load, Some(1_000.0));
+    }
 }

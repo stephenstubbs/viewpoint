@@ -1,5 +1,4 @@
 #![cfg(feature = "integration")]
-#![allow(clippy::assertions_on_constants, clippy::float_cmp)]
 
 //! Device emulation context tests for viewpoint-core.
 //!
@@ -277,7 +276,11 @@ async fn test_device_scale_factor() {
         .await
         .expect("Failed to get DPR");
 
-    assert_eq!(dpr, 2.0, "Device pixel ratio should be 2.0");
+    // Testing exact float value from browser emulation
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(dpr, 2.0, "Device pixel ratio should be 2.0");
+    }
 
     browser.close().await.expect("Failed to close browser");
 }

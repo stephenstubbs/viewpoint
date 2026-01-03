@@ -76,6 +76,12 @@ impl Locator<'_> {
                 .await;
         }
 
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.query_element_info_by_backend_id(backend_node_id).await;
+        }
+
         let selector_expr = self.selector.to_js_expression();
         let js_code = js! {
             (function() {
@@ -214,6 +220,12 @@ impl Locator<'_> {
         // Handle BackendNodeId selector specially
         if let Selector::BackendNodeId(backend_node_id) = &self.selector {
             return self.focus_element_by_backend_id(*backend_node_id).await;
+        }
+
+        // Handle Ref selector - lookup in ref map and focus via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.focus_element_by_backend_id(backend_node_id).await;
         }
 
         let selector_expr = self.selector.to_js_expression();

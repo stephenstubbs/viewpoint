@@ -173,6 +173,7 @@ mod scripts;
 pub mod storage;
 mod storage_restore;
 mod test_id;
+mod timeout;
 pub mod trace;
 mod tracing_access;
 pub mod types;
@@ -238,6 +239,10 @@ pub struct BrowserContext {
     connection: Arc<CdpConnection>,
     /// Browser context ID.
     context_id: String,
+    /// Context index for element ref generation.
+    /// Each context is assigned a unique index for generating scoped element refs
+    /// in the format `c{contextIndex}p{pageIndex}e{counter}`.
+    context_index: usize,
     /// Whether the context has been closed.
     closed: bool,
     /// Whether we own this context (created it) vs discovered it.
@@ -245,6 +250,8 @@ pub struct BrowserContext {
     owned: bool,
     /// Created pages (weak tracking for `pages()` method).
     pages: Arc<RwLock<Vec<PageInfo>>>,
+    /// Counter for assigning page indices within this context.
+    page_index_counter: std::sync::atomic::AtomicUsize,
     /// Default timeout for actions.
     default_timeout: Duration,
     /// Default timeout for navigation.
@@ -274,6 +281,7 @@ impl std::fmt::Debug for BrowserContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BrowserContext")
             .field("context_id", &self.context_id)
+            .field("context_index", &self.context_index)
             .field("closed", &self.closed)
             .field("owned", &self.owned)
             .field("default_timeout", &self.default_timeout)
@@ -351,33 +359,7 @@ impl BrowserContext {
         self.context_id.is_empty()
     }
 
-    // =========================================================================
-    // Timeout Configuration
-    // =========================================================================
-
-    /// Set the default timeout for actions.
-    ///
-    /// This timeout is used for actions like clicking, typing, etc.
-    pub fn set_default_timeout(&mut self, timeout: Duration) {
-        self.default_timeout = timeout;
-    }
-
-    /// Get the default timeout for actions.
-    pub fn default_timeout(&self) -> Duration {
-        self.default_timeout
-    }
-
-    /// Set the default navigation timeout.
-    ///
-    /// This timeout is used for navigation operations like goto, reload, etc.
-    pub fn set_default_navigation_timeout(&mut self, timeout: Duration) {
-        self.default_navigation_timeout = timeout;
-    }
-
-    /// Get the default navigation timeout.
-    pub fn default_navigation_timeout(&self) -> Duration {
-        self.default_navigation_timeout
-    }
+    // Timeout configuration methods are in timeout.rs
 
     // Init script methods are in scripts.rs
 
@@ -443,6 +425,24 @@ impl BrowserContext {
     /// Get the context ID.
     pub fn id(&self) -> &str {
         &self.context_id
+    }
+
+    /// Get the context index.
+    ///
+    /// This index is used for generating scoped element refs in the format
+    /// `c{contextIndex}p{pageIndex}e{counter}`. Each context has a unique
+    /// index to prevent ref collisions across contexts.
+    pub fn index(&self) -> usize {
+        self.context_index
+    }
+
+    /// Get the next page index for this context.
+    ///
+    /// This is called internally when creating a new page to assign
+    /// a unique index within this context.
+    pub(crate) fn next_page_index(&self) -> usize {
+        self.page_index_counter
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Check if this context has been closed.

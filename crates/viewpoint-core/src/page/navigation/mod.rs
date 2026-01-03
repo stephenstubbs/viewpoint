@@ -3,10 +3,11 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace, warn};
+use viewpoint_cdp::protocol::page::{NavigateParams, NavigateResult};
 
 use crate::error::NavigationError;
-use crate::wait::DocumentLoadState;
+use crate::wait::{DocumentLoadState, LoadStateWaiter};
 
 use super::{DEFAULT_NAVIGATION_TIMEOUT, Page};
 
@@ -192,6 +193,99 @@ impl<'a> GotoBuilder<'a> {
                 self.referer.as_deref(),
             )
             .await
+    }
+}
+
+// =============================================================================
+// Navigation Internal Methods
+// =============================================================================
+
+impl Page {
+    /// Navigate to a URL with the given options.
+    #[instrument(level = "info", skip(self), fields(target_id = %self.target_id, url = %url, wait_until = ?wait_until, timeout_ms = timeout.as_millis()))]
+    pub(crate) async fn navigate_internal(
+        &self,
+        url: &str,
+        wait_until: DocumentLoadState,
+        timeout: Duration,
+        referer: Option<&str>,
+    ) -> Result<NavigationResponse, NavigationError> {
+        if self.closed {
+            warn!("Attempted navigation on closed page");
+            return Err(NavigationError::Cancelled);
+        }
+
+        info!("Starting navigation");
+
+        // Create a load state waiter
+        let event_rx = self.connection.subscribe_events();
+        let mut waiter =
+            LoadStateWaiter::new(event_rx, self.session_id.clone(), self.frame_id.clone());
+        trace!("Created load state waiter");
+
+        // Send the navigation command
+        debug!("Sending Page.navigate command");
+        let result: NavigateResult = self
+            .connection
+            .send_command(
+                "Page.navigate",
+                Some(NavigateParams {
+                    url: url.to_string(),
+                    referrer: referer.map(ToString::to_string),
+                    transition_type: None,
+                    frame_id: None,
+                }),
+                Some(&self.session_id),
+            )
+            .await?;
+
+        debug!(frame_id = %result.frame_id, loader_id = ?result.loader_id, "Page.navigate completed");
+
+        // Check for navigation errors
+        // Note: Chrome reports HTTP error status codes (4xx, 5xx) as errors with
+        // "net::ERR_HTTP_RESPONSE_CODE_FAILURE" or "net::ERR_INVALID_AUTH_CREDENTIALS".
+        // Following Playwright's behavior, we treat these as successful navigations
+        // that return a response with the appropriate status code.
+        if let Some(ref error_text) = result.error_text {
+            let is_http_error = error_text == "net::ERR_HTTP_RESPONSE_CODE_FAILURE"
+                || error_text == "net::ERR_INVALID_AUTH_CREDENTIALS";
+
+            if !is_http_error {
+                warn!(error = %error_text, "Navigation failed with error");
+                return Err(NavigationError::NetworkError(error_text.clone()));
+            }
+            debug!(error = %error_text, "HTTP error response - continuing to capture status");
+        }
+
+        // Mark commit as received
+        trace!("Setting commit received");
+        waiter.set_commit_received().await;
+
+        // Wait for the target load state
+        debug!(wait_until = ?wait_until, "Waiting for load state");
+        waiter
+            .wait_for_load_state_with_timeout(wait_until, timeout)
+            .await?;
+
+        // Get response data captured during navigation
+        let response_data = waiter.response_data().await;
+
+        info!(frame_id = %result.frame_id, "Navigation completed successfully");
+
+        // Use the final URL from response data if available (handles redirects)
+        let final_url = response_data.url.unwrap_or_else(|| url.to_string());
+
+        // Build the response with captured data
+        if let Some(status) = response_data.status {
+            Ok(NavigationResponse::with_response(
+                final_url,
+                result.frame_id,
+                status,
+                response_data.headers,
+            ))
+        } else {
+            Ok(NavigationResponse::new(final_url, result.frame_id))
+        }
     }
 }
 

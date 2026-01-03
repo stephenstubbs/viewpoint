@@ -1,23 +1,31 @@
-#![allow(clippy::float_cmp, clippy::assertions_on_constants)]
-
 use super::*;
 
 #[test]
+#[allow(clippy::assertions_on_constants)] // Testing constant device descriptor properties
 fn test_iphone_13_descriptor() {
     assert_eq!(IPHONE_13.name, "iPhone 13");
     assert_eq!(IPHONE_13.viewport.width, 390);
     assert_eq!(IPHONE_13.viewport.height, 844);
-    assert_eq!(IPHONE_13.device_scale_factor, 3.0);
+    // Testing exact float value from device descriptor
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(IPHONE_13.device_scale_factor, 3.0);
+    }
     assert!(IPHONE_13.is_mobile);
     assert!(IPHONE_13.has_touch);
 }
 
 #[test]
+#[allow(clippy::assertions_on_constants)] // Testing constant device descriptor properties
 fn test_desktop_chrome_descriptor() {
     assert_eq!(DESKTOP_CHROME.name, "Desktop Chrome");
     assert_eq!(DESKTOP_CHROME.viewport.width, 1280);
     assert_eq!(DESKTOP_CHROME.viewport.height, 720);
-    assert_eq!(DESKTOP_CHROME.device_scale_factor, 1.0);
+    // Testing exact float value from device descriptor
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(DESKTOP_CHROME.device_scale_factor, 1.0);
+    }
     assert!(!DESKTOP_CHROME.is_mobile);
     assert!(!DESKTOP_CHROME.has_touch);
 }

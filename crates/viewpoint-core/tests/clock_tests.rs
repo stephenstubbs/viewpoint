@@ -1,5 +1,4 @@
 #![cfg(feature = "integration")]
-#![allow(clippy::float_cmp, clippy::unreadable_literal)]
 
 //! Clock mocking tests for viewpoint-core.
 //!
@@ -70,8 +69,8 @@ async fn test_clock_date_mocking() {
         .await
         .expect("Failed to get time");
 
-    // Jan 1, 2024 00:00:00 UTC = 1704067200000 ms
-    assert_eq!(timestamp as i64, 1704067200000);
+    // Jan 1, 2024 00:00:00 UTC = 1_704_067_200_000 ms
+    assert_eq!(timestamp as i64, 1_704_067_200_000);
 
     // Verify new Date() also returns the fixed time
     let date_string: String = page
@@ -179,7 +178,7 @@ async fn test_clock_fast_forward() {
     let mut clock = page.clock();
     clock.install().await.expect("Failed to install clock");
     clock
-        .set_fixed_time(1704067200000i64)
+        .set_fixed_time(1_704_067_200_000i64)
         .await
         .expect("Failed to set time");
 
@@ -200,9 +199,9 @@ async fn test_clock_fast_forward() {
         .evaluate(js! { Date.now() })
         .await
         .expect("Failed to get time");
-    let expected_time = time_before + 3600.0 * 1000.0;
+    let expected_time = time_before + 3_600.0 * 1_000.0;
     assert!(
-        (time_after - expected_time).abs() < 1000.0,
+        (time_after - expected_time).abs() < 1_000.0,
         "Time should have advanced by ~1 hour. Before: {time_before}, After: {time_after}"
     );
 
@@ -384,7 +383,11 @@ async fn test_clock_pause_resume() {
         .evaluate(js! { Date.now() })
         .await
         .expect("Failed to get time");
-    assert_eq!(time1, time2, "Time should be paused");
+    // Testing exact float values for clock pausing
+    #[allow(clippy::float_cmp)]
+    {
+        assert_eq!(time1, time2, "Time should be paused");
+    }
 
     // Resume
     clock.resume().await.expect("Failed to resume");

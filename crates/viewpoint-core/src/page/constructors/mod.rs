@@ -28,7 +28,28 @@ impl Page {
         session_id: String,
         frame_id: String,
     ) -> Self {
-        Self::build_page(connection, target_id, session_id, frame_id, None, None)
+        Self::build_page(connection, target_id, session_id, frame_id, 0, 0, None, None)
+    }
+
+    /// Create a new page with context and page indices.
+    pub(crate) fn new_with_indices(
+        connection: Arc<CdpConnection>,
+        target_id: String,
+        session_id: String,
+        frame_id: String,
+        context_index: usize,
+        page_index: usize,
+    ) -> Self {
+        Self::build_page(
+            connection,
+            target_id,
+            session_id,
+            frame_id,
+            context_index,
+            page_index,
+            None,
+            None,
+        )
     }
 
     /// Create a new page with video recording enabled.
@@ -44,6 +65,30 @@ impl Page {
             target_id,
             session_id,
             frame_id,
+            0,
+            0,
+            Some(video_options),
+            None,
+        )
+    }
+
+    /// Create a new page with video recording and indices.
+    pub(crate) fn with_video_and_indices(
+        connection: Arc<CdpConnection>,
+        target_id: String,
+        session_id: String,
+        frame_id: String,
+        context_index: usize,
+        page_index: usize,
+        video_options: VideoOptions,
+    ) -> Self {
+        Self::build_page(
+            connection,
+            target_id,
+            session_id,
+            frame_id,
+            context_index,
+            page_index,
             Some(video_options),
             None,
         )
@@ -62,6 +107,8 @@ impl Page {
             target_id,
             session_id,
             frame_id,
+            0,
+            0,
             None,
             Some(opener_target_id),
         )
@@ -73,6 +120,8 @@ impl Page {
         target_id: String,
         session_id: String,
         frame_id: String,
+        context_index: usize,
+        page_index: usize,
         video_options: Option<VideoOptions>,
         opener_target_id: Option<String>,
     ) -> Self {
@@ -125,6 +174,8 @@ impl Page {
             target_id,
             session_id,
             frame_id,
+            context_index,
+            page_index,
             closed: false,
             route_registry,
             keyboard,
@@ -139,6 +190,7 @@ impl Page {
             binding_manager,
             test_id_attribute: DEFAULT_TEST_ID_ATTRIBUTE.to_string(),
             context_registry,
+            ref_map: std::sync::Arc::new(parking_lot::RwLock::new(std::collections::HashMap::new())),
         }
     }
 
@@ -218,6 +270,8 @@ impl Page {
             target_id: self.target_id.clone(),
             session_id: self.session_id.clone(),
             frame_id: self.frame_id.clone(),
+            context_index: self.context_index,
+            page_index: self.page_index,
             closed: self.closed,
             route_registry: self.route_registry.clone(),
             keyboard: Keyboard::new(
@@ -236,6 +290,7 @@ impl Page {
             binding_manager: self.binding_manager.clone(),
             test_id_attribute: self.test_id_attribute.clone(),
             context_registry: self.context_registry.clone(),
+            ref_map: self.ref_map.clone(),
         }
     }
 

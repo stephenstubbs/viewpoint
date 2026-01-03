@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 use super::*;
 
 // =========================================================================
@@ -9,7 +7,7 @@ use super::*;
 #[test]
 fn test_selector_display_css() {
     let selector = Selector::Css("button.primary".to_string());
-    assert_eq!(format!("{}", selector), "css=button.primary");
+    assert_eq!(format!("{selector}"), "css=button.primary");
 }
 
 #[test]
@@ -18,7 +16,7 @@ fn test_selector_display_text_exact() {
         text: "Click me".to_string(),
         exact: true,
     };
-    assert_eq!(format!("{}", selector), "text=Click me");
+    assert_eq!(format!("{selector}"), "text=Click me");
 }
 
 #[test]
@@ -27,7 +25,7 @@ fn test_selector_display_text_partial() {
         text: "Click".to_string(),
         exact: false,
     };
-    assert_eq!(format!("{}", selector), "text*=Click");
+    assert_eq!(format!("{selector}"), "text*=Click");
 }
 
 #[test]
@@ -36,7 +34,7 @@ fn test_selector_display_role() {
         role: AriaRole::Button,
         name: None,
     };
-    assert_eq!(format!("{}", selector), "role=button");
+    assert_eq!(format!("{selector}"), "role=button");
 }
 
 #[test]
@@ -45,13 +43,13 @@ fn test_selector_display_role_with_name() {
         role: AriaRole::Button,
         name: Some("Submit".to_string()),
     };
-    assert_eq!(format!("{}", selector), "role=button[name=Submit]");
+    assert_eq!(format!("{selector}"), "role=button[name=Submit]");
 }
 
 #[test]
 fn test_selector_display_testid() {
     let selector = Selector::TestId("login-btn".to_string());
-    assert_eq!(format!("{}", selector), "testid=login-btn");
+    assert_eq!(format!("{selector}"), "testid=login-btn");
 }
 
 #[test]
@@ -59,7 +57,7 @@ fn test_selector_display_chained() {
     let parent = Box::new(Selector::Css("ul".to_string()));
     let child = Box::new(Selector::Css("li".to_string()));
     let selector = Selector::Chained(parent, child);
-    assert_eq!(format!("{}", selector), "css=ul >> css=li");
+    assert_eq!(format!("{selector}"), "css=ul >> css=li");
 }
 
 // =========================================================================
@@ -125,6 +123,6 @@ fn test_deeply_nested_selector() {
     let li_a = Selector::Chained(Box::new(li), Box::new(a));
     let ul_li_a = Selector::Chained(Box::new(ul), Box::new(li_a));
 
-    let display = format!("{}", ul_li_a);
+    let display = format!("{ul_li_a}");
     assert_eq!(display, "css=ul >> css=li >> css=a");
 }

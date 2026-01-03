@@ -1,11 +1,11 @@
 #![cfg(feature = "integration")]
 
-//! ARIA snapshot node reference tests for viewpoint-core.
+//! ARIA snapshot ref isolation tests.
 //!
-//! These tests verify element refs in ARIA snapshots and ref resolution.
+//! These tests verify that refs are properly scoped to their context and page.
+//! Refs from one context/page cannot be resolved on a different context/page.
 
 use std::sync::Once;
-use std::time::Duration;
 
 use viewpoint_core::Browser;
 
@@ -26,12 +26,14 @@ fn init_tracing() {
 }
 
 // =============================================================================
-// Node Reference Tests
+// Context Isolation Tests
 // =============================================================================
 
-/// Test that snapshots include refs for interactive elements.
+/// Test that refs captured on one context cannot be resolved on a different context.
+///
+/// This verifies context isolation - refs are scoped to their originating context.
 #[tokio::test]
-async fn test_aria_snapshot_includes_refs_for_buttons() {
+async fn test_ref_rejected_on_wrong_context() {
     init_tracing();
 
     let browser = Browser::launch()
@@ -40,117 +42,27 @@ async fn test_aria_snapshot_includes_refs_for_buttons() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser
+    // Create first context and capture a ref
+    let context1 = browser
         .new_context()
         .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
+        .expect("Failed to create context 1");
+    let page1 = context1.new_page().await.expect("Failed to create page 1");
 
-    page.set_content(
-        r#"
-        <html><body>
-            <button id="btn1">Click me</button>
-            <button id="btn2">Submit</button>
-        </body></html>
-    "#,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
-
-    // Capture snapshot with refs
-    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    let yaml = snapshot.to_yaml();
-    println!("Snapshot with refs:\n{yaml}");
-
-    // Verify refs are present for buttons (format: [ref=eXXX])
-    assert!(
-        yaml.contains("[ref=e"),
-        "Snapshot should contain refs for buttons, got: {yaml}"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test that refs work for headings (non-interactive elements).
-#[tokio::test]
-async fn test_aria_snapshot_includes_refs_for_headings() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
+    page1
+        .set_content(
+            r#"<html><body><button id="btn1">Button in Context 1</button></body></html>"#,
+        )
+        .set()
         .await
-        .expect("Failed to launch browser");
+        .expect("Failed to set content");
 
-    let context = browser
-        .new_context()
+    let snapshot1 = page1
+        .aria_snapshot()
         .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
+        .expect("Failed to get snapshot from context 1");
 
-    page.set_content(
-        r"
-        <html><body>
-            <h1>Main Title</h1>
-            <h2>Subtitle</h2>
-        </body></html>
-    ",
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
-
-    // Capture snapshot
-    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    let yaml = snapshot.to_yaml();
-    println!("Snapshot with heading refs:\n{yaml}");
-
-    // Verify refs are present for headings
-    assert!(
-        yaml.contains("[ref=e"),
-        "Snapshot should contain refs for headings, got: {yaml}"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test ref resolution - click an element using its ref.
-#[tokio::test]
-async fn test_ref_resolution_and_click() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    page.set_content(
-        r#"
-        <html><body>
-            <button id="mybutton" onclick="this.textContent='Clicked!'">Click me</button>
-        </body></html>
-    "#,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
-
-    // Capture snapshot with refs
-    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    let yaml = snapshot.to_yaml();
-    println!("Initial snapshot:\n{yaml}");
-
-    // Find the button's ref in the snapshot
+    // Find button ref from context 1
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
         if snapshot.role.as_deref() == Some("button") {
             return snapshot.node_ref.clone();
@@ -163,162 +75,57 @@ async fn test_ref_resolution_and_click() {
         None
     }
 
-    let button_ref = find_button_ref(&snapshot).expect("Should find button ref");
-    println!("Found button ref: {button_ref}");
+    let context1_button_ref = find_button_ref(&snapshot1).expect("Should find button ref in context 1");
+    println!("Context 1 button ref: {context1_button_ref}");
 
-    // Click using the ref
-    let handle = page
-        .element_from_ref(&button_ref)
+    // Verify the ref works on context 1's page
+    let handle = page1
+        .element_from_ref(&context1_button_ref)
         .await
-        .expect("Failed to resolve ref");
-
-    // Verify element is valid
+        .expect("Ref should resolve on correct context");
     assert!(
         handle.is_attached().await.unwrap(),
         "Element should be attached"
     );
 
-    // Click the button via locator
-    let locator = page.locator_from_ref(&button_ref);
-    locator.click().await.expect("Failed to click button");
-
-    // Wait a bit for the click to process
-    tokio::time::sleep(Duration::from_millis(100)).await;
-
-    // Verify the button text changed
-    let new_text = page
-        .locator("#mybutton")
-        .text_content()
-        .await
-        .expect("Failed to get text");
-    assert_eq!(
-        new_text.as_deref(),
-        Some("Clicked!"),
-        "Button text should have changed"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test ref resolution for dynamically created elements.
-#[tokio::test]
-async fn test_ref_for_dynamic_elements() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
+    // Create second context with a different page
+    let context2 = browser
         .new_context()
         .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
+        .expect("Failed to create context 2");
+    let page2 = context2.new_page().await.expect("Failed to create page 2");
 
-    page.set_content(
-        r#"
-        <html><body>
-            <div id="container"></div>
-            <script>
-                // Dynamically create a button after a short delay
-                setTimeout(() => {
-                    const btn = document.createElement('button');
-                    btn.id = 'dynamic-btn';
-                    btn.textContent = 'Dynamic Button';
-                    document.getElementById('container').appendChild(btn);
-                }, 100);
-            </script>
-        </body></html>
-    "#,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
-
-    // Wait for dynamic button to be created
-    tokio::time::sleep(Duration::from_millis(200)).await;
-
-    // Capture snapshot after dynamic element is created
-    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
-    let yaml = snapshot.to_yaml();
-    println!("Snapshot with dynamic element:\n{yaml}");
-
-    // Find the dynamic button's ref
-    fn find_dynamic_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
-        if snapshot.role.as_deref() == Some("button")
-            && snapshot.name.as_deref() == Some("Dynamic Button")
-        {
-            return snapshot.node_ref.clone();
-        }
-        for child in &snapshot.children {
-            if let Some(r) = find_dynamic_button_ref(child) {
-                return Some(r);
-            }
-        }
-        None
-    }
-
-    let button_ref = find_dynamic_button_ref(&snapshot).expect("Should find dynamic button ref");
-    println!("Found dynamic button ref: {button_ref}");
-
-    // Verify we can resolve the ref
-    let handle = page
-        .element_from_ref(&button_ref)
-        .await
-        .expect("Failed to resolve dynamic element ref");
-
-    assert!(
-        handle.is_attached().await.unwrap(),
-        "Dynamic element should be attached"
-    );
-
-    // Clean up
-    browser.close().await.expect("Failed to close browser");
-}
-
-/// Test error handling for invalid refs.
-#[tokio::test]
-async fn test_invalid_ref_handling() {
-    init_tracing();
-
-    let browser = Browser::launch()
-        .headless(true)
-        .launch()
-        .await
-        .expect("Failed to launch browser");
-
-    let context = browser
-        .new_context()
-        .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
-
-    page.set_content("<html><body><p>Test</p></body></html>")
+    page2
+        .set_content(
+            r#"<html><body><button id="btn2">Button in Context 2</button></body></html>"#,
+        )
         .set()
         .await
         .expect("Failed to set content");
 
-    // Try to resolve an invalid ref format
-    let result = page.element_from_ref("invalid-ref").await;
-    assert!(result.is_err(), "Should fail for invalid ref format");
-
-    // Try to resolve a non-existent backend node ID
-    let result = page.element_from_ref("e999999999").await;
+    // Try to resolve context 1's ref on context 2's page - should fail
+    let result = page2.element_from_ref(&context1_button_ref).await;
+    
     assert!(
         result.is_err(),
-        "Should fail for non-existent backend node ID"
+        "Ref from context 1 should NOT be resolvable on context 2"
+    );
+    
+    // Verify the error message mentions context mismatch
+    let err_msg = result.unwrap_err().to_string();
+    println!("Error message: {err_msg}");
+    assert!(
+        err_msg.contains("Context index mismatch") || err_msg.contains("context"),
+        "Error should mention context mismatch, got: {err_msg}"
     );
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
 
-/// Test error handling for stale refs (element removed after snapshot).
+/// Test that context indices are assigned correctly across multiple contexts.
 #[tokio::test]
-async fn test_stale_ref_handling() {
+async fn test_context_indices_assigned_correctly() {
     init_tracing();
 
     let browser = Browser::launch()
@@ -327,27 +134,68 @@ async fn test_stale_ref_handling() {
         .await
         .expect("Failed to launch browser");
 
-    let context = browser
+    // Create multiple contexts and verify they get unique indices
+    let context1 = browser
         .new_context()
         .await
-        .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
+        .expect("Failed to create context 1");
+    let context2 = browser
+        .new_context()
+        .await
+        .expect("Failed to create context 2");
+    let context3 = browser
+        .new_context()
+        .await
+        .expect("Failed to create context 3");
 
-    page.set_content(
-        r#"
-        <html><body>
-            <button id="removable">Remove Me</button>
-        </body></html>
-    "#,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
+    // Indices should be unique (not necessarily sequential due to other tests)
+    let idx1 = context1.index();
+    let idx2 = context2.index();
+    let idx3 = context3.index();
 
-    // Capture snapshot with refs
-    let snapshot = page.aria_snapshot().await.expect("Failed to get snapshot");
+    assert_ne!(idx1, idx2, "Context 1 and 2 should have different indices");
+    assert_ne!(idx2, idx3, "Context 2 and 3 should have different indices");
+    assert_ne!(idx1, idx3, "Context 1 and 3 should have different indices");
 
-    // Find the button's ref
+    println!("Context indices: {idx1} {idx2} {idx3}");
+
+    // Clean up
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that refs from different contexts have different prefixes.
+#[tokio::test]
+async fn test_refs_from_different_contexts_have_different_prefixes() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context1 = browser
+        .new_context()
+        .await
+        .expect("Failed to create context 1");
+    let context2 = browser
+        .new_context()
+        .await
+        .expect("Failed to create context 2");
+
+    let page1 = context1.new_page().await.expect("Failed to create page 1");
+    let page2 = context2.new_page().await.expect("Failed to create page 2");
+
+    // Set same content on both pages
+    let html = "<html><body><button>Test Button</button></body></html>";
+    page1.set_content(html).set().await.expect("Failed to set content");
+    page2.set_content(html).set().await.expect("Failed to set content");
+
+    // Capture snapshots
+    let snapshot1 = page1.aria_snapshot().await.expect("Failed to get snapshot 1");
+    let snapshot2 = page2.aria_snapshot().await.expect("Failed to get snapshot 2");
+
+    // Find button refs
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
         if snapshot.role.as_deref() == Some("button") {
             return snapshot.node_ref.clone();
@@ -360,34 +208,31 @@ async fn test_stale_ref_handling() {
         None
     }
 
-    let button_ref = find_button_ref(&snapshot).expect("Should find button ref");
+    let ref1 = find_button_ref(&snapshot1).expect("Should find button ref in snapshot 1");
+    let ref2 = find_button_ref(&snapshot2).expect("Should find button ref in snapshot 2");
 
-    // Remove the element from the DOM
-    page.evaluate::<()>("document.getElementById('removable').remove()")
-        .await
-        .expect("Failed to remove element");
+    println!("Ref from context 1: {ref1}");
+    println!("Ref from context 2: {ref2}");
 
-    // Try to resolve the stale ref - may succeed (node still in memory) or fail (cleaned up)
-    // The important thing is it shouldn't panic
-    let result = page.element_from_ref(&button_ref).await;
-    println!("Stale ref resolution result: {:?}", result.is_ok());
+    // Refs should have different context prefixes
+    assert_ne!(ref1, ref2, "Refs from different contexts should be different");
 
-    // If we got a handle, verify is_attached returns false
-    if let Ok(handle) = result {
-        let attached = handle.is_attached().await.unwrap_or(true);
-        assert!(!attached, "Removed element should not be attached");
-    }
+    // Extract context index from refs (format: c{ctx}p{page}f{frame}e{counter})
+    let ctx1_idx: usize = ref1[1..ref1.find('p').unwrap()].parse().unwrap();
+    let ctx2_idx: usize = ref2[1..ref2.find('p').unwrap()].parse().unwrap();
+    assert_ne!(ctx1_idx, ctx2_idx, "Context indices in refs should differ");
 
     // Clean up
     browser.close().await.expect("Failed to close browser");
 }
 
-/// Test that Frame.aria_snapshot() (via main_frame) includes element refs.
-///
-/// Note: This tests main_frame().aria_snapshot() which is what Page.aria_snapshot_with_frames()
-/// calls internally. The frame execution context targeting is a separate concern.
+// =============================================================================
+// Page Isolation Tests
+// =============================================================================
+
+/// Test that page indices are assigned correctly within a context.
 #[tokio::test]
-async fn test_main_frame_aria_snapshot_includes_refs() {
+async fn test_page_indices_assigned_correctly() {
     init_tracing();
 
     let browser = Browser::launch()
@@ -400,38 +245,135 @@ async fn test_main_frame_aria_snapshot_includes_refs() {
         .new_context()
         .await
         .expect("Failed to create context");
-    let page = context.new_page().await.expect("Failed to create page");
 
-    page.set_content(
-        r##"
-        <html><body>
-            <h1>Main Heading</h1>
-            <button id="main-btn">Main Button</button>
-            <a href="#">Main Link</a>
-        </body></html>
-    "##,
-    )
-    .set()
-    .await
-    .expect("Failed to set content");
+    // Create multiple pages and verify they get incrementing indices
+    let page1 = context.new_page().await.expect("Failed to create page 1");
+    let page2 = context.new_page().await.expect("Failed to create page 2");
+    let page3 = context.new_page().await.expect("Failed to create page 3");
 
-    // Get the main frame and capture snapshot
-    let main_frame = page.main_frame().await.expect("Failed to get main frame");
-    let frame_snapshot = main_frame
+    // Pages should have sequential indices starting from 0
+    assert_eq!(page1.index(), 0, "First page should have index 0");
+    assert_eq!(page2.index(), 1, "Second page should have index 1");
+    assert_eq!(page3.index(), 2, "Third page should have index 2");
+
+    // Clean up
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that refs from different pages have different prefixes.
+#[tokio::test]
+async fn test_refs_from_different_pages_have_different_prefixes() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+
+    let page1 = context.new_page().await.expect("Failed to create page 1");
+    let page2 = context.new_page().await.expect("Failed to create page 2");
+
+    // Set same content on both pages
+    let html = "<html><body><button>Test Button</button></body></html>";
+    page1.set_content(html).set().await.expect("Failed to set content");
+    page2.set_content(html).set().await.expect("Failed to set content");
+
+    // Capture snapshots
+    let snapshot1 = page1.aria_snapshot().await.expect("Failed to get snapshot 1");
+    let snapshot2 = page2.aria_snapshot().await.expect("Failed to get snapshot 2");
+
+    // Find button refs
+    fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
+        if snapshot.role.as_deref() == Some("button") {
+            return snapshot.node_ref.clone();
+        }
+        for child in &snapshot.children {
+            if let Some(r) = find_button_ref(child) {
+                return Some(r);
+            }
+        }
+        None
+    }
+
+    let ref1 = find_button_ref(&snapshot1).expect("Should find button ref in snapshot 1");
+    let ref2 = find_button_ref(&snapshot2).expect("Should find button ref in snapshot 2");
+
+    println!("Ref from page 1: {ref1}");
+    println!("Ref from page 2: {ref2}");
+
+    // Refs should have different page prefixes
+    assert_ne!(ref1, ref2, "Refs from different pages should be different");
+
+    // Extract page index from refs (format: c{ctx}p{page}f{frame}e{counter})
+    let p_start1 = ref1.find('p').unwrap() + 1;
+    let p_end1 = ref1.find('f').unwrap();
+    let page1_idx: usize = ref1[p_start1..p_end1].parse().unwrap();
+
+    let p_start2 = ref2.find('p').unwrap() + 1;
+    let p_end2 = ref2.find('f').unwrap();
+    let page2_idx: usize = ref2[p_start2..p_end2].parse().unwrap();
+
+    assert_ne!(page1_idx, page2_idx, "Page indices in refs should differ");
+    assert_eq!(page1_idx, 0, "First page should have index 0");
+    assert_eq!(page2_idx, 1, "Second page should have index 1");
+
+    // Clean up
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that refs captured on one page cannot be resolved on a different page in the same context.
+///
+/// This verifies page isolation - refs are scoped to their originating page.
+#[tokio::test]
+async fn test_ref_rejected_on_wrong_page() {
+    init_tracing();
+
+    let browser = Browser::launch()
+        .headless(true)
+        .launch()
+        .await
+        .expect("Failed to launch browser");
+
+    // Create a single context with two pages
+    let context = browser
+        .new_context()
+        .await
+        .expect("Failed to create context");
+    
+    let page1 = context.new_page().await.expect("Failed to create page 1");
+    let page2 = context.new_page().await.expect("Failed to create page 2");
+
+    // Set content on page 1
+    page1
+        .set_content(
+            r#"<html><body><button id="btn1">Button on Page 1</button></body></html>"#,
+        )
+        .set()
+        .await
+        .expect("Failed to set content on page 1");
+
+    // Set content on page 2
+    page2
+        .set_content(
+            r#"<html><body><button id="btn2">Button on Page 2</button></body></html>"#,
+        )
+        .set()
+        .await
+        .expect("Failed to set content on page 2");
+
+    // Capture snapshot from page 1
+    let snapshot1 = page1
         .aria_snapshot()
         .await
-        .expect("Failed to get frame snapshot");
+        .expect("Failed to get snapshot from page 1");
 
-    let yaml = frame_snapshot.to_yaml();
-    println!("Main frame snapshot with refs:\n{yaml}");
-
-    // Verify refs are present for elements (format: [ref=eXXX])
-    assert!(
-        yaml.contains("[ref=e"),
-        "Main frame snapshot should contain refs for elements, got: {yaml}"
-    );
-
-    // Verify we can find a button ref in the snapshot structure
+    // Find button ref from page 1
     fn find_button_ref(snapshot: &viewpoint_core::AriaSnapshot) -> Option<String> {
         if snapshot.role.as_deref() == Some("button") {
             return snapshot.node_ref.clone();
@@ -444,22 +386,33 @@ async fn test_main_frame_aria_snapshot_includes_refs() {
         None
     }
 
-    let button_ref = find_button_ref(&frame_snapshot);
-    assert!(
-        button_ref.is_some(),
-        "Should find a button with ref in main frame snapshot"
-    );
+    let page1_button_ref = find_button_ref(&snapshot1).expect("Should find button ref on page 1");
+    println!("Page 1 button ref: {page1_button_ref}");
 
-    // Verify the ref can be resolved from the Page
-    let button_ref_str = button_ref.unwrap();
-    let handle = page
-        .element_from_ref(&button_ref_str)
+    // Verify the ref works on page 1
+    let handle = page1
+        .element_from_ref(&page1_button_ref)
         .await
-        .expect("Failed to resolve ref from frame snapshot");
-
+        .expect("Ref should resolve on correct page");
     assert!(
         handle.is_attached().await.unwrap(),
-        "Element from main frame should be attached"
+        "Element should be attached"
+    );
+
+    // Try to resolve page 1's ref on page 2 - should fail
+    let result = page2.element_from_ref(&page1_button_ref).await;
+    
+    assert!(
+        result.is_err(),
+        "Ref from page 1 should NOT be resolvable on page 2"
+    );
+    
+    // Verify the error message mentions page mismatch
+    let err_msg = result.unwrap_err().to_string();
+    println!("Error message: {err_msg}");
+    assert!(
+        err_msg.contains("Page index mismatch") || err_msg.contains("page"),
+        "Error should mention page mismatch, got: {err_msg}"
     );
 
     // Clean up

@@ -172,7 +172,17 @@ impl Frame {
                 );
 
                 // Apply refs to the snapshot tree
-                apply_refs_to_snapshot(&mut snapshot, &ref_map);
+                // Note: Frame doesn't have access to Page's ref_map, so we discard
+                // the returned mappings. Refs captured via Frame are visible in the
+                // snapshot but not resolvable via page.locator_from_ref().
+                // Use page.aria_snapshot() instead for full ref support.
+                let _ = apply_refs_to_snapshot(
+                    &mut snapshot,
+                    &ref_map,
+                    self.context_index,
+                    self.page_index,
+                    self.frame_index,
+                );
 
                 // Release the elements array to free memory
                 let _ = self.release_object(&elements_object_id).await;

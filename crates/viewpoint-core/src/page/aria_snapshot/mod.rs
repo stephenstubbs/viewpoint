@@ -171,11 +171,8 @@ impl Page {
             return Err(PageError::Closed);
         }
 
-        // Get the main frame snapshot first
-        let main_frame = self.main_frame().await?;
-        let mut root_snapshot = main_frame
-            .aria_snapshot_with_options(options.clone())
-            .await?;
+        // Get the main frame snapshot first using Page's method to populate ref_map
+        let mut root_snapshot = self.capture_snapshot_with_refs(options.clone()).await?;
 
         // Get all frames
         let frames = self.frames().await?;
@@ -385,6 +382,9 @@ impl Page {
             PageError::EvaluationFailed(format!("Failed to parse aria snapshot: {e}"))
         })?;
 
+        // Clear any previous ref mappings before populating new ones
+        self.clear_ref_map();
+
         // Only resolve refs if requested
         if options.include_refs {
             // Get the elements array as a RemoteObject
@@ -404,18 +404,30 @@ impl Page {
                 );
 
                 // Resolve all node IDs in parallel with concurrency limit
-                let ref_map = self
+                let index_to_backend_id = self
                     .resolve_node_ids_parallel(element_object_ids, options.max_concurrency)
                     .await;
 
                 debug!(
-                    resolved_count = ref_map.len(),
+                    resolved_count = index_to_backend_id.len(),
                     total_count = element_count,
                     "Completed parallel ref resolution"
                 );
 
-                // Apply refs to the snapshot tree
-                apply_refs_to_snapshot(&mut snapshot, &ref_map);
+                // Apply refs to the snapshot tree and get ref-to-backendId mappings
+                // Frame index 0 = main frame (Page captures always use the main frame)
+                let ref_to_backend_id = apply_refs_to_snapshot(
+                    &mut snapshot,
+                    &index_to_backend_id,
+                    self.context_index,
+                    self.page_index,
+                    0, // main frame
+                );
+
+                // Store the ref mappings for later resolution
+                for (ref_str, backend_node_id) in ref_to_backend_id {
+                    self.store_ref_mapping(ref_str, backend_node_id);
+                }
 
                 // Release the elements array to free memory
                 let _ = self.release_object(&elements_object_id).await;

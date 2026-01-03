@@ -1,5 +1,4 @@
 #![cfg(feature = "integration")]
-#![allow(clippy::uninlined_format_args)]
 
 //! Integration tests for viewpoint-cdp.
 //!
@@ -108,12 +107,13 @@ async fn test_cdp_connection() {
         .expect("Failed to get targets");
 
     // Should have at least one target (the browser)
-    println!("Found {} targets", result.target_infos.len());
+    let target_count = result.target_infos.len();
+    println!("Found {target_count} targets");
     for target in &result.target_infos {
-        println!(
-            "  - {} ({}): {}",
-            target.target_type, target.target_id, target.url
-        );
+        let target_type = &target.target_type;
+        let target_id = &target.target_id;
+        let url = &target.url;
+        println!("  - {target_type} ({target_id}): {url}");
     }
 
     // Clean up
@@ -141,10 +141,8 @@ async fn test_cdp_session_commands() {
         .await
         .expect("Failed to create browser context");
 
-    println!(
-        "Created browser context: {}",
-        create_result.browser_context_id
-    );
+    let browser_context_id = &create_result.browser_context_id;
+    println!("Created browser context: {browser_context_id}");
 
     // Create a target (page) in the context
     let target_result: viewpoint_cdp::protocol::target_domain::CreateTargetResult = conn
@@ -163,7 +161,8 @@ async fn test_cdp_session_commands() {
         .await
         .expect("Failed to create target");
 
-    println!("Created target: {}", target_result.target_id);
+    let target_id = &target_result.target_id;
+    println!("Created target: {target_id}");
 
     // Attach to the target
     let attach_result: viewpoint_cdp::protocol::target_domain::AttachToTargetResult = conn
@@ -180,7 +179,8 @@ async fn test_cdp_session_commands() {
         .await
         .expect("Failed to attach to target");
 
-    println!("Attached with session: {}", attach_result.session_id);
+    let session_id = &attach_result.session_id;
+    println!("Attached with session: {session_id}");
 
     // Enable Page domain on the session
     conn.send_command::<(), serde_json::Value>(
@@ -206,7 +206,8 @@ async fn test_cdp_session_commands() {
         .await
         .expect("Failed to navigate");
 
-    println!("Navigated to frame: {}", nav_result.frame_id);
+    let frame_id = &nav_result.frame_id;
+    println!("Navigated to frame: {frame_id}");
     assert!(
         nav_result.error_text.is_none(),
         "Navigation failed: {:?}",
@@ -357,7 +358,8 @@ async fn test_connection_error_after_browser_kill() {
         .send_command("Target.getTargets", Some(GetTargetsParams::default()), None)
         .await
         .expect("Initial command should succeed");
-    println!("Initial targets: {}", result.target_infos.len());
+    let target_count = result.target_infos.len();
+    println!("Initial targets: {target_count}");
 
     // Kill the browser process
     child.kill().expect("Failed to kill browser");
@@ -376,7 +378,7 @@ async fn test_connection_error_after_browser_kill() {
         "Command should fail after browser is killed"
     );
     let err = error_result.unwrap_err();
-    println!("Got expected error: {}", err);
+    println!("Got expected error: {err}");
 }
 
 /// Test connection to invalid WebSocket URL fails gracefully.
@@ -389,7 +391,7 @@ async fn test_connection_to_invalid_url() {
 
     assert!(result.is_err(), "Connection to invalid URL should fail");
     let err = result.unwrap_err();
-    println!("Got expected error for invalid URL: {}", err);
+    println!("Got expected error for invalid URL: {err}");
 }
 
 /// Test connection handles malformed WebSocket URL.
@@ -402,7 +404,7 @@ async fn test_connection_to_malformed_url() {
 
     assert!(result.is_err(), "Connection to malformed URL should fail");
     let err = result.unwrap_err();
-    println!("Got expected error for malformed URL: {}", err);
+    println!("Got expected error for malformed URL: {err}");
 }
 
 // =============================================================================

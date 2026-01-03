@@ -64,12 +64,17 @@ impl BrowserContext {
         // Convert context proxy credentials to network auth proxy credentials
         let proxy_credentials = page_factory::convert_proxy_credentials(&self.options);
 
+        // Get the next page index for this context
+        let page_index = self.next_page_index();
+
         // Create page with or without video recording
         let page = page_factory::create_page_instance(
             self.connection.clone(),
             create_result,
             attach_result,
             frame_id,
+            self.context_index,
+            page_index,
             &self.options,
             test_id_attr,
             self.route_registry.clone(),
