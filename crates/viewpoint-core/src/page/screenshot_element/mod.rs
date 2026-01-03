@@ -2,8 +2,11 @@
 
 use std::path::Path;
 
+use serde::Deserialize;
 use tracing::{info, instrument};
+use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
 
+use super::locator::Selector;
 use super::screenshot::{Animations, ScreenshotBuilder, ScreenshotFormat};
 use crate::error::LocatorError;
 use crate::page::Locator;
@@ -118,7 +121,20 @@ impl<'a, 'b> ElementScreenshotBuilder<'a, 'b> {
     /// Get the element's bounding box.
     async fn get_element_bounding_box(&self) -> Result<BoundingBox, LocatorError> {
         let page = self.locator.page();
-        let js_selector = self.locator.selector().to_js_expression();
+        let selector = self.locator.selector();
+
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = selector {
+            let backend_node_id = page.get_backend_node_id_for_ref(ref_str)?;
+            return self.get_element_bounding_box_by_backend_id(backend_node_id).await;
+        }
+
+        // Handle BackendNodeId selector
+        if let Selector::BackendNodeId(backend_node_id) = selector {
+            return self.get_element_bounding_box_by_backend_id(*backend_node_id).await;
+        }
+
+        let js_selector = selector.to_js_expression();
 
         let script = format!(
             r"
@@ -163,10 +179,98 @@ impl<'a, 'b> ElementScreenshotBuilder<'a, 'b> {
                     v.as_str().map(String::from)
                 }
             })
-            .ok_or_else(|| LocatorError::NotFound(self.locator.selector().to_string()))?;
+            .ok_or_else(|| LocatorError::NotFound(selector.to_string()))?;
 
         let bbox: serde_json::Value = serde_json::from_str(&json_str).map_err(|e| {
             LocatorError::EvaluationError(format!("Failed to parse bounding box: {e}"))
+        })?;
+
+        Ok(BoundingBox {
+            x: bbox["x"].as_f64().unwrap_or(0.0),
+            y: bbox["y"].as_f64().unwrap_or(0.0),
+            width: bbox["width"].as_f64().unwrap_or(0.0),
+            height: bbox["height"].as_f64().unwrap_or(0.0),
+        })
+    }
+
+    /// Get element bounding box by backend node ID.
+    async fn get_element_bounding_box_by_backend_id(
+        &self,
+        backend_node_id: BackendNodeId,
+    ) -> Result<BoundingBox, LocatorError> {
+        let page = self.locator.page();
+
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-screenshot".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        // Call getBoundingClientRect on the resolved element
+        #[derive(Debug, Deserialize)]
+        struct CallResult {
+            result: viewpoint_cdp::protocol::runtime::RemoteObject,
+            #[serde(rename = "exceptionDetails")]
+            exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
+        }
+
+        let call_result: CallResult = page
+            .connection()
+            .send_command(
+                "Runtime.callFunctionOn",
+                Some(serde_json::json!({
+                    "objectId": object_id,
+                    "functionDeclaration": r#"function() {
+                        const rect = this.getBoundingClientRect();
+                        return {
+                            x: rect.x,
+                            y: rect.y,
+                            width: rect.width,
+                            height: rect.height
+                        };
+                    }"#,
+                    "returnByValue": true
+                })),
+                Some(page.session_id()),
+            )
+            .await?;
+
+        // Release the object
+        let _ = page
+            .connection()
+            .send_command::<_, serde_json::Value>(
+                "Runtime.releaseObject",
+                Some(serde_json::json!({ "objectId": object_id })),
+                Some(page.session_id()),
+            )
+            .await;
+
+        if let Some(exception) = call_result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
+        }
+
+        let bbox = call_result.result.value.ok_or_else(|| {
+            LocatorError::EvaluationError("No result from bounding box query".to_string())
         })?;
 
         Ok(BoundingBox {

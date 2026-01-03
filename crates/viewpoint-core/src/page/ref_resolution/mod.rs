@@ -365,7 +365,7 @@ impl Page {
     /// # Errors
     ///
     /// Returns an error if the ref is not found in the ref map.
-    pub(crate) fn get_backend_node_id_for_ref(
+    pub fn get_backend_node_id_for_ref(
         &self,
         ref_str: &str,
     ) -> Result<BackendNodeId, LocatorError> {

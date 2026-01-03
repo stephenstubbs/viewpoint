@@ -2,10 +2,13 @@
 //!
 //! Methods for evaluating JavaScript expressions on elements.
 
+use serde::Deserialize;
 use tracing::{debug, instrument};
+use viewpoint_cdp::protocol::dom::{BackendNodeId, ResolveNodeParams, ResolveNodeResult};
 use viewpoint_cdp::protocol::runtime::EvaluateParams;
 
 use super::Locator;
+use super::Selector;
 use super::element::{BoundingBox, ElementHandle};
 use crate::error::LocatorError;
 
@@ -62,6 +65,17 @@ impl<'a> Locator<'a> {
 
         debug!(expression, "Evaluating expression on element");
 
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.evaluate_by_backend_id(backend_node_id, expression).await;
+        }
+
+        // Handle BackendNodeId selector
+        if let Selector::BackendNodeId(backend_node_id) = &self.selector {
+            return self.evaluate_by_backend_id(*backend_node_id, expression).await;
+        }
+
         let js = format!(
             r"(function() {{
                 const elements = {selector};
@@ -90,6 +104,101 @@ impl<'a> Locator<'a> {
             .cloned()
             .unwrap_or(serde_json::Value::Null);
         serde_json::from_value(value).map_err(|e| {
+            LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
+        })
+    }
+
+    /// Evaluate a JavaScript expression on an element by backend node ID.
+    async fn evaluate_by_backend_id<T: serde::de::DeserializeOwned>(
+        &self,
+        backend_node_id: BackendNodeId,
+        expression: &str,
+    ) -> Result<T, LocatorError> {
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = self
+            .page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-evaluate".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(self.page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        // Call the function on the resolved element
+        #[derive(Debug, Deserialize)]
+        struct CallResult {
+            result: viewpoint_cdp::protocol::runtime::RemoteObject,
+            #[serde(rename = "exceptionDetails")]
+            exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
+        }
+
+        let call_result: CallResult = self
+            .page
+            .connection()
+            .send_command(
+                "Runtime.callFunctionOn",
+                Some(serde_json::json!({
+                    "objectId": object_id,
+                    "functionDeclaration": format!(r#"function() {{
+                        const element = this;
+                        try {{
+                            const result = (function(element) {{ return {expression}; }})(element);
+                            return {{ __viewpoint_result: result }};
+                        }} catch (e) {{
+                            return {{ __viewpoint_error: e.toString() }};
+                        }}
+                    }}"#),
+                    "returnByValue": true
+                })),
+                Some(self.page.session_id()),
+            )
+            .await?;
+
+        // Release the object
+        let _ = self
+            .page
+            .connection()
+            .send_command::<_, serde_json::Value>(
+                "Runtime.releaseObject",
+                Some(serde_json::json!({ "objectId": object_id })),
+                Some(self.page.session_id()),
+            )
+            .await;
+
+        if let Some(exception) = call_result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
+        }
+
+        let value = call_result.result.value.ok_or_else(|| {
+            LocatorError::EvaluationError("No result from evaluate".to_string())
+        })?;
+
+        if let Some(error) = value.get("__viewpoint_error").and_then(|v| v.as_str()) {
+            return Err(LocatorError::EvaluationError(error.to_string()));
+        }
+
+        let result_value = value
+            .get("__viewpoint_result")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        serde_json::from_value(result_value).map_err(|e| {
             LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
         })
     }
@@ -142,6 +251,18 @@ impl<'a> Locator<'a> {
     ) -> Result<T, LocatorError> {
         debug!(expression, "Evaluating expression on all elements");
 
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        // For Ref selectors, evaluate_all returns an array with a single element
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.evaluate_all_by_backend_id(backend_node_id, expression).await;
+        }
+
+        // Handle BackendNodeId selector
+        if let Selector::BackendNodeId(backend_node_id) = &self.selector {
+            return self.evaluate_all_by_backend_id(*backend_node_id, expression).await;
+        }
+
         let js = format!(
             r"(function() {{
                 const elements = Array.from({selector});
@@ -167,6 +288,102 @@ impl<'a> Locator<'a> {
             .cloned()
             .unwrap_or(serde_json::Value::Null);
         serde_json::from_value(value).map_err(|e| {
+            LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
+        })
+    }
+
+    /// Evaluate a JavaScript expression on all elements by backend node ID.
+    /// Since a backend node ID refers to a single element, this wraps it in an array.
+    async fn evaluate_all_by_backend_id<T: serde::de::DeserializeOwned>(
+        &self,
+        backend_node_id: BackendNodeId,
+        expression: &str,
+    ) -> Result<T, LocatorError> {
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = self
+            .page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-evaluate-all".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(self.page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        // Call the function on the resolved element, wrapping it in an array
+        #[derive(Debug, Deserialize)]
+        struct CallResult {
+            result: viewpoint_cdp::protocol::runtime::RemoteObject,
+            #[serde(rename = "exceptionDetails")]
+            exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
+        }
+
+        let call_result: CallResult = self
+            .page
+            .connection()
+            .send_command(
+                "Runtime.callFunctionOn",
+                Some(serde_json::json!({
+                    "objectId": object_id,
+                    "functionDeclaration": format!(r#"function() {{
+                        const elements = [this];
+                        try {{
+                            const result = (function(elements) {{ return {expression}; }})(elements);
+                            return {{ __viewpoint_result: result }};
+                        }} catch (e) {{
+                            return {{ __viewpoint_error: e.toString() }};
+                        }}
+                    }}"#),
+                    "returnByValue": true
+                })),
+                Some(self.page.session_id()),
+            )
+            .await?;
+
+        // Release the object
+        let _ = self
+            .page
+            .connection()
+            .send_command::<_, serde_json::Value>(
+                "Runtime.releaseObject",
+                Some(serde_json::json!({ "objectId": object_id })),
+                Some(self.page.session_id()),
+            )
+            .await;
+
+        if let Some(exception) = call_result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
+        }
+
+        let value = call_result.result.value.ok_or_else(|| {
+            LocatorError::EvaluationError("No result from evaluate_all".to_string())
+        })?;
+
+        if let Some(error) = value.get("__viewpoint_error").and_then(|v| v.as_str()) {
+            return Err(LocatorError::EvaluationError(error.to_string()));
+        }
+
+        let result_value = value
+            .get("__viewpoint_result")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null);
+        serde_json::from_value(result_value).map_err(|e| {
             LocatorError::EvaluationError(format!("Failed to deserialize result: {e}"))
         })
     }
@@ -201,6 +418,17 @@ impl<'a> Locator<'a> {
         self.wait_for_actionable().await?;
 
         debug!("Getting element handle");
+
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.element_handle_by_backend_id(backend_node_id).await;
+        }
+
+        // Handle BackendNodeId selector
+        if let Selector::BackendNodeId(backend_node_id) = &self.selector {
+            return self.element_handle_by_backend_id(*backend_node_id).await;
+        }
 
         // Use Runtime.evaluate to get the element object ID
         let js = format!(
@@ -247,6 +475,44 @@ impl<'a> Locator<'a> {
         })
     }
 
+    /// Get an element handle by backend node ID.
+    async fn element_handle_by_backend_id(
+        &self,
+        backend_node_id: BackendNodeId,
+    ) -> Result<ElementHandle<'a>, LocatorError> {
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = self
+            .page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-element-handle".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(self.page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        Ok(ElementHandle {
+            object_id,
+            page: self.page,
+        })
+    }
+
     /// Scroll the element into view if needed.
     ///
     /// This scrolls the element's parent container(s) to make the element visible.
@@ -271,6 +537,17 @@ impl<'a> Locator<'a> {
 
         debug!("Scrolling element into view");
 
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self.scroll_into_view_by_backend_id(backend_node_id).await;
+        }
+
+        // Handle BackendNodeId selector
+        if let Selector::BackendNodeId(backend_node_id) = &self.selector {
+            return self.scroll_into_view_by_backend_id(*backend_node_id).await;
+        }
+
         let js = format!(
             r"(function() {{
                 const elements = {selector};
@@ -290,6 +567,81 @@ impl<'a> Locator<'a> {
             .unwrap_or(false);
         if !found {
             return Err(LocatorError::NotFound(format!("{:?}", self.selector)));
+        }
+
+        Ok(())
+    }
+
+    /// Scroll an element into view by backend node ID.
+    async fn scroll_into_view_by_backend_id(
+        &self,
+        backend_node_id: BackendNodeId,
+    ) -> Result<(), LocatorError> {
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = self
+            .page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-scroll".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(self.page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        // Call scrollIntoView on the resolved element
+        #[derive(Debug, Deserialize)]
+        struct CallResult {
+            result: viewpoint_cdp::protocol::runtime::RemoteObject,
+            #[serde(rename = "exceptionDetails")]
+            exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
+        }
+
+        let call_result: CallResult = self
+            .page
+            .connection()
+            .send_command(
+                "Runtime.callFunctionOn",
+                Some(serde_json::json!({
+                    "objectId": object_id,
+                    "functionDeclaration": r#"function() {
+                        this.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
+                        return { found: true };
+                    }"#,
+                    "returnByValue": true
+                })),
+                Some(self.page.session_id()),
+            )
+            .await?;
+
+        // Release the object
+        let _ = self
+            .page
+            .connection()
+            .send_command::<_, serde_json::Value>(
+                "Runtime.releaseObject",
+                Some(serde_json::json!({ "objectId": object_id })),
+                Some(self.page.session_id()),
+            )
+            .await;
+
+        if let Some(exception) = call_result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
         }
 
         Ok(())
