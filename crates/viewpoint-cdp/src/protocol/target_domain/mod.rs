@@ -193,3 +193,11 @@ pub struct AttachedToTargetEvent {
     /// Whether waiting for debugger.
     pub waiting_for_debugger: bool,
 }
+
+/// Parameters for Target.setDiscoverTargets.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetDiscoverTargetsParams {
+    /// Whether to discover targets.
+    pub discover: bool,
+}

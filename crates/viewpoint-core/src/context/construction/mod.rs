@@ -8,6 +8,7 @@ use tracing::debug;
 
 use viewpoint_cdp::CdpConnection;
 
+use crate::context::target_events;
 use crate::context::trace::TracingState;
 use crate::context::{ContextOptions, DEFAULT_TEST_ID_ATTRIBUTE, binding, routing};
 use crate::error::ContextError;
@@ -30,23 +31,42 @@ impl BrowserContext {
             context_id.clone(),
         ));
         let binding_registry = Arc::new(binding::ContextBindingRegistry::new());
+        let pages = Arc::new(RwLock::new(Vec::new()));
+        let page_index_counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let event_manager = Arc::new(ContextEventManager::new());
+        let test_id_attribute = Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string()));
+        let options = ContextOptions::default();
+
+        // Start the target event listener for automatic page tracking
+        target_events::start_target_event_listener(
+            connection.clone(),
+            context_id.clone(),
+            pages.clone(),
+            event_manager.clone(),
+            route_registry.clone(),
+            options.clone(),
+            context_index,
+            page_index_counter.clone(),
+            test_id_attribute.clone(),
+        );
+
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
             context_index,
             closed: false,
             owned: true, // We created this context
-            pages: Arc::new(RwLock::new(Vec::new())),
-            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
+            pages,
+            page_index_counter,
             default_timeout: Duration::from_secs(30),
             default_navigation_timeout: Duration::from_secs(30),
-            options: ContextOptions::default(),
+            options,
             weberror_handler: Arc::new(RwLock::new(None)),
-            event_manager: Arc::new(ContextEventManager::new()),
+            event_manager,
             route_registry,
             binding_registry,
             init_scripts: Arc::new(RwLock::new(Vec::new())),
-            test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
+            test_id_attribute,
             har_recorder: Arc::new(RwLock::new(None)),
             tracing_state: Arc::new(RwLock::new(TracingState::default())),
         };
@@ -67,25 +87,43 @@ impl BrowserContext {
             context_id.clone(),
         ));
         let binding_registry = Arc::new(binding::ContextBindingRegistry::new());
+        let pages = Arc::new(RwLock::new(Vec::new()));
+        let page_index_counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let event_manager = Arc::new(ContextEventManager::new());
+        let test_id_attribute = Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string()));
+
+        // Start the target event listener for automatic page tracking
+        target_events::start_target_event_listener(
+            connection.clone(),
+            context_id.clone(),
+            pages.clone(),
+            event_manager.clone(),
+            route_registry.clone(),
+            options.clone(),
+            context_index,
+            page_index_counter.clone(),
+            test_id_attribute.clone(),
+        );
+
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
             context_index,
             closed: false,
             owned: true, // We created this context
-            pages: Arc::new(RwLock::new(Vec::new())),
-            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
+            pages,
+            page_index_counter,
             default_timeout: options.default_timeout.unwrap_or(Duration::from_secs(30)),
             default_navigation_timeout: options
                 .default_navigation_timeout
                 .unwrap_or(Duration::from_secs(30)),
             options,
             weberror_handler: Arc::new(RwLock::new(None)),
-            event_manager: Arc::new(ContextEventManager::new()),
+            event_manager,
             route_registry,
             binding_registry,
             init_scripts: Arc::new(RwLock::new(Vec::new())),
-            test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
+            test_id_attribute,
             har_recorder: Arc::new(RwLock::new(None)),
             tracing_state: Arc::new(RwLock::new(TracingState::default())),
         };
@@ -107,23 +145,42 @@ impl BrowserContext {
             context_id.clone(),
         ));
         let binding_registry = Arc::new(binding::ContextBindingRegistry::new());
+        let pages = Arc::new(RwLock::new(Vec::new()));
+        let page_index_counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let event_manager = Arc::new(ContextEventManager::new());
+        let test_id_attribute = Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string()));
+        let options = ContextOptions::default();
+
+        // Start the target event listener for automatic page tracking
+        target_events::start_target_event_listener(
+            connection.clone(),
+            context_id.clone(),
+            pages.clone(),
+            event_manager.clone(),
+            route_registry.clone(),
+            options.clone(),
+            context_index,
+            page_index_counter.clone(),
+            test_id_attribute.clone(),
+        );
+
         let ctx = Self {
             connection: connection.clone(),
             context_id: context_id.clone(),
             context_index,
             closed: false,
             owned: false, // We didn't create this context
-            pages: Arc::new(RwLock::new(Vec::new())),
-            page_index_counter: std::sync::atomic::AtomicUsize::new(0),
+            pages,
+            page_index_counter,
             default_timeout: Duration::from_secs(30),
             default_navigation_timeout: Duration::from_secs(30),
-            options: ContextOptions::default(),
+            options,
             weberror_handler: Arc::new(RwLock::new(None)),
-            event_manager: Arc::new(ContextEventManager::new()),
+            event_manager,
             route_registry,
             binding_registry,
             init_scripts: Arc::new(RwLock::new(Vec::new())),
-            test_id_attribute: Arc::new(RwLock::new(DEFAULT_TEST_ID_ATTRIBUTE.to_string())),
+            test_id_attribute,
             har_recorder: Arc::new(RwLock::new(None)),
             tracing_state: Arc::new(RwLock::new(TracingState::default())),
         };

@@ -283,6 +283,20 @@ impl BrowserBuilder {
         debug!("Connecting to browser via CDP");
         let connection = CdpConnection::connect(&ws_url).await?;
 
+        // Enable target discovery to receive Target.targetCreated events
+        // This is required for automatic page tracking (popups, target="_blank" links)
+        debug!("Enabling target discovery");
+        connection
+            .send_command::<_, serde_json::Value>(
+                "Target.setDiscoverTargets",
+                Some(viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
+                    discover: true,
+                }),
+                None,
+            )
+            .await
+            .map_err(|e| BrowserError::LaunchFailed(format!("Failed to enable target discovery: {e}")))?;
+
         info!(pid = pid, "Browser launched and connected successfully");
         Ok(Browser::from_launch(connection, child, temp_dir))
     }

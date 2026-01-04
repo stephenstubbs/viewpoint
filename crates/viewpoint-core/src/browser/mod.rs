@@ -179,6 +179,19 @@ impl Browser {
     pub async fn connect(ws_url: &str) -> Result<Self, BrowserError> {
         let connection = CdpConnection::connect(ws_url).await?;
 
+        // Enable target discovery to receive Target.targetCreated events
+        // This is required for automatic page tracking (popups, target="_blank" links)
+        connection
+            .send_command::<_, serde_json::Value>(
+                "Target.setDiscoverTargets",
+                Some(viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
+                    discover: true,
+                }),
+                None,
+            )
+            .await
+            .map_err(|e| BrowserError::ConnectionFailed(format!("Failed to enable target discovery: {e}")))?;
+
         Ok(Self {
             connection: Arc::new(connection),
             process: None,

@@ -1,12 +1,10 @@
 //! Page creation and setup for browser contexts.
 //!
-//! This module handles the creation and initialization of new pages
-//! within a browser context, including enabling CDP domains,
-//! applying emulation settings, and setting up video recording.
+//! This module provides utilities for page initialization within a browser context,
+//! including enabling CDP domains, applying emulation settings, and setting up
+//! video recording. These utilities are used by the target_events module which
+//! is the single source of truth for page lifecycle management.
 
-use std::sync::Arc;
-
-use tokio::sync::RwLock;
 use tracing::{debug, trace as trace_log};
 
 use viewpoint_cdp::CdpConnection;
@@ -14,15 +12,9 @@ use viewpoint_cdp::protocol::emulation::{
     MediaFeature, SetDeviceMetricsOverrideParams, SetEmulatedMediaParams, SetLocaleOverrideParams,
     SetTimezoneOverrideParams, SetTouchEmulationEnabledParams, SetUserAgentOverrideParams,
 };
-use viewpoint_cdp::protocol::target_domain::{
-    AttachToTargetParams, AttachToTargetResult, CreateTargetParams, CreateTargetResult,
-};
 
-use super::PageInfo;
-use super::routing;
 use super::types::{ColorScheme, ContextOptions, ForcedColors, ReducedMotion, ViewportSize};
 use crate::error::ContextError;
-use crate::page::Page;
 
 /// Apply CDP domain enabling to a new page session.
 pub(crate) async fn enable_page_domains(
@@ -205,48 +197,6 @@ async fn apply_media_features(
     Ok(())
 }
 
-/// Create a target and attach to it.
-pub(crate) async fn create_and_attach_target(
-    connection: &CdpConnection,
-    context_id: &str,
-) -> Result<(CreateTargetResult, AttachToTargetResult), ContextError> {
-    debug!("Creating target via Target.createTarget");
-    let create_result: CreateTargetResult = connection
-        .send_command(
-            "Target.createTarget",
-            Some(CreateTargetParams {
-                url: "about:blank".to_string(),
-                width: None,
-                height: None,
-                browser_context_id: Some(context_id.to_string()),
-                background: None,
-                new_window: None,
-            }),
-            None,
-        )
-        .await?;
-
-    let target_id = &create_result.target_id;
-    debug!(target_id = %target_id, "Target created");
-
-    debug!(target_id = %target_id, "Attaching to target");
-    let attach_result: AttachToTargetResult = connection
-        .send_command(
-            "Target.attachToTarget",
-            Some(AttachToTargetParams {
-                target_id: target_id.clone(),
-                flatten: Some(true),
-            }),
-            None,
-        )
-        .await?;
-
-    let session_id = &attach_result.session_id;
-    debug!(session_id = %session_id, "Attached to target");
-
-    Ok((create_result, attach_result))
-}
-
 /// Get the main frame ID from a page session.
 pub(crate) async fn get_main_frame_id(
     connection: &CdpConnection,
@@ -297,68 +247,4 @@ pub(crate) fn convert_proxy_credentials(
             )),
             _ => None,
         })
-}
-
-/// Create the page instance with optional video recording.
-pub(crate) async fn create_page_instance(
-    connection: Arc<CdpConnection>,
-    create_result: CreateTargetResult,
-    attach_result: AttachToTargetResult,
-    frame_id: String,
-    context_index: usize,
-    page_index: usize,
-    options: &ContextOptions,
-    test_id_attr: String,
-    route_registry: Arc<routing::ContextRouteRegistry>,
-    http_credentials: Option<crate::network::auth::HttpCredentials>,
-    proxy_credentials: Option<crate::network::auth::ProxyCredentials>,
-    context_pages: Arc<RwLock<Vec<PageInfo>>>,
-) -> Page {
-    if let Some(ref video_options) = options.record_video {
-        let page = Page::with_video_and_indices(
-            connection,
-            create_result.target_id,
-            attach_result.session_id,
-            frame_id,
-            context_index,
-            page_index,
-            video_options.clone(),
-        )
-        .with_test_id_attribute(test_id_attr)
-        .with_context_pages(context_pages)
-        .with_context_routes_and_proxy(route_registry, http_credentials.clone(), proxy_credentials)
-        .await;
-
-        // Start video recording immediately
-        if let Err(e) = page.start_video_recording().await {
-            debug!("Failed to start video recording: {}", e);
-        }
-        page
-    } else {
-        Page::new_with_indices(
-            connection,
-            create_result.target_id,
-            attach_result.session_id,
-            frame_id,
-            context_index,
-            page_index,
-        )
-        .with_test_id_attribute(test_id_attr)
-        .with_context_pages(context_pages)
-        .with_context_routes_and_proxy(route_registry, http_credentials, proxy_credentials)
-        .await
-    }
-}
-
-/// Track the page in the context's pages list.
-pub(crate) async fn track_page(
-    pages: &RwLock<Vec<PageInfo>>,
-    target_id: String,
-    session_id: String,
-) {
-    let mut pages_guard = pages.write().await;
-    pages_guard.push(PageInfo {
-        target_id,
-        session_id,
-    });
 }

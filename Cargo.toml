@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.3.5"
+version = "0.3.6"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/stephenstubbs/viewpoint"
@@ -23,12 +23,12 @@ categories = ["development-tools::testing", "web-programming"]
 
 [workspace.dependencies]
 # Internal crates
-viewpoint-cdp = { version = "0.3.5", path = "crates/viewpoint-cdp" }
-viewpoint-core = { version = "0.3.5", path = "crates/viewpoint-core" }
-viewpoint-js = { version = "0.3.5", path = "crates/viewpoint-js" }
-viewpoint-js-core = { version = "0.3.5", path = "crates/viewpoint-js-core" }
-viewpoint-test = { version = "0.3.5", path = "crates/viewpoint-test" }
-viewpoint-test-macros = { version = "0.3.5", path = "crates/viewpoint-test-macros" }
+viewpoint-cdp = { version = "0.3.6", path = "crates/viewpoint-cdp" }
+viewpoint-core = { version = "0.3.6", path = "crates/viewpoint-core" }
+viewpoint-js = { version = "0.3.6", path = "crates/viewpoint-js" }
+viewpoint-js-core = { version = "0.3.6", path = "crates/viewpoint-js-core" }
+viewpoint-test = { version = "0.3.6", path = "crates/viewpoint-test" }
+viewpoint-test-macros = { version = "0.3.6", path = "crates/viewpoint-test-macros" }
 
 # Async runtime
 tokio = "1.47"

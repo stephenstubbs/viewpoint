@@ -172,6 +172,7 @@ mod routing_impl;
 mod scripts;
 pub mod storage;
 mod storage_restore;
+mod target_events;
 mod test_id;
 mod timeout;
 pub mod trace;
@@ -251,7 +252,8 @@ pub struct BrowserContext {
     /// Created pages (weak tracking for `pages()` method).
     pages: Arc<RwLock<Vec<PageInfo>>>,
     /// Counter for assigning page indices within this context.
-    page_index_counter: std::sync::atomic::AtomicUsize,
+    /// Wrapped in Arc to share with the target event listener.
+    page_index_counter: Arc<std::sync::atomic::AtomicUsize>,
     /// Default timeout for actions.
     default_timeout: Duration,
     /// Default timeout for navigation.

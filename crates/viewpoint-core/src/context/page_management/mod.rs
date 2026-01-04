@@ -1,10 +1,15 @@
 //! Page creation and management within a browser context.
 
+use std::sync::Arc;
+use std::time::Duration;
+
+use tokio::sync::oneshot;
 use tracing::{debug, info, instrument};
 
-use viewpoint_cdp::protocol::target_domain::{GetTargetsParams, GetTargetsResult};
+use viewpoint_cdp::protocol::target_domain::{
+    CreateTargetParams, CreateTargetResult, GetTargetsParams, GetTargetsResult,
+};
 
-use crate::context::page_factory;
 use crate::error::ContextError;
 use crate::page::Page;
 
@@ -13,9 +18,13 @@ use super::{BrowserContext, PageInfo};
 impl BrowserContext {
     /// Create a new page in this context.
     ///
+    /// This method creates a new page target and waits for the CDP event listener
+    /// to complete page initialization. All page creation goes through the unified
+    /// CDP event-driven path, ensuring consistent behavior.
+    ///
     /// # Errors
     ///
-    /// Returns an error if page creation fails.
+    /// Returns an error if page creation fails or times out.
     #[instrument(level = "info", skip(self), fields(context_id = %self.context_id))]
     pub async fn new_page(&self) -> Result<Page, ContextError> {
         if self.closed {
@@ -24,76 +33,81 @@ impl BrowserContext {
 
         info!("Creating new page");
 
-        // Create target and attach to it
-        let (create_result, attach_result) =
-            page_factory::create_and_attach_target(&self.connection, &self.context_id).await?;
+        // Set up a oneshot channel to receive the page from the event listener
+        let (tx, rx) = oneshot::channel::<Page>();
+        let tx = Arc::new(tokio::sync::Mutex::new(Some(tx)));
 
-        let target_id = &create_result.target_id;
-        let session_id = &attach_result.session_id;
+        // Register a temporary handler to capture the new page
+        let tx_clone = tx.clone();
+        let handler_id = self
+            .event_manager
+            .on_page(move |page| {
+                let tx = tx_clone.clone();
+                async move {
+                    let mut guard = tx.lock().await;
+                    if let Some(sender) = guard.take() {
+                        let _ = sender.send(page);
+                    }
+                }
+            })
+            .await;
 
-        // Enable required CDP domains on the page
-        page_factory::enable_page_domains(&self.connection, session_id).await?;
+        // Create the target - the CDP event listener will handle attachment,
+        // domain enabling, and page creation
+        let create_result: Result<CreateTargetResult, _> = self
+            .connection
+            .send_command(
+                "Target.createTarget",
+                Some(CreateTargetParams {
+                    url: "about:blank".to_string(),
+                    width: None,
+                    height: None,
+                    browser_context_id: Some(self.context_id.clone()),
+                    background: None,
+                    new_window: None,
+                }),
+                None,
+            )
+            .await;
 
-        // Apply emulation settings (viewport, touch, locale, etc.)
-        page_factory::apply_emulation_settings(&self.connection, session_id, &self.options).await?;
-
-        // Get the main frame ID
-        let frame_id = page_factory::get_main_frame_id(&self.connection, session_id).await?;
-
-        // Track the page
-        page_factory::track_page(
-            &self.pages,
-            create_result.target_id.clone(),
-            attach_result.session_id.clone(),
-        )
-        .await;
-
-        // Apply context-level init scripts to the new page
-        if let Err(e) = self.apply_init_scripts_to_session(session_id).await {
-            debug!("Failed to apply init scripts: {}", e);
+        // Handle target creation error
+        if let Err(e) = create_result {
+            // Clean up handler before returning error
+            self.event_manager.off_page(handler_id).await;
+            return Err(e.into());
         }
 
-        info!(target_id = %target_id, session_id = %session_id, frame_id = %frame_id, "Page created successfully");
+        // Wait for the event listener to complete page setup
+        let timeout_duration = Duration::from_secs(30);
+        let page_result = tokio::time::timeout(timeout_duration, rx).await;
 
-        // Get the test ID attribute from context
-        let test_id_attr = self.test_id_attribute.read().await.clone();
+        // Clean up the handler
+        self.event_manager.off_page(handler_id).await;
 
-        // Convert context HTTP credentials to network auth credentials
-        let http_credentials = page_factory::convert_http_credentials(&self.options);
+        // Process the result
+        match page_result {
+            Ok(Ok(page)) => {
+                // Apply context-level init scripts to the new page
+                if let Err(e) = self.apply_init_scripts_to_session(page.session_id()).await {
+                    debug!("Failed to apply init scripts: {}", e);
+                }
 
-        // Convert context proxy credentials to network auth proxy credentials
-        let proxy_credentials = page_factory::convert_proxy_credentials(&self.options);
+                info!(
+                    target_id = %page.target_id(),
+                    session_id = %page.session_id(),
+                    "Page created successfully"
+                );
 
-        // Get the next page index for this context
-        let page_index = self.next_page_index();
-
-        // Create page with or without video recording
-        let page = page_factory::create_page_instance(
-            self.connection.clone(),
-            create_result,
-            attach_result,
-            frame_id,
-            self.context_index,
-            page_index,
-            &self.options,
-            test_id_attr,
-            self.route_registry.clone(),
-            http_credentials,
-            proxy_credentials,
-            self.pages.clone(),
-        )
-        .await;
-
-        // Enable Fetch domain if there are context-level routes
-        // This ensures requests are intercepted for context routes
-        if let Err(e) = page.enable_fetch_for_context_routes().await {
-            debug!("Failed to enable Fetch for context routes: {}", e);
+                Ok(page)
+            }
+            Ok(Err(_)) => Err(ContextError::Internal(
+                "Page channel closed unexpectedly".to_string(),
+            )),
+            Err(_) => Err(ContextError::Timeout {
+                operation: "new_page".to_string(),
+                duration: timeout_duration,
+            }),
         }
-
-        // Emit page event to registered handlers
-        self.event_manager.emit_page(page.clone_internal()).await;
-
-        Ok(page)
     }
 
     /// Get all pages in this context.
