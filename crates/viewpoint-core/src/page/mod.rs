@@ -250,7 +250,10 @@ mod video_io;
 use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::sync::RwLock;
 use viewpoint_cdp::CdpConnection;
+
+use crate::context::PageInfo;
 
 use crate::error::NavigationError;
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
@@ -343,6 +346,10 @@ pub struct Page {
             std::collections::HashMap<String, viewpoint_cdp::protocol::dom::BackendNodeId>,
         >,
     >,
+    /// Reference to context's pages list for removal on close.
+    /// This is used to remove the page from the context's tracking list when closed,
+    /// preventing stale sessions from accumulating.
+    context_pages: Option<Arc<RwLock<Vec<PageInfo>>>>,
 }
 
 // Manual Debug implementation since some fields don't implement Debug

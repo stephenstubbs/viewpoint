@@ -312,6 +312,7 @@ pub(crate) async fn create_page_instance(
     route_registry: Arc<routing::ContextRouteRegistry>,
     http_credentials: Option<crate::network::auth::HttpCredentials>,
     proxy_credentials: Option<crate::network::auth::ProxyCredentials>,
+    context_pages: Arc<RwLock<Vec<PageInfo>>>,
 ) -> Page {
     if let Some(ref video_options) = options.record_video {
         let page = Page::with_video_and_indices(
@@ -324,6 +325,7 @@ pub(crate) async fn create_page_instance(
             video_options.clone(),
         )
         .with_test_id_attribute(test_id_attr)
+        .with_context_pages(context_pages)
         .with_context_routes_and_proxy(route_registry, http_credentials.clone(), proxy_credentials)
         .await;
 
@@ -342,6 +344,7 @@ pub(crate) async fn create_page_instance(
             page_index,
         )
         .with_test_id_attribute(test_id_attr)
+        .with_context_pages(context_pages)
         .with_context_routes_and_proxy(route_registry, http_credentials, proxy_credentials)
         .await
     }

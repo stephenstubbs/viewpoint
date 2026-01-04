@@ -4,8 +4,10 @@
 
 use std::sync::Arc;
 
+use tokio::sync::RwLock;
 use viewpoint_cdp::CdpConnection;
 
+use crate::context::PageInfo;
 use crate::error::NetworkError;
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
 
@@ -195,12 +197,25 @@ impl Page {
             ref_map: std::sync::Arc::new(
                 parking_lot::RwLock::new(std::collections::HashMap::new()),
             ),
+            context_pages: None,
         }
     }
 
     /// Create a new page with a custom test ID attribute.
     pub(crate) fn with_test_id_attribute(mut self, attribute: String) -> Self {
         self.test_id_attribute = attribute;
+        self
+    }
+
+    /// Set the context's pages list for this page.
+    ///
+    /// This allows the page to remove itself from the context's tracking list
+    /// when it is closed, preventing stale sessions from accumulating.
+    pub(crate) fn with_context_pages(
+        mut self,
+        pages: Arc<RwLock<Vec<PageInfo>>>,
+    ) -> Self {
+        self.context_pages = Some(pages);
         self
     }
 
@@ -295,6 +310,7 @@ impl Page {
             test_id_attribute: self.test_id_attribute.clone(),
             context_registry: self.context_registry.clone(),
             ref_map: self.ref_map.clone(),
+            context_pages: self.context_pages.clone(),
         }
     }
 

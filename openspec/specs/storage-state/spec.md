@@ -38,6 +38,20 @@ The system SHALL export the browser context's storage state.
 - **WHEN** `context.storage_state().indexed_db(true).await` is called
 - **THEN** the IndexedDB snapshot is included in the state
 
+#### Scenario: Closed pages are removed from tracking
+
+- **GIVEN** a browser context with an open page
+- **WHEN** the page is closed via `page.close().await`
+- **THEN** the page is removed from the context's internal pages list
+- **AND** subsequent calls to `storage_state()` do not attempt to use the closed page's session
+
+#### Scenario: Storage state succeeds after closing pages
+
+- **GIVEN** a browser context where a page was created and then closed
+- **WHEN** `context.storage_state().await` is called
+- **THEN** the operation succeeds without "session not found" errors
+- **AND** cookies are collected successfully
+
 ### Requirement: Restore Storage State
 
 The system SHALL restore browser context state from a saved state.

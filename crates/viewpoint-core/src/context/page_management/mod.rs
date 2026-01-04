@@ -80,6 +80,7 @@ impl BrowserContext {
             self.route_registry.clone(),
             http_credentials,
             proxy_credentials,
+            self.pages.clone(),
         )
         .await;
 
