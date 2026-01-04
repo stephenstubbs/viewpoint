@@ -13,6 +13,7 @@ Viewpoint is a high-performance browser automation and E2E testing framework in 
 - **Async Runtime**: Tokio
 - **Error Handling**: `thiserror` (libraries), `anyhow` (binaries)
 - **Build Environment**: Nix flakes + direnv
+- **TLS / SSL**: Rusttls
 - **Browser**: Chromium via CDP (Chrome DevTools Protocol)
 
 ## Conventions
