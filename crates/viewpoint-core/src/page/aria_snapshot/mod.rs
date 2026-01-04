@@ -94,6 +94,18 @@ impl Page {
     /// boundaries in the main frame snapshot are replaced with the actual content
     /// from the corresponding frames.
     ///
+    /// # Element Refs and Iframe Interaction
+    ///
+    /// Element refs from all frames (main and child iframes) are captured and stored
+    /// in the Page's ref map. This means you can use [`locator_from_ref`](Page::locator_from_ref)
+    /// or [`element_from_ref`](Page::element_from_ref) to interact with elements inside
+    /// iframes after calling this method.
+    ///
+    /// Refs from different frames have distinct frame indices in their format:
+    /// - Main frame: `c{ctx}p{page}f0e{counter}`
+    /// - First iframe: `c{ctx}p{page}f1e{counter}`
+    /// - Second iframe: `c{ctx}p{page}f2e{counter}`
+    ///
     /// # Performance
     ///
     /// Child frame snapshots are captured in parallel for improved performance.
@@ -106,6 +118,7 @@ impl Page {
     /// 2. Getting the frame tree from CDP
     /// 3. For each child frame, capturing its aria snapshot (in parallel)
     /// 4. Stitching child frame content into the parent snapshot at iframe boundaries
+    /// 5. Storing all element ref mappings in the Page's ref_map for later resolution
     ///
     /// # Cross-Origin Frames
     ///
@@ -127,8 +140,11 @@ impl Page {
     /// //   - heading "Title"
     /// //   - iframe "Widget Frame" [frame-boundary]
     /// //     - document "Widget"
-    /// //       - button "Click me"
+    /// //       - button "Click me" [ref=c0p0f1e1]
     /// println!("{}", snapshot);
+    ///
+    /// // You can interact with elements inside iframes using their refs:
+    /// // page.locator_from_ref("c0p0f1e1").click().await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -189,7 +205,7 @@ impl Page {
             "Capturing child frame snapshots in parallel"
         );
 
-        // Capture all child frame snapshots in parallel
+        // Capture all child frame snapshots in parallel, collecting ref mappings
         let frame_futures: FuturesUnordered<_> = child_frames
             .iter()
             .map(|frame| {
@@ -198,8 +214,11 @@ impl Page {
                 let frame_name = frame.name().clone();
                 let opts = options.clone();
                 async move {
-                    match frame.aria_snapshot_with_options(opts).await {
-                        Ok(snapshot) => Some((frame_id, frame_url, frame_name, snapshot)),
+                    // Use capture_snapshot_with_refs to get both snapshot and ref mappings
+                    match frame.capture_snapshot_with_refs(opts).await {
+                        Ok((snapshot, ref_mappings)) => {
+                            Some((frame_id, frame_url, frame_name, snapshot, ref_mappings))
+                        }
                         Err(e) => {
                             tracing::warn!(
                                 error = %e,
@@ -221,7 +240,12 @@ impl Page {
         let mut frame_snapshots: HashMap<String, AriaSnapshot> = HashMap::new();
 
         for result in results.into_iter().flatten() {
-            let (frame_id, frame_url, frame_name, snapshot) = result;
+            let (frame_id, frame_url, frame_name, snapshot, ref_mappings) = result;
+
+            // Store child frame ref mappings in Page's ref_map for later resolution
+            for (ref_str, backend_node_id) in ref_mappings {
+                self.store_ref_mapping(ref_str, backend_node_id);
+            }
 
             if !frame_url.is_empty() && frame_url != "about:blank" {
                 frame_snapshots.insert(frame_url, snapshot.clone());

@@ -161,6 +161,23 @@ impl Locator<'_> {
             (function() {
                 const el = this;
                 const rect = el.getBoundingClientRect();
+
+                // Calculate cumulative iframe offset by walking up the frame hierarchy.
+                // This is needed because getBoundingClientRect() returns coordinates relative
+                // to the element's containing document, but Input.dispatchMouseEvent requires
+                // coordinates relative to the main frame's viewport.
+                let frameOffset = { x: 0, y: 0 };
+                let currentWindow = el.ownerDocument.defaultView;
+                while (currentWindow && currentWindow !== currentWindow.top) {
+                    const frameElement = currentWindow.frameElement;
+                    if (frameElement) {
+                        const frameRect = frameElement.getBoundingClientRect();
+                        frameOffset.x += frameRect.x;
+                        frameOffset.y += frameRect.y;
+                    }
+                    currentWindow = currentWindow.parent;
+                }
+
                 const style = window.getComputedStyle(el);
                 const visible = rect.width > 0 && rect.height > 0 &&
                     style.visibility !== "hidden" &&
@@ -171,8 +188,8 @@ impl Locator<'_> {
                     count: 1,
                     visible: visible,
                     enabled: !el.disabled,
-                    x: rect.x,
-                    y: rect.y,
+                    x: frameOffset.x + rect.x,
+                    y: frameOffset.y + rect.y,
                     width: rect.width,
                     height: rect.height,
                     text: el.textContent,

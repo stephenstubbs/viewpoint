@@ -69,8 +69,10 @@ impl Frame {
             return Err(PageError::EvaluationFailed("Frame is detached".to_string()));
         }
 
-        // Capture snapshot with element collection for ref resolution
-        self.capture_snapshot_with_refs(options).await
+        // Capture snapshot with element collection for ref resolution, discarding the ref mappings
+        // (Frame's public API doesn't return them - use Page.aria_snapshot_with_frames() for full ref support)
+        let (snapshot, _ref_mappings) = self.capture_snapshot_with_refs(options).await?;
+        Ok(snapshot)
     }
 
     /// Internal method to capture a snapshot with refs resolved.
@@ -79,16 +81,19 @@ impl Frame {
     /// 1. JS traversal collects the snapshot and element references
     /// 2. CDP calls resolve each element to its backendNodeId (in parallel)
     ///
+    /// Returns both the snapshot and a map of ref strings to their backendNodeIds.
+    /// The caller should store these mappings in Page's ref_map for later resolution.
+    ///
     /// # Performance Optimizations
     ///
     /// - Uses `Runtime.getProperties` to batch-fetch all array element object IDs
     /// - Uses `FuturesUnordered` to resolve node IDs in parallel
     /// - Configurable concurrency limit to avoid overwhelming the browser
     #[instrument(level = "debug", skip(self, options), fields(frame_id = %self.id))]
-    pub(super) async fn capture_snapshot_with_refs(
+    pub(crate) async fn capture_snapshot_with_refs(
         &self,
         options: SnapshotOptions,
-    ) -> Result<crate::page::locator::AriaSnapshot, PageError> {
+    ) -> Result<(crate::page::locator::AriaSnapshot, HashMap<String, BackendNodeId>), PageError> {
         let snapshot_fn = aria_snapshot_with_refs_js();
 
         // Evaluate the JS function to get snapshot and element array
@@ -142,6 +147,9 @@ impl Frame {
                 PageError::EvaluationFailed(format!("Failed to parse aria snapshot: {e}"))
             })?;
 
+        // Collect ref mappings to return to caller
+        let mut ref_mappings: HashMap<String, BackendNodeId> = HashMap::new();
+
         // Only resolve refs if requested
         if options.get_include_refs() {
             // Get the elements array as a RemoteObject
@@ -161,24 +169,20 @@ impl Frame {
                 );
 
                 // Resolve all node IDs in parallel with concurrency limit
-                let ref_map = self
+                let index_to_backend_id = self
                     .resolve_node_ids_parallel(element_object_ids, options.get_max_concurrency())
                     .await;
 
                 debug!(
-                    resolved_count = ref_map.len(),
+                    resolved_count = index_to_backend_id.len(),
                     total_count = element_count,
                     "Completed parallel ref resolution"
                 );
 
-                // Apply refs to the snapshot tree
-                // Note: Frame doesn't have access to Page's ref_map, so we discard
-                // the returned mappings. Refs captured via Frame are visible in the
-                // snapshot but not resolvable via page.locator_from_ref().
-                // Use page.aria_snapshot() instead for full ref support.
-                let _ = apply_refs_to_snapshot(
+                // Apply refs to the snapshot tree and collect the ref-to-backendNodeId mappings
+                ref_mappings = apply_refs_to_snapshot(
                     &mut snapshot,
-                    &ref_map,
+                    &index_to_backend_id,
                     self.context_index,
                     self.page_index,
                     self.frame_index,
@@ -192,7 +196,7 @@ impl Frame {
         // Release the result object
         let _ = self.release_object(&result_object_id).await;
 
-        Ok(snapshot)
+        Ok((snapshot, ref_mappings))
     }
 
     /// Batch-fetch all array element object IDs using `Runtime.getProperties`.
