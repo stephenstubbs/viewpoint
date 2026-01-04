@@ -112,6 +112,14 @@ use viewpoint_js::js;
 pub fn aria_snapshot_with_refs_js() -> &'static str {
     js! {
         (function(element) {
+            // Handle null/undefined element (can happen during page transitions)
+            if (!element) {
+                return {
+                    snapshot: { role: "document", name: "", children: [], elementIndex: -1 },
+                    elements: []
+                };
+            }
+
             // Collect elements during traversal for later backendNodeId resolution
             const elements = [];
             // Collect iframe refs during traversal (stored at root level)

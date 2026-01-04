@@ -15,7 +15,11 @@ use super::{DocumentLoadState, LoadStateWaiter};
 use crate::error::WaitError;
 
 /// Duration to wait for navigation to be triggered after an action.
-const NAVIGATION_DETECTION_WINDOW: Duration = Duration::from_millis(50);
+///
+/// This window must be long enough for the browser to process the action and
+/// emit a `Page.frameNavigated` CDP event. 50ms was found to be too short in
+/// practice, causing navigation events to be missed.
+const NAVIGATION_DETECTION_WINDOW: Duration = Duration::from_millis(150);
 
 /// Default navigation timeout.
 const DEFAULT_NAVIGATION_TIMEOUT: Duration = Duration::from_secs(30);
