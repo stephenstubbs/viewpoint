@@ -6,14 +6,12 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use tracing::{debug, info, instrument};
 
-use viewpoint_cdp::protocol::target_domain::{
-    CreateTargetParams, CreateTargetResult, GetTargetsParams, GetTargetsResult,
-};
+use viewpoint_cdp::protocol::target_domain::{CreateTargetParams, CreateTargetResult};
 
 use crate::error::ContextError;
 use crate::page::Page;
 
-use super::{BrowserContext, PageInfo};
+use super::BrowserContext;
 
 impl BrowserContext {
     /// Create a new page in this context.
@@ -112,41 +110,50 @@ impl BrowserContext {
 
     /// Get all pages in this context.
     ///
+    /// Returns fully functional `Page` objects that can be used to interact
+    /// with the pages (navigate, click, type, etc.).
+    ///
     /// # Errors
     ///
-    /// Returns an error if querying targets fails.
-    pub async fn pages(&self) -> Result<Vec<PageInfo>, ContextError> {
+    /// Returns an error if the context is closed.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::BrowserContext;
+    ///
+    /// # async fn example(context: &BrowserContext) -> Result<(), viewpoint_core::CoreError> {
+    /// // Get all pages
+    /// let pages = context.pages().await?;
+    /// for page in &pages {
+    ///     println!("Page URL: {}", page.url().await?);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn pages(&self) -> Result<Vec<Page>, ContextError> {
         if self.closed {
             return Err(ContextError::Closed);
         }
 
-        let result: GetTargetsResult = self
-            .connection
-            .send_command("Target.getTargets", Some(GetTargetsParams::default()), None)
-            .await?;
+        let pages_guard = self.pages.read().await;
+        Ok(pages_guard.iter().map(Page::clone_internal).collect())
+    }
 
-        let pages: Vec<PageInfo> = result
-            .target_infos
-            .into_iter()
-            .filter(|t| {
-                // For the default context (empty string ID), match targets with no context ID
-                // or with an empty context ID
-                let matches_context = if self.context_id.is_empty() {
-                    // Default context: match targets without a context ID or with empty context ID
-                    t.browser_context_id.as_deref().is_none()
-                        || t.browser_context_id.as_deref() == Some("")
-                } else {
-                    // Named context: exact match
-                    t.browser_context_id.as_deref() == Some(&self.context_id)
-                };
-                matches_context && t.target_type == "page"
-            })
-            .map(|t| PageInfo {
-                target_id: t.target_id,
-                session_id: String::new(), // Would need to track sessions
-            })
-            .collect();
+    /// Get the number of pages in this context.
+    ///
+    /// This is a convenience method that avoids cloning all pages when
+    /// you only need the count.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the context is closed.
+    pub async fn page_count(&self) -> Result<usize, ContextError> {
+        if self.closed {
+            return Err(ContextError::Closed);
+        }
 
-        Ok(pages)
+        let pages_guard = self.pages.read().await;
+        Ok(pages_guard.len())
     }
 }

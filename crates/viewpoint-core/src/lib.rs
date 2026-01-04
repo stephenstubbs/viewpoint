@@ -278,9 +278,9 @@ pub use context::{
     BrowserContext, ClearCookiesBuilder, ColorScheme, ContextEventManager, ContextOptions,
     ContextOptionsBuilder, Cookie, ForcedColors, Geolocation, HandlerId, HttpCredentials,
     IndexedDbDatabase, IndexedDbEntry, IndexedDbIndex, IndexedDbObjectStore, LocalStorageEntry,
-    PageInfo, Permission, ProxyConfig, ReducedMotion, SameSite, SetGeolocationBuilder,
-    StorageOrigin, StorageState, StorageStateBuilder, StorageStateOptions, StorageStateSource,
-    Tracing, TracingOptions, ViewportSize as ContextViewportSize,
+    Permission, ProxyConfig, ReducedMotion, SameSite, SetGeolocationBuilder, StorageOrigin,
+    StorageState, StorageStateBuilder, StorageStateOptions, StorageStateSource, Tracing,
+    TracingOptions, ViewportSize as ContextViewportSize,
 };
 pub use error::CoreError;
 pub use network::{

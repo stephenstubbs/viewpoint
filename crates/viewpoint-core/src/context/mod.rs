@@ -249,8 +249,9 @@ pub struct BrowserContext {
     /// Whether we own this context (created it) vs discovered it.
     /// Owned contexts are disposed when closed; external contexts are not.
     owned: bool,
-    /// Created pages (weak tracking for `pages()` method).
-    pages: Arc<RwLock<Vec<PageInfo>>>,
+    /// Created pages for `pages()` method.
+    /// Stores actual Page objects to allow returning fully functional pages.
+    pages: Arc<RwLock<Vec<crate::page::Page>>>,
     /// Counter for assigning page indices within this context.
     /// Wrapped in Arc to share with the target event listener.
     page_index_counter: Arc<std::sync::atomic::AtomicUsize>,

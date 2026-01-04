@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use viewpoint_cdp::CdpConnection;
 
-use crate::context::PageInfo;
+
 use crate::error::NetworkError;
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
 
@@ -213,7 +213,7 @@ impl Page {
     /// when it is closed, preventing stale sessions from accumulating.
     pub(crate) fn with_context_pages(
         mut self,
-        pages: Arc<RwLock<Vec<PageInfo>>>,
+        pages: Arc<RwLock<Vec<Page>>>,
     ) -> Self {
         self.context_pages = Some(pages);
         self

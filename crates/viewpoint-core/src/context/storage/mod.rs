@@ -110,7 +110,7 @@ impl StorageStateOptions {
 pub struct StorageStateBuilder<'a> {
     connection: &'a Arc<CdpConnection>,
     context_id: &'a str,
-    pages: &'a Arc<RwLock<Vec<super::PageInfo>>>,
+    pages: &'a Arc<RwLock<Vec<crate::page::Page>>>,
     options: StorageStateOptions,
 }
 
@@ -118,7 +118,7 @@ impl<'a> StorageStateBuilder<'a> {
     pub(crate) fn new(
         connection: &'a Arc<CdpConnection>,
         context_id: &'a str,
-        pages: &'a Arc<RwLock<Vec<super::PageInfo>>>,
+        pages: &'a Arc<RwLock<Vec<crate::page::Page>>>,
     ) -> Self {
         Self {
             connection,
@@ -157,22 +157,22 @@ impl<'a> StorageStateBuilder<'a> {
         let pages = self.pages.read().await;
 
         for page in pages.iter() {
-            if page.session_id.is_empty() {
+            if page.session_id().is_empty() {
                 continue;
             }
 
             // Get the current page URL/origin
-            let origin = self.get_page_origin(&page.session_id).await?;
+            let origin = self.get_page_origin(page.session_id()).await?;
             if origin.is_empty() || origin == "null" {
                 continue;
             }
 
             // Get localStorage for this page
-            let local_storage = self.collect_local_storage(&page.session_id).await?;
+            let local_storage = self.collect_local_storage(page.session_id()).await?;
 
             // Get IndexedDB if requested
             let indexed_db = if self.options.indexed_db {
-                self.collect_indexed_db(&page.session_id).await?
+                self.collect_indexed_db(page.session_id()).await?
             } else {
                 Vec::new()
             };

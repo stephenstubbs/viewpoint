@@ -38,8 +38,8 @@ impl BrowserContext {
                                 let pages_guard = pages.read().await;
                                 pages_guard
                                     .iter()
-                                    .find(|p| p.session_id == session_id)
-                                    .map(|p| p.target_id.clone())
+                                    .find(|p| p.session_id() == session_id)
+                                    .map(|p| p.target_id().to_string())
                                     .unwrap_or_default()
                             };
 

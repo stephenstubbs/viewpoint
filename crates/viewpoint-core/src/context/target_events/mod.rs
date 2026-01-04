@@ -27,7 +27,6 @@ use super::events::ContextEventManager;
 use super::page_factory;
 use super::routing::ContextRouteRegistry;
 use super::types::ContextOptions;
-use super::PageInfo;
 use crate::page::Page;
 
 /// Start listening for target events on a browser context.
@@ -44,7 +43,7 @@ use crate::page::Page;
 pub(crate) fn start_target_event_listener(
     connection: Arc<CdpConnection>,
     context_id: String,
-    pages: Arc<RwLock<Vec<PageInfo>>>,
+    pages: Arc<RwLock<Vec<Page>>>,
     event_manager: Arc<ContextEventManager>,
     route_registry: Arc<ContextRouteRegistry>,
     options: ContextOptions,
@@ -106,7 +105,7 @@ pub(crate) fn start_target_event_listener(
 async fn handle_target_created(
     connection: &Arc<CdpConnection>,
     context_id: &str,
-    pages: &Arc<RwLock<Vec<PageInfo>>>,
+    pages: &Arc<RwLock<Vec<Page>>>,
     event_manager: &Arc<ContextEventManager>,
     route_registry: &Arc<ContextRouteRegistry>,
     options: &ContextOptions,
@@ -222,15 +221,6 @@ async fn handle_target_created(
         }
     };
 
-    // Track the page
-    {
-        let mut pages_guard = pages.write().await;
-        pages_guard.push(PageInfo {
-            target_id: info.target_id.clone(),
-            session_id: attach_result.session_id.clone(),
-        });
-    }
-
     // Get test ID attribute
     let test_id_attr = test_id_attribute.read().await.clone();
 
@@ -285,6 +275,12 @@ async fn handle_target_created(
         // Continue anyway
     }
 
+    // Track the page by storing a clone in the pages list
+    {
+        let mut pages_guard = pages.write().await;
+        pages_guard.push(page.clone_internal());
+    }
+
     debug!(
         target_id = %info.target_id,
         session_id = %attach_result.session_id,
@@ -300,10 +296,10 @@ async fn handle_target_created(
 ///
 /// This is the single entry point for ALL page destruction.
 /// It removes the page from tracking.
-async fn handle_target_destroyed(pages: &Arc<RwLock<Vec<PageInfo>>>, event: TargetDestroyedEvent) {
+async fn handle_target_destroyed(pages: &Arc<RwLock<Vec<Page>>>, event: TargetDestroyedEvent) {
     let mut pages_guard = pages.write().await;
     let initial_len = pages_guard.len();
-    pages_guard.retain(|p| p.target_id != event.target_id);
+    pages_guard.retain(|p| p.target_id() != event.target_id);
 
     if pages_guard.len() < initial_len {
         debug!(

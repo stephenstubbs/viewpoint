@@ -29,12 +29,12 @@ impl BrowserContext {
         // Clear on all pages
         let pages = self.pages.read().await;
         for page in pages.iter() {
-            if !page.session_id.is_empty() {
+            if !page.session_id().is_empty() {
                 self.connection()
                     .send_command::<_, serde_json::Value>(
                         "Emulation.clearGeolocationOverride",
                         Some(ClearGeolocationOverrideParams::default()),
-                        Some(&page.session_id),
+                        Some(page.session_id()),
                     )
                     .await?;
             }
@@ -76,14 +76,14 @@ impl BrowserContext {
         // Set on all pages
         let pages = self.pages.read().await;
         for page in pages.iter() {
-            if !page.session_id.is_empty() {
+            if !page.session_id().is_empty() {
                 self.connection()
                     .send_command::<_, serde_json::Value>(
                         "Network.setExtraHTTPHeaders",
                         Some(SetExtraHTTPHeadersParams {
                             headers: headers.clone(),
                         }),
-                        Some(&page.session_id),
+                        Some(page.session_id()),
                     )
                     .await?;
             }
@@ -129,12 +129,12 @@ impl BrowserContext {
         // Set on all pages
         let pages = self.pages.read().await;
         for page in pages.iter() {
-            if !page.session_id.is_empty() {
+            if !page.session_id().is_empty() {
                 self.connection()
                     .send_command::<_, serde_json::Value>(
                         "Network.emulateNetworkConditions",
                         Some(params.clone()),
-                        Some(&page.session_id),
+                        Some(page.session_id()),
                     )
                     .await?;
             }
@@ -200,13 +200,13 @@ impl<'a> SetGeolocationBuilder<'a> {
         // Set on all pages
         let pages = self.context.pages.read().await;
         for page in pages.iter() {
-            if !page.session_id.is_empty() {
+            if !page.session_id().is_empty() {
                 self.context
                     .connection()
                     .send_command::<_, serde_json::Value>(
                         "Emulation.setGeolocationOverride",
                         Some(params.clone()),
-                        Some(&page.session_id),
+                        Some(page.session_id()),
                     )
                     .await?;
             }

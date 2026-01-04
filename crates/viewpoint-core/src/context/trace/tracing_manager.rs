@@ -9,7 +9,7 @@ use tracing::{debug, info, instrument};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::tracing as cdp_tracing;
 
-use crate::context::PageInfo;
+use crate::page::Page;
 use crate::error::ContextError;
 use crate::network::har::HarPage;
 
@@ -64,7 +64,7 @@ pub struct Tracing {
     /// Browser context ID.
     context_id: String,
     /// Pages in this context (used to get session IDs).
-    pages: Arc<RwLock<Vec<PageInfo>>>,
+    pages: Arc<RwLock<Vec<Page>>>,
     /// Tracing state.
     state: Arc<RwLock<TracingState>>,
 }
@@ -82,7 +82,7 @@ impl Tracing {
     pub(crate) fn new(
         connection: Arc<CdpConnection>,
         context_id: String,
-        pages: Arc<RwLock<Vec<PageInfo>>>,
+        pages: Arc<RwLock<Vec<Page>>>,
         state: Arc<RwLock<TracingState>>,
     ) -> Self {
         Self {
@@ -98,8 +98,8 @@ impl Tracing {
         let pages = self.pages.read().await;
         pages
             .iter()
-            .filter(|p| !p.session_id.is_empty())
-            .map(|p| p.session_id.clone())
+            .filter(|p| !p.session_id().is_empty())
+            .map(|p| p.session_id().to_string())
             .collect()
     }
 

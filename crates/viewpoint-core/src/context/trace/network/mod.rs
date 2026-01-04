@@ -11,7 +11,7 @@ use viewpoint_cdp::protocol::network::{
     LoadingFailedEvent, LoadingFinishedEvent, RequestWillBeSentEvent, ResponseReceivedEvent,
 };
 
-use crate::context::PageInfo;
+use crate::page::Page;
 
 use super::types::{NetworkEntryState, PendingRequest, TracingState};
 
@@ -21,7 +21,7 @@ use super::types::{NetworkEntryState, PendingRequest, TracingState};
 pub fn start_network_listener(
     connection: Arc<CdpConnection>,
     state: Arc<RwLock<TracingState>>,
-    pages: Arc<RwLock<Vec<PageInfo>>>,
+    pages: Arc<RwLock<Vec<Page>>>,
 ) {
     let mut events = connection.subscribe_events();
 
@@ -42,7 +42,7 @@ pub fn start_network_listener(
                 event
                     .session_id
                     .as_ref()
-                    .is_some_and(|sid| pages.iter().any(|p| &p.session_id == sid))
+                    .is_some_and(|sid| pages.iter().any(|p| p.session_id() == sid))
             };
             if !is_our_session {
                 continue;

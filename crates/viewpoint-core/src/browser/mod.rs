@@ -232,8 +232,8 @@ impl Browser {
     /// let contexts = browser.contexts().await?;
     /// for context in contexts {
     ///     let pages = context.pages().await?;
-    ///     for page in pages {
-    ///         println!("Found page: {:?}", page.target_id);
+    ///     for page in &pages {
+    ///         println!("Found page: {}", page.target_id());
     ///     }
     /// }
     /// # Ok(())

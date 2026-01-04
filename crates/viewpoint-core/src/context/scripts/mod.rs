@@ -56,7 +56,7 @@ impl BrowserContext {
         // Apply to existing pages
         let pages = self.pages.read().await;
         for page in pages.iter() {
-            if !page.session_id.is_empty() {
+            if !page.session_id().is_empty() {
                 use viewpoint_cdp::protocol::page::AddScriptToEvaluateOnNewDocumentParams;
 
                 let _ = self.connection()
@@ -68,7 +68,7 @@ impl BrowserContext {
                             include_command_line_api: None,
                             run_immediately: None,
                         }),
-                        Some(&page.session_id),
+                        Some(page.session_id()),
                     )
                     .await;
             }

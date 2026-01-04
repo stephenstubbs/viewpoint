@@ -40,7 +40,7 @@ impl Page {
         // Remove this page from the context's pages list to prevent stale session accumulation
         if let Some(ref pages) = self.context_pages {
             let mut pages_guard = pages.write().await;
-            pages_guard.retain(|p| p.target_id != self.target_id);
+            pages_guard.retain(|p| p.target_id() != self.target_id);
             debug!("Removed page from context's pages list");
         }
 
