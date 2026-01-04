@@ -21,6 +21,7 @@ use tracing::{debug, trace};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::target_domain::{
     AttachToTargetParams, AttachToTargetResult, TargetCreatedEvent, TargetDestroyedEvent,
+    TargetInfoChangedEvent,
 };
 
 use super::events::ContextEventManager;
@@ -83,6 +84,21 @@ pub(crate) fn start_target_event_listener(
                             serde_json::from_value::<TargetDestroyedEvent>(params.clone())
                         {
                             handle_target_destroyed(&pages, destroyed_event).await;
+                        }
+                    }
+                }
+                "Target.targetInfoChanged" => {
+                    if let Some(params) = &event.params {
+                        if let Ok(changed_event) =
+                            serde_json::from_value::<TargetInfoChangedEvent>(params.clone())
+                        {
+                            handle_target_info_changed(
+                                &context_id,
+                                &pages,
+                                &event_manager,
+                                changed_event,
+                            )
+                            .await;
                         }
                     }
                 }
@@ -305,6 +321,75 @@ async fn handle_target_destroyed(pages: &Arc<RwLock<Vec<Page>>>, event: TargetDe
         debug!(
             target_id = %event.target_id,
             "Page removed from tracking via Target.targetDestroyed"
+        );
+    }
+}
+
+/// Handle a Target.targetInfoChanged event.
+///
+/// This detects when a page becomes the active/foreground tab and emits
+/// the `page_activated` event. This allows consumers to react to user-initiated
+/// tab switches (e.g., clicking on a tab) or programmatic tab switches
+/// (e.g., `page.bring_to_front()`).
+async fn handle_target_info_changed(
+    context_id: &str,
+    pages: &Arc<RwLock<Vec<Page>>>,
+    event_manager: &Arc<ContextEventManager>,
+    event: TargetInfoChangedEvent,
+) {
+    let info = &event.target_info;
+
+    // Only handle "page" targets
+    if info.target_type != "page" {
+        trace!(
+            target_type = %info.target_type,
+            target_id = %info.target_id,
+            "Ignoring targetInfoChanged for non-page target"
+        );
+        return;
+    }
+
+    // Filter by context ID
+    // For default context (empty string), match targets without a context ID
+    // For named contexts, require exact match
+    let matches_context = if context_id.is_empty() {
+        info.browser_context_id.is_none() || info.browser_context_id.as_deref() == Some("")
+    } else {
+        info.browser_context_id.as_deref() == Some(context_id)
+    };
+
+    if !matches_context {
+        trace!(
+            target_context = ?info.browser_context_id,
+            our_context = %context_id,
+            target_id = %info.target_id,
+            "targetInfoChanged for target in different context"
+        );
+        return;
+    }
+
+    // Look up the page from our tracked pages
+    let page = {
+        let pages_guard = pages.read().await;
+        pages_guard
+            .iter()
+            .find(|p| p.target_id() == info.target_id)
+            .map(|p| p.clone_internal())
+    };
+
+    if let Some(page) = page {
+        debug!(
+            target_id = %info.target_id,
+            url = %info.url,
+            "Page activated via Target.targetInfoChanged"
+        );
+
+        // Emit the page_activated event
+        event_manager.emit_page_activated(page).await;
+    } else {
+        trace!(
+            target_id = %info.target_id,
+            "targetInfoChanged for untracked page (may be in creation)"
         );
     }
 }

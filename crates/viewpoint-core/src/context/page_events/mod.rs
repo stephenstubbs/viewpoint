@@ -48,6 +48,46 @@ impl BrowserContext {
         self.event_manager.off_page(handler_id).await
     }
 
+    /// Register a handler for page activated events.
+    ///
+    /// The handler will be called when a page becomes the active/foreground tab,
+    /// including when the user clicks on a tab in the browser UI or switches tabs
+    /// programmatically via `page.bring_to_front()`.
+    /// Returns a handler ID that can be used to remove the handler with `off_page_activated`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use viewpoint_core::{Browser, Page};
+    ///
+    /// # async fn example() -> Result<(), viewpoint_core::CoreError> {
+    /// let browser = Browser::launch().headless(true).launch().await?;
+    /// let context = browser.new_context().await?;
+    ///
+    /// let handler_id = context.on_page_activated(|page: Page| async move {
+    ///     println!("Page activated: {}", page.url().await.unwrap_or_default());
+    /// }).await;
+    ///
+    /// // Later, remove the handler
+    /// context.off_page_activated(handler_id).await;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn on_page_activated<F, Fut>(&self, handler: F) -> HandlerId
+    where
+        F: Fn(Page) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.event_manager.on_page_activated(handler).await
+    }
+
+    /// Remove a page activated event handler by its ID.
+    ///
+    /// Returns `true` if a handler was removed, `false` if the ID was not found.
+    pub async fn off_page_activated(&self, handler_id: HandlerId) -> bool {
+        self.event_manager.off_page_activated(handler_id).await
+    }
+
     /// Register a handler for context close events.
     ///
     /// The handler will be called when the context is about to close,

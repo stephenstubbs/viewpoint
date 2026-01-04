@@ -32,6 +32,13 @@ impl HandlerId {
 pub type PageEventHandler =
     Box<dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
 
+/// Type alias for the page activated event handler function.
+///
+/// This handler is called when a page becomes the active/foreground tab,
+/// including when the user clicks on a tab in the browser UI.
+pub type PageActivatedEventHandler =
+    Box<dyn Fn(Page) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
+
 /// Type alias for the close event handler function.
 pub type CloseEventHandler =
     Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>;
@@ -97,11 +104,24 @@ impl EventEmitter<PageEventHandler> {
     /// Emit an event to all page handlers.
     ///
     /// Each handler is called with a clone of the page.
-    pub async fn emit(&self, page: Page) {
+    pub async fn emit_page(&self, page: Page) {
         let handlers = self.handlers.read().await;
         for handler in handlers.values() {
             // Clone the page for each handler
             // Note: We need to create a new page reference for each handler
+            handler(page.clone_internal()).await;
+        }
+    }
+}
+
+impl EventEmitter<PageActivatedEventHandler> {
+    /// Emit a page activated event to all handlers.
+    ///
+    /// Each handler is called with a clone of the page.
+    pub async fn emit_page_activated(&self, page: Page) {
+        let handlers = self.handlers.read().await;
+        for handler in handlers.values() {
+            // Clone the page for each handler
             handler(page.clone_internal()).await;
         }
     }
@@ -122,6 +142,8 @@ impl EventEmitter<CloseEventHandler> {
 pub struct ContextEventManager {
     /// Handlers for 'page' events (new page created).
     page_handlers: EventEmitter<PageEventHandler>,
+    /// Handlers for 'page_activated' events (page became active/foreground).
+    page_activated_handlers: EventEmitter<PageActivatedEventHandler>,
     /// Handlers for 'close' events (context closing).
     close_handlers: EventEmitter<CloseEventHandler>,
 }
@@ -131,6 +153,7 @@ impl ContextEventManager {
     pub fn new() -> Self {
         Self {
             page_handlers: EventEmitter::new(),
+            page_activated_handlers: EventEmitter::new(),
             close_handlers: EventEmitter::new(),
         }
     }
@@ -157,7 +180,34 @@ impl ContextEventManager {
 
     /// Emit a page event to all registered handlers.
     pub async fn emit_page(&self, page: Page) {
-        self.page_handlers.emit(page).await;
+        self.page_handlers.emit_page(page).await;
+    }
+
+    /// Register a handler for page activated events.
+    ///
+    /// The handler will be called when a page becomes the active/foreground tab,
+    /// including when the user clicks on a tab in the browser UI.
+    /// Returns a handler ID that can be used to remove the handler.
+    pub async fn on_page_activated<F, Fut>(&self, handler: F) -> HandlerId
+    where
+        F: Fn(Page) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        let boxed_handler: PageActivatedEventHandler =
+            Box::new(move |page| Box::pin(handler(page)));
+        self.page_activated_handlers.add(boxed_handler).await
+    }
+
+    /// Remove a page activated event handler by its ID.
+    ///
+    /// Returns `true` if a handler was removed.
+    pub async fn off_page_activated(&self, id: HandlerId) -> bool {
+        self.page_activated_handlers.remove(id).await
+    }
+
+    /// Emit a page activated event to all registered handlers.
+    pub async fn emit_page_activated(&self, page: Page) {
+        self.page_activated_handlers.emit_page_activated(page).await;
     }
 
     /// Register a handler for context close events.
@@ -188,6 +238,7 @@ impl ContextEventManager {
     /// Clear all event handlers.
     pub async fn clear(&self) {
         self.page_handlers.clear().await;
+        self.page_activated_handlers.clear().await;
         self.close_handlers.clear().await;
     }
 }

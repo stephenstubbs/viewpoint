@@ -283,6 +283,120 @@ async fn test_wait_for_popup_compatibility() {
     browser.close().await.expect("Failed to close browser");
 }
 
+/// Test that on_page_activated handler registration and removal works correctly.
+///
+/// Note: The `Target.targetInfoChanged` event may not fire in headless mode for
+/// `bring_to_front` calls. This test verifies the handler infrastructure works correctly.
+#[tokio::test]
+async fn test_page_activated_handler_registration() {
+    let (browser, context) = setup().await;
+
+    // Track activation count
+    let activation_count = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let activation_count_clone = activation_count.clone();
+
+    // Set up on_page_activated handler
+    let handler_id = context
+        .on_page_activated(move |_page| {
+            let count = activation_count_clone.clone();
+            async move {
+                count.fetch_add(1, Ordering::SeqCst);
+            }
+        })
+        .await;
+
+    // Create a page
+    let _page = context.new_page().await.expect("Failed to create page");
+
+    // Give time for any events
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    // Verify the handler was registered (we can remove it successfully)
+    let removed = context.off_page_activated(handler_id).await;
+    assert!(removed, "Handler should have been successfully registered and removed");
+
+    // Verify removing again returns false
+    let removed_again = context.off_page_activated(handler_id).await;
+    assert!(!removed_again, "Handler should not be found after removal");
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that multiple on_page_activated handlers can be registered.
+#[tokio::test]
+async fn test_multiple_page_activated_handlers() {
+    let (browser, context) = setup().await;
+
+    // Register multiple handlers
+    let handler_id1 = context.on_page_activated(|_page| async {}).await;
+    let handler_id2 = context.on_page_activated(|_page| async {}).await;
+    let handler_id3 = context.on_page_activated(|_page| async {}).await;
+
+    // All handlers should have unique IDs
+    assert_ne!(handler_id1, handler_id2);
+    assert_ne!(handler_id2, handler_id3);
+    assert_ne!(handler_id1, handler_id3);
+
+    // All handlers should be removable
+    assert!(context.off_page_activated(handler_id1).await);
+    assert!(context.off_page_activated(handler_id2).await);
+    assert!(context.off_page_activated(handler_id3).await);
+
+    // None should be removable again
+    assert!(!context.off_page_activated(handler_id1).await);
+    assert!(!context.off_page_activated(handler_id2).await);
+    assert!(!context.off_page_activated(handler_id3).await);
+
+    browser.close().await.expect("Failed to close browser");
+}
+
+/// Test that on_page_activated only fires for pages in the same context.
+#[tokio::test]
+async fn test_page_activated_only_for_own_context() {
+    let (browser, _) = setup().await;
+
+    // Create two separate contexts
+    let context_a = browser.new_context().await.expect("Failed to create context A");
+    let context_b = browser.new_context().await.expect("Failed to create context B");
+
+    // Track activations for context A
+    let context_a_activations = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let context_a_activations_clone = context_a_activations.clone();
+
+    // Set up on_page_activated handler only on context A
+    context_a
+        .on_page_activated(move |_page| {
+            let count = context_a_activations_clone.clone();
+            async move {
+                count.fetch_add(1, Ordering::SeqCst);
+            }
+        })
+        .await;
+
+    // Create pages in both contexts
+    let _page_a = context_a.new_page().await.expect("Failed to create page in context A");
+    let page_b = context_b.new_page().await.expect("Failed to create page in context B");
+
+    // Give pages time to initialize
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    // Reset counter
+    context_a_activations.store(0, Ordering::SeqCst);
+
+    // Bring page from context B to front
+    page_b.bring_to_front().await.expect("Failed to bring page B to front");
+    tokio::time::sleep(Duration::from_millis(500)).await;
+
+    // Context A's handler should NOT have been triggered by context B's page
+    let count = context_a_activations.load(Ordering::SeqCst);
+    assert_eq!(
+        count, 0,
+        "Context A's handler should not be triggered by context B's page activation"
+    );
+
+    browser.close().await.expect("Failed to close browser");
+}
+
 /// Test that closed pages are removed from tracking.
 #[tokio::test]
 async fn test_closed_page_removed_from_tracking() {
