@@ -9,9 +9,9 @@ use tracing::{debug, info, instrument};
 use viewpoint_cdp::CdpConnection;
 use viewpoint_cdp::protocol::tracing as cdp_tracing;
 
-use crate::page::Page;
 use crate::error::ContextError;
 use crate::network::har::HarPage;
+use crate::page::Page;
 
 use super::action_handle::ActionHandle;
 use super::capture;

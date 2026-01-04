@@ -313,7 +313,10 @@ async fn test_page_activated_handler_registration() {
 
     // Verify the handler was registered (we can remove it successfully)
     let removed = context.off_page_activated(handler_id).await;
-    assert!(removed, "Handler should have been successfully registered and removed");
+    assert!(
+        removed,
+        "Handler should have been successfully registered and removed"
+    );
 
     // Verify removing again returns false
     let removed_again = context.off_page_activated(handler_id).await;
@@ -356,8 +359,14 @@ async fn test_page_activated_only_for_own_context() {
     let (browser, _) = setup().await;
 
     // Create two separate contexts
-    let context_a = browser.new_context().await.expect("Failed to create context A");
-    let context_b = browser.new_context().await.expect("Failed to create context B");
+    let context_a = browser
+        .new_context()
+        .await
+        .expect("Failed to create context A");
+    let context_b = browser
+        .new_context()
+        .await
+        .expect("Failed to create context B");
 
     // Track activations for context A
     let context_a_activations = Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -374,8 +383,14 @@ async fn test_page_activated_only_for_own_context() {
         .await;
 
     // Create pages in both contexts
-    let _page_a = context_a.new_page().await.expect("Failed to create page in context A");
-    let page_b = context_b.new_page().await.expect("Failed to create page in context B");
+    let _page_a = context_a
+        .new_page()
+        .await
+        .expect("Failed to create page in context A");
+    let page_b = context_b
+        .new_page()
+        .await
+        .expect("Failed to create page in context B");
 
     // Give pages time to initialize
     tokio::time::sleep(Duration::from_millis(200)).await;
@@ -384,7 +399,10 @@ async fn test_page_activated_only_for_own_context() {
     context_a_activations.store(0, Ordering::SeqCst);
 
     // Bring page from context B to front
-    page_b.bring_to_front().await.expect("Failed to bring page B to front");
+    page_b
+        .bring_to_front()
+        .await
+        .expect("Failed to bring page B to front");
     tokio::time::sleep(Duration::from_millis(500)).await;
 
     // Context A's handler should NOT have been triggered by context B's page

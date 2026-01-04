@@ -89,9 +89,7 @@ async fn test_page_activated_event_emitter_add_remove() {
 
     assert!(emitter.is_empty().await);
 
-    let id = emitter
-        .add(Box::new(|_page| Box::pin(async {})))
-        .await;
+    let id = emitter.add(Box::new(|_page| Box::pin(async {}))).await;
     assert_eq!(emitter.len().await, 1);
     assert!(!emitter.is_empty().await);
 

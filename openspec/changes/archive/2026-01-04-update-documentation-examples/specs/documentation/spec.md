@@ -1,8 +1,5 @@
-# documentation Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change update-documentation-coverage. Update Purpose after archive.
-## Requirements
 ### Requirement: Crate-Level Documentation
 Each crate in the workspace SHALL have comprehensive `//!` documentation in its `lib.rs` file that includes:
 - A brief description of the crate's purpose
@@ -28,45 +25,6 @@ Each crate in the workspace SHALL have comprehensive `//!` documentation in its 
 - **WHEN** they read the crate-level docs
 - **THEN** they see how to use ToJsValue for type conversion
 - **AND** they see examples of string escaping utilities
-
-### Requirement: Public API Documentation
-All public types, traits, methods, and functions SHALL have `///` doc comments that include:
-- A brief description of what the item does
-- At least one code example (where practical)
-- Documentation of parameters and return values
-- Documentation of error conditions with `# Errors` section
-- Cross-references to related types using `[Type]` links
-
-#### Scenario: Page type documentation
-- **GIVEN** a user views the `Page` type documentation
-- **WHEN** they read the type and method docs
-- **THEN** each public method has a description and example
-- **AND** navigation methods document timeout and error behavior
-
-#### Scenario: Locator type documentation  
-- **GIVEN** a user views the `Locator` type documentation
-- **WHEN** they read the type and method docs
-- **THEN** they understand how to locate elements
-- **AND** each action method (click, fill, etc.) has an example
-
-### Requirement: Module-Level Documentation
-Each public module SHALL have `//!` documentation in its `mod.rs` file that explains:
-- The module's purpose and scope
-- Key types defined in the module
-- Typical usage patterns
-- Links to related modules
-
-#### Scenario: browser module documentation
-- **GIVEN** a user views the `browser` module documentation
-- **WHEN** they read the module-level docs
-- **THEN** they understand the three connection methods (launch, connect, connect_over_cdp)
-- **AND** they see examples of each connection method
-
-#### Scenario: network module documentation
-- **GIVEN** a user views the `network` module documentation
-- **WHEN** they read the module-level docs
-- **THEN** they understand network interception capabilities
-- **AND** they see how Route, Request, and Response types relate
 
 ### Requirement: Example Coverage
 Documentation examples SHALL:
@@ -109,24 +67,7 @@ Each crate in the workspace SHALL have a README.md file that:
 - **THEN** every crate directory contains a README.md
 - **AND** each README has at minimum: description, installation, and example
 
-### Requirement: Context7 Configuration
-The `context7.json` file SHALL be configured to:
-- Exclude test files and internal modules from indexing
-- Include rules/best practices for AI coding assistants
-- Have an accurate project title and description
-- Optimize for maximum useful snippet extraction
-
-#### Scenario: Context7 excludes test code
-- **GIVEN** Context7 indexes the repository
-- **WHEN** the exclusion patterns are applied
-- **THEN** test files are not indexed as documentation
-- **AND** only public API documentation is included
-
-#### Scenario: Context7 provides usage rules
-- **GIVEN** an AI assistant queries Context7 for Viewpoint docs
-- **WHEN** Context7 provides documentation context
-- **THEN** the rules field provides best practices
-- **AND** the AI understands idioms like `js!` macro usage
+## ADDED Requirements
 
 ### Requirement: Primary Type Documentation
 The primary public types (Browser, BrowserContext, Page, Locator, Frame, ElementHandle) SHALL have comprehensive documentation that includes:
@@ -174,4 +115,3 @@ Network interception types (Route, Request, Response) SHALL document:
 - **WHEN** they read the Route documentation
 - **THEN** they find examples of fulfill(), abort(), and continue()
 - **AND** they see how to return JSON, HTML, and binary responses
-

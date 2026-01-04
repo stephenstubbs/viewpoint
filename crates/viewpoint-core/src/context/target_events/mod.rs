@@ -374,7 +374,7 @@ async fn handle_target_info_changed(
         pages_guard
             .iter()
             .find(|p| p.target_id() == info.target_id)
-            .map(|p| p.clone_internal())
+            .map(super::super::page::Page::clone_internal)
     };
 
     if let Some(page) = page {

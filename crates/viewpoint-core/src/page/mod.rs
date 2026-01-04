@@ -253,8 +253,6 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use viewpoint_cdp::CdpConnection;
 
-
-
 use crate::error::NavigationError;
 use crate::network::{RouteHandlerRegistry, WebSocketManager};
 
@@ -349,7 +347,7 @@ pub struct Page {
     /// Reference to context's pages list for removal on close.
     /// This is used to remove the page from the context's tracking list when closed,
     /// preventing stale sessions from accumulating.
-    /// Stores a Vec<Page> to enable returning functional Page objects from context.pages().
+    /// Stores a `Vec<Page>` to enable returning functional Page objects from context.pages().
     context_pages: Option<Arc<RwLock<Vec<Page>>>>,
 }
 

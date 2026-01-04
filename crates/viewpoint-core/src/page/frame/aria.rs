@@ -93,7 +93,13 @@ impl Frame {
     pub(crate) async fn capture_snapshot_with_refs(
         &self,
         options: SnapshotOptions,
-    ) -> Result<(crate::page::locator::AriaSnapshot, HashMap<String, BackendNodeId>), PageError> {
+    ) -> Result<
+        (
+            crate::page::locator::AriaSnapshot,
+            HashMap<String, BackendNodeId>,
+        ),
+        PageError,
+    > {
         let snapshot_fn = aria_snapshot_with_refs_js();
 
         // Evaluate the JS function to get snapshot and element array

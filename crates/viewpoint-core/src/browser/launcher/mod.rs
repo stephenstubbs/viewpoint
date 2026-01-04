@@ -289,13 +289,17 @@ impl BrowserBuilder {
         connection
             .send_command::<_, serde_json::Value>(
                 "Target.setDiscoverTargets",
-                Some(viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
-                    discover: true,
-                }),
+                Some(
+                    viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
+                        discover: true,
+                    },
+                ),
                 None,
             )
             .await
-            .map_err(|e| BrowserError::LaunchFailed(format!("Failed to enable target discovery: {e}")))?;
+            .map_err(|e| {
+                BrowserError::LaunchFailed(format!("Failed to enable target discovery: {e}"))
+            })?;
 
         info!(pid = pid, "Browser launched and connected successfully");
         Ok(Browser::from_launch(connection, child, temp_dir))

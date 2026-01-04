@@ -31,7 +31,8 @@ A Rust-native browser automation library inspired by Playwright. Viewpoint provi
 | [`viewpoint-core`](https://crates.io/crates/viewpoint-core) | High-level browser automation API | [![docs.rs](https://docs.rs/viewpoint-core/badge.svg)](https://docs.rs/viewpoint-core) |
 | [`viewpoint-test`](https://crates.io/crates/viewpoint-test) | Test framework with assertions and fixtures | [![docs.rs](https://docs.rs/viewpoint-test/badge.svg)](https://docs.rs/viewpoint-test) |
 | [`viewpoint-test-macros`](https://crates.io/crates/viewpoint-test-macros) | Proc macros for convenient test setup | [![docs.rs](https://docs.rs/viewpoint-test-macros/badge.svg)](https://docs.rs/viewpoint-test-macros) |
-| [`viewpoint-js`](https://crates.io/crates/viewpoint-js) | JavaScript interpolation macro | [![docs.rs](https://docs.rs/viewpoint-js/badge.svg)](https://docs.rs/viewpoint-js) |
+| [`viewpoint-js`](https://crates.io/crates/viewpoint-js) | Compile-time JavaScript validation macro | [![docs.rs](https://docs.rs/viewpoint-js/badge.svg)](https://docs.rs/viewpoint-js) |
+| [`viewpoint-js-core`](https://crates.io/crates/viewpoint-js-core) | JavaScript value conversion traits | [![docs.rs](https://docs.rs/viewpoint-js-core/badge.svg)](https://docs.rs/viewpoint-js-core) |
 
 ## Quick Start
 

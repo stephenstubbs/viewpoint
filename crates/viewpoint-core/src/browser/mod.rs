@@ -184,13 +184,17 @@ impl Browser {
         connection
             .send_command::<_, serde_json::Value>(
                 "Target.setDiscoverTargets",
-                Some(viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
-                    discover: true,
-                }),
+                Some(
+                    viewpoint_cdp::protocol::target_domain::SetDiscoverTargetsParams {
+                        discover: true,
+                    },
+                ),
                 None,
             )
             .await
-            .map_err(|e| BrowserError::ConnectionFailed(format!("Failed to enable target discovery: {e}")))?;
+            .map_err(|e| {
+                BrowserError::ConnectionFailed(format!("Failed to enable target discovery: {e}"))
+            })?;
 
         Ok(Self {
             connection: Arc::new(connection),
