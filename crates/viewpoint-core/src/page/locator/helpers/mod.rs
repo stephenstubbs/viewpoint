@@ -39,6 +39,9 @@ pub(super) struct ElementInfo {
 
 impl Locator<'_> {
     /// Wait for element to be actionable (visible, enabled, stable).
+    ///
+    /// This also scrolls the element into view and returns updated coordinates
+    /// so that clicks happen at the correct viewport position.
     pub(super) async fn wait_for_actionable(&self) -> Result<ElementInfo, LocatorError> {
         let start = std::time::Instant::now();
         let timeout = self.options.timeout;
@@ -62,9 +65,195 @@ impl Locator<'_> {
                 continue;
             }
 
-            // Element is visible, return it
+            // Element is visible - scroll it into view and get updated coordinates
+            let info = self.scroll_into_view_and_get_info().await?;
             return Ok(info);
         }
+    }
+
+    /// Scroll the element into view and return updated element info with correct coordinates.
+    ///
+    /// This is necessary because `getBoundingClientRect()` returns coordinates relative to
+    /// the viewport, but if an element is outside the visible area, those coordinates may
+    /// be outside what CDP `Input.dispatchMouseEvent` can target. By scrolling first and
+    /// then getting the bounding rect, we ensure the coordinates are within the visible area.
+    async fn scroll_into_view_and_get_info(&self) -> Result<ElementInfo, LocatorError> {
+        // Handle BackendNodeId selector specially - resolve via CDP
+        if let Selector::BackendNodeId(backend_node_id) = &self.selector {
+            return self
+                .scroll_into_view_and_get_info_by_backend_id(*backend_node_id)
+                .await;
+        }
+
+        // Handle Ref selector - lookup in ref map and resolve via CDP
+        if let Selector::Ref(ref_str) = &self.selector {
+            let backend_node_id = self.page.get_backend_node_id_for_ref(ref_str)?;
+            return self
+                .scroll_into_view_and_get_info_by_backend_id(backend_node_id)
+                .await;
+        }
+
+        // For CSS selectors, use JavaScript to scroll and get info
+        let selector_expr = self.selector.to_js_expression();
+        let js_code = js! {
+            (function() {
+                const elements = Array.from(@{selector_expr});
+                if (elements.length === 0) {
+                    return { found: false, count: 0 };
+                }
+                const el = elements[0];
+                // Scroll element into view if needed
+                el.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+                // Get bounding rect after scroll
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                const visible = rect.width > 0 && rect.height > 0 &&
+                    style.visibility !== "hidden" &&
+                    style.display !== "none" &&
+                    parseFloat(style.opacity) > 0;
+                return {
+                    found: true,
+                    count: elements.length,
+                    visible: visible,
+                    enabled: !el.disabled,
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                    text: el.textContent,
+                    tagName: el.tagName.toLowerCase()
+                };
+            })()
+        };
+
+        let result = self.evaluate_js(&js_code).await?;
+        let info: ElementInfo = serde_json::from_value(result)
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
+        Ok(info)
+    }
+
+    /// Scroll element into view and get info for a BackendNodeId selector.
+    async fn scroll_into_view_and_get_info_by_backend_id(
+        &self,
+        backend_node_id: viewpoint_cdp::protocol::dom::BackendNodeId,
+    ) -> Result<ElementInfo, LocatorError> {
+        // Resolve the backend node ID to a RemoteObject
+        let result: ResolveNodeResult = self
+            .page
+            .connection()
+            .send_command(
+                "DOM.resolveNode",
+                Some(ResolveNodeParams {
+                    node_id: None,
+                    backend_node_id: Some(backend_node_id),
+                    object_group: Some("viewpoint-locator".to_string()),
+                    execution_context_id: None,
+                }),
+                Some(self.page.session_id()),
+            )
+            .await
+            .map_err(|_| {
+                LocatorError::NotFound(format!(
+                    "Could not resolve backend node ID {backend_node_id}: element may no longer exist"
+                ))
+            })?;
+
+        let object_id = result.object.object_id.ok_or_else(|| {
+            LocatorError::NotFound(format!(
+                "No object ID for backend node ID {backend_node_id}"
+            ))
+        })?;
+
+        // Call a function on the resolved element to scroll into view and get its info
+        #[derive(Debug, Deserialize)]
+        struct CallResult {
+            result: viewpoint_cdp::protocol::runtime::RemoteObject,
+            #[serde(rename = "exceptionDetails")]
+            exception_details: Option<viewpoint_cdp::protocol::runtime::ExceptionDetails>,
+        }
+
+        let js_fn = js! {
+            (function() {
+                const el = this;
+                // Scroll element into view if needed
+                el.scrollIntoView({ behavior: "instant", block: "center", inline: "center" });
+                // Get bounding rect after scroll
+                const rect = el.getBoundingClientRect();
+
+                // Calculate cumulative iframe offset by walking up the frame hierarchy.
+                // This is needed because getBoundingClientRect() returns coordinates relative
+                // to the element's containing document, but Input.dispatchMouseEvent requires
+                // coordinates relative to the main frame's viewport.
+                let frameOffset = { x: 0, y: 0 };
+                let currentWindow = el.ownerDocument.defaultView;
+                while (currentWindow && currentWindow !== currentWindow.top) {
+                    const frameElement = currentWindow.frameElement;
+                    if (frameElement) {
+                        const frameRect = frameElement.getBoundingClientRect();
+                        frameOffset.x += frameRect.x;
+                        frameOffset.y += frameRect.y;
+                    }
+                    currentWindow = currentWindow.parent;
+                }
+
+                const style = window.getComputedStyle(el);
+                const visible = rect.width > 0 && rect.height > 0 &&
+                    style.visibility !== "hidden" &&
+                    style.display !== "none" &&
+                    parseFloat(style.opacity) > 0;
+                return {
+                    found: true,
+                    count: 1,
+                    visible: visible,
+                    enabled: !el.disabled,
+                    x: frameOffset.x + rect.x,
+                    y: frameOffset.y + rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                    text: el.textContent,
+                    tagName: el.tagName.toLowerCase()
+                };
+            })
+        };
+        // Strip outer parentheses for CDP functionDeclaration
+        let js_fn = js_fn.trim_start_matches('(').trim_end_matches(')');
+
+        let result: CallResult = self
+            .page
+            .connection()
+            .send_command(
+                "Runtime.callFunctionOn",
+                Some(serde_json::json!({
+                    "objectId": object_id,
+                    "functionDeclaration": js_fn,
+                    "returnByValue": true
+                })),
+                Some(self.page.session_id()),
+            )
+            .await?;
+
+        // Release the object
+        let _ = self
+            .page
+            .connection()
+            .send_command::<_, serde_json::Value>(
+                "Runtime.releaseObject",
+                Some(serde_json::json!({ "objectId": object_id })),
+                Some(self.page.session_id()),
+            )
+            .await;
+
+        if let Some(exception) = result.exception_details {
+            return Err(LocatorError::EvaluationError(exception.text));
+        }
+
+        let value = result.result.value.ok_or_else(|| {
+            LocatorError::EvaluationError("No result from element info query".to_string())
+        })?;
+
+        let info: ElementInfo = serde_json::from_value(value)
+            .map_err(|e| LocatorError::EvaluationError(e.to_string()))?;
+        Ok(info)
     }
 
     /// Query element information via JavaScript.
